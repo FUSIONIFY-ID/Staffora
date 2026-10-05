@@ -1,0 +1,185 @@
+// Staffora Database Schema (MVP v1.0)
+// Technical Specification Document - Section 9 & 12
+
+Table users {
+  id uuid [pk, default: `gen_random_uuid()`]
+  normalized_email varchar [unique, not null]
+  password_hash varchar [not null]
+  role varchar [not null] // 'ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE'
+  is_active boolean [not null, default: true]
+  employee_id uuid
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+
+  indexes {
+    normalized_email [unique]
+  }
+}
+
+Table user_sessions {
+  sid varchar [pk]
+  sess json [not null]
+  expire timestamptz [not null]
+
+  indexes {
+    expire
+  }
+}
+
+Table departments {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar [unique, not null]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+}
+
+Table job_roles {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar [unique, not null]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+}
+
+Table employees {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_code varchar [unique, not null]
+  full_name varchar [not null]
+  work_email varchar [unique, not null]
+  department_id uuid [not null]
+  job_role_id uuid [not null]
+  status varchar [not null, default: 'ACTIVE'] // 'ACTIVE', 'INACTIVE'
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+
+  indexes {
+    employee_code [unique]
+    work_email [unique]
+    (status, department_id, job_role_id)
+  }
+}
+
+Table skills {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar [unique, not null]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+}
+
+Table employee_skills {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null]
+  skill_id uuid [not null]
+  proficiency_level integer [not null] // 1-5
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+
+  indexes {
+    (employee_id, skill_id) [unique]
+    (skill_id, proficiency_level, employee_id)
+  }
+}
+
+Table projects {
+  id uuid [pk, default: `gen_random_uuid()`]
+  project_code varchar [unique, not null]
+  name varchar [not null]
+  project_manager_employee_id uuid [not null]
+  start_date date [not null]
+  end_date date [not null]
+  status varchar [not null, default: 'DRAFT'] // 'DRAFT', 'PLANNED', 'ACTIVE', 'COMPLETED', 'ARCHIVED'
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+
+  indexes {
+    project_code [unique]
+    (status, project_manager_employee_id, start_date, end_date)
+  }
+}
+
+Table staffing_requirements {
+  id uuid [pk, default: `gen_random_uuid()`]
+  project_id uuid [not null]
+  job_role_id uuid [not null]
+  headcount integer [not null]
+  allocation_percentage integer [not null]
+  start_date date [not null]
+  end_date date [not null]
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+
+  indexes {
+    (project_id, start_date, end_date)
+  }
+}
+
+Table staffing_requirement_skills {
+  id uuid [pk, default: `gen_random_uuid()`]
+  staffing_requirement_id uuid [not null]
+  skill_id uuid [not null]
+  minimum_proficiency_level integer [not null] // 1-5
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+
+  indexes {
+    (staffing_requirement_id, skill_id) [unique]
+  }
+}
+
+Table allocations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null]
+  project_id uuid [not null]
+  job_role_id uuid [not null]
+  staffing_requirement_id uuid
+  allocation_percentage integer [not null]
+  start_date date [not null]
+  end_date date [not null]
+  cancelled_at timestamptz
+  cancelled_by uuid
+  created_at timestamptz [not null, default: `now()`]
+  created_by varchar
+  updated_at timestamptz [not null, default: `now()`]
+  updated_by varchar
+
+  indexes {
+    (employee_id, start_date, end_date)
+    (project_id, start_date, end_date)
+  }
+}
+
+Ref: users.employee_id > employees.id [delete: set null]
+Ref: employees.department_id > departments.id
+Ref: employees.job_role_id > job_roles.id
+Ref: employee_skills.employee_id > employees.id [delete: cascade]
+Ref: employee_skills.skill_id > skills.id
+Ref: projects.project_manager_employee_id > employees.id
+Ref: staffing_requirements.project_id > projects.id [delete: cascade]
+Ref: staffing_requirements.job_role_id > job_roles.id
+Ref: staffing_requirement_skills.staffing_requirement_id > staffing_requirements.id [delete: cascade]
+Ref: staffing_requirement_skills.skill_id > skills.id
+Ref: allocations.employee_id > employees.id
+Ref: allocations.project_id > projects.id
+Ref: allocations.job_role_id > job_roles.id
+Ref: allocations.staffing_requirement_id > staffing_requirements.id [delete: set null]
+Ref: allocations.cancelled_by > users.id [delete: set null]

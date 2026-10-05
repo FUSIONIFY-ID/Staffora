@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: staffora
+      POSTGRES_PASSWORD: staffora_local
+      POSTGRES_DB: staffora
+    ports:
+      - "5432:5432"
+    volumes:
+      - staffora_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U staffora -d staffora"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://staffora:staffora_local@db:5432/staffora
+      SESSION_SECRET: ${SESSION_SECRET:-local-only-change-this-before-deployment-123456}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+volumes:
+  staffora_pgdata:

@@ -1,0 +1,23 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    name: Build & Staging Rollout
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Web & API Container Images
+        run: |
+          docker compose -f docker-compose.prod.yml build
+          echo "Staging images built successfully for automated VM deployment."

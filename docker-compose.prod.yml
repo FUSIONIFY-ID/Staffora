@@ -1,0 +1,10 @@
+# Baseline overlay only; production secrets, TLS, and deployment procedure require approval.
+services:
+  db:
+    ports: !reset []
+  api:
+    restart: unless-stopped
+    environment:
+      SESSION_SECRET: ${SESSION_SECRET:?Set a production SESSION_SECRET}
+  web:
+    restart: unless-stopped

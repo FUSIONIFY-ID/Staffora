@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  PROJECT_MANAGER
+  RESOURCE_MANAGER
+  EMPLOYEE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProjectStatus {
+  DRAFT
+  PLANNED
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model User {
+  id                   String        @id @default(uuid()) @db.Uuid
+  normalizedEmail      String        @unique @map("normalized_email") @db.VarChar(255)
+  passwordHash         String        @map("password_hash") @db.VarChar(255)
+  role                 Role
+  isActive             Boolean       @default(true) @map("is_active")
+  employeeId           String?       @unique @map("employee_id") @db.Uuid
+  employee             Employee?     @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy            String?       @map("created_by") @db.VarChar(255)
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy            String?       @map("updated_by") @db.VarChar(255)
+  cancelledAllocations Allocation[]  @relation("CancelledByUser")
+
+  @@map("users")
+}
+
+model UserSession {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamptz(6)
+
+  @@index([expire])
+  @@map("user_sessions")
+}
+
+model Department {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @unique @db.VarChar(255)
+  isActive  Boolean    @default(true) @map("is_active")
+  employees Employee[]
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?    @map("created_by") @db.VarChar(255)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy String?    @map("updated_by") @db.VarChar(255)
+
+  @@map("departments")
+}
+
+model JobRole {
+  id                   String                @id @default(uuid()) @db.Uuid
+  name                 String                @unique @db.VarChar(255)
+  isActive             Boolean               @default(true) @map("is_active")
+  employees            Employee[]
+  staffingRequirements StaffingRequirement[]
+  allocations          Allocation[]
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy            String?               @map("created_by") @db.VarChar(255)
+  updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy            String?               @map("updated_by") @db.VarChar(255)
+
+  @@map("job_roles")
+}
+
+model Employee {
+  id              String          @id @default(uuid()) @db.Uuid
+  employeeCode    String          @unique @map("employee_code") @db.VarChar(50)
+  fullName        String          @map("full_name") @db.VarChar(255)
+  workEmail       String          @unique @map("work_email") @db.VarChar(255)
+  departmentId    String          @map("department_id") @db.Uuid
+  department      Department      @relation(fields: [departmentId], references: [id])
+  jobRoleId       String          @map("job_role_id") @db.Uuid
+  jobRole         JobRole         @relation(fields: [jobRoleId], references: [id])
+  status          EmployeeStatus  @default(ACTIVE)
+  user            User?
+  managedProjects Project[]       @relation("ProjectManager")
+  skills          EmployeeSkill[]
+  allocations     Allocation[]
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy       String?         @map("created_by") @db.VarChar(255)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy       String?         @map("updated_by") @db.VarChar(255)
+
+  @@index([status, departmentId, jobRoleId])
+  @@map("employees")
+}
+
+model Skill {
+  id                        String                     @id @default(uuid()) @db.Uuid
+  name                      String                     @unique @db.VarChar(255)
+  isActive                  Boolean                    @default(true) @map("is_active")
+  employeeSkills            EmployeeSkill[]
+  staffingRequirementSkills StaffingRequirementSkill[]
+  createdAt                 DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy                 String?                    @map("created_by") @db.VarChar(255)
+  updatedAt                 DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy                 String?                    @map("updated_by") @db.VarChar(255)
+
+  @@map("skills")
+}
+
+model EmployeeSkill {
+  id               String   @id @default(uuid()) @db.Uuid
+  employeeId       String   @map("employee_id") @db.Uuid
+  employee         Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  skillId          String   @map("skill_id") @db.Uuid
+  skill            Skill    @relation(fields: [skillId], references: [id])
+  proficiencyLevel Int      @map("proficiency_level")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy        String?  @map("created_by") @db.VarChar(255)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy        String?  @map("updated_by") @db.VarChar(255)
+
+  @@unique([employeeId, skillId])
+  @@index([skillId, proficiencyLevel, employeeId])
+  @@map("employee_skills")
+}
+
+model Project {
+  id                       String                @id @default(uuid()) @db.Uuid
+  projectCode              String                @unique @map("project_code") @db.VarChar(50)
+  name                     String                @db.VarChar(255)
+  projectManagerEmployeeId String                @map("project_manager_employee_id") @db.Uuid
+  projectManager           Employee              @relation("ProjectManager", fields: [projectManagerEmployeeId], references: [id])
+  startDate                DateTime              @map("start_date") @db.Date
+  endDate                  DateTime              @map("end_date") @db.Date
+  status                   ProjectStatus         @default(DRAFT)
+  staffingRequirements     StaffingRequirement[]
+  allocations              Allocation[]
+  createdAt                DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy                String?               @map("created_by") @db.VarChar(255)
+  updatedAt                DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy                String?               @map("updated_by") @db.VarChar(255)
+
+  @@index([status, projectManagerEmployeeId, startDate, endDate])
+  @@map("projects")
+}
+
+model StaffingRequirement {
+  id                   String                     @id @default(uuid()) @db.Uuid
+  projectId            String                     @map("project_id") @db.Uuid
+  project              Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  jobRoleId            String                     @map("job_role_id") @db.Uuid
+  jobRole              JobRole                    @relation(fields: [jobRoleId], references: [id])
+  headcount            Int
+  allocationPercentage Int                        @map("allocation_percentage")
+  startDate            DateTime                   @map("start_date") @db.Date
+  endDate              DateTime                   @map("end_date") @db.Date
+  skills               StaffingRequirementSkill[]
+  allocations          Allocation[]
+  createdAt            DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy            String?                    @map("created_by") @db.VarChar(255)
+  updatedAt            DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy            String?                    @map("updated_by") @db.VarChar(255)
+
+  @@index([projectId, startDate, endDate])
+  @@map("staffing_requirements")
+}
+
+model StaffingRequirementSkill {
+  id                      String              @id @default(uuid()) @db.Uuid
+  staffingRequirementId   String              @map("staffing_requirement_id") @db.Uuid
+  staffingRequirement     StaffingRequirement @relation(fields: [staffingRequirementId], references: [id], onDelete: Cascade)
+  skillId                 String              @map("skill_id") @db.Uuid
+  skill                   Skill               @relation(fields: [skillId], references: [id])
+  minimumProficiencyLevel Int                 @map("minimum_proficiency_level")
+  createdAt               DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy               String?             @map("created_by") @db.VarChar(255)
+  updatedAt               DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy               String?             @map("updated_by") @db.VarChar(255)
+
+  @@unique([staffingRequirementId, skillId])
+  @@map("staffing_requirement_skills")
+}
+
+model Allocation {
+  id                    String               @id @default(uuid()) @db.Uuid
+  employeeId            String               @map("employee_id") @db.Uuid
+  employee              Employee             @relation(fields: [employeeId], references: [id])
+  projectId             String               @map("project_id") @db.Uuid
+  project               Project              @relation(fields: [projectId], references: [id])
+  jobRoleId             String               @map("job_role_id") @db.Uuid
+  jobRole               JobRole              @relation(fields: [jobRoleId], references: [id])
+  staffingRequirementId String?              @map("staffing_requirement_id") @db.Uuid
+  staffingRequirement   StaffingRequirement? @relation(fields: [staffingRequirementId], references: [id], onDelete: SetNull)
+  allocationPercentage  Int                  @map("allocation_percentage")
+  startDate             DateTime             @map("start_date") @db.Date
+  endDate               DateTime             @map("end_date") @db.Date
+  cancelledAt           DateTime?            @map("cancelled_at") @db.Timestamptz(6)
+  cancelledBy           String?              @map("cancelled_by") @db.Uuid
+  canceller             User?                @relation("CancelledByUser", fields: [cancelledBy], references: [id], onDelete: SetNull)
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy             String?              @map("created_by") @db.VarChar(255)
+  updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedBy             String?              @map("updated_by") @db.VarChar(255)
+
+  @@index([employeeId, startDate, endDate])
+  @@index([projectId, startDate, endDate])
+  @@map("allocations")
+}
