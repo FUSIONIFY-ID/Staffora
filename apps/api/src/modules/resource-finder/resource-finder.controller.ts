@@ -1,21 +1,14 @@
-import type { RequestHandler } from 'express'
+import type { Request, Response, NextFunction } from 'express'
+import { sendSuccess } from '../../common/http/response.js'
 import { resourceFinderService } from './resource-finder.service.js'
 
 export const resourceFinderController = {
-  search: (async (req, res, next) => {
+  async search(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await resourceFinderService.searchResources({
-        startDate: req.query.startDate as string,
-        endDate: req.query.endDate as string,
-        jobRoleId: req.query.jobRoleId as string | undefined,
-        departmentId: req.query.departmentId as string | undefined,
-        skillId: req.query.skillId as string | undefined,
-        minProficiency: req.query.minProficiency ? Number(req.query.minProficiency) : undefined,
-        minRemainingCapacity: req.query.minRemainingCapacity ? Number(req.query.minRemainingCapacity) : undefined,
-      })
-      return res.status(200).json(result)
+      const results = await resourceFinderService.search(req.query)
+      return sendSuccess(res, results)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 }

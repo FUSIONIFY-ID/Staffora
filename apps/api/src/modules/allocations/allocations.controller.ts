@@ -1,65 +1,66 @@
-import type { RequestHandler } from 'express'
+import type { Request, Response, NextFunction } from 'express'
+import { sendSuccess, sendList } from '../../common/http/response.js'
 import { allocationsService } from './allocations.service.js'
-import { sendSuccess, sendCreated } from '../../common/http/response.js'
-import { getParam } from '../../common/http/params.js'
 
 export const allocationsController = {
-  getAllocations: (async (req, res, next) => {
+  async getAllocations(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await allocationsService.getAllocations({
-        employeeId: req.query.employeeId as string | undefined,
-        projectId: req.query.projectId as string | undefined,
-        startDate: req.query.startDate as string | undefined,
-        endDate: req.query.endDate as string | undefined,
+      const result = await allocationsService.getAllocations(req.query, req.user!)
+      return sendList(res, result.data, {
+        page: result.page,
+        pageSize: result.pageSize,
+        total: result.total,
       })
-      return sendSuccess(res, data)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  getAllocationById: (async (req, res, next) => {
+  async getAllocationById(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await allocationsService.getAllocationById(getParam(req.params.id))
-      return sendSuccess(res, data)
+      const item = await allocationsService.getAllocationById(req.params.id as string, req.user!)
+      return sendSuccess(res, item)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  createAllocation: (async (req, res, next) => {
+  async createAllocation(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await allocationsService.createAllocation(req.body, req.user!)
-      return sendCreated(res, data)
+      const item = await allocationsService.createAllocation(req.body, req.user!)
+      return res.status(201).json({
+        data: item,
+        meta: { message: 'Allocation created scaffold' },
+      })
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  updateAllocation: (async (req, res, next) => {
+  async updateAllocation(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await allocationsService.updateAllocation(getParam(req.params.id), req.body, req.user!)
-      return sendSuccess(res, data)
+      const item = await allocationsService.updateAllocation(req.params.id as string, req.body, req.user!)
+      return sendSuccess(res, item)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  endAllocation: (async (req, res, next) => {
+  async endAllocation(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await allocationsService.endAllocation(getParam(req.params.id), req.body.endDate, req.user!)
-      return sendSuccess(res, data)
+      const item = await allocationsService.endAllocation(req.params.id as string, req.body, req.user!)
+      return sendSuccess(res, item)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  cancelAllocation: (async (req, res, next) => {
+  async cancelAllocation(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await allocationsService.cancelAllocation(getParam(req.params.id), req.user!)
-      return sendSuccess(res, data)
+      await allocationsService.cancelAllocation(req.params.id as string, req.user!)
+      return res.status(204).send()
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 }

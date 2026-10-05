@@ -1,22 +1,11 @@
-import type { RequestHandler } from 'express'
+import type { Request, Response, NextFunction } from 'express'
+import { sendSuccess, sendList } from '../../common/http/response.js'
 import { projectsService } from './projects.service.js'
-import { sendSuccess, sendCreated, sendList } from '../../common/http/response.js'
-import { getParam } from '../../common/http/params.js'
-import type { ProjectStatus } from '../../generated/prisma/client.js'
 
 export const projectsController = {
-  getProjects: (async (req, res, next) => {
+  async getProjects(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await projectsService.getProjects(
-        {
-          search: req.query.search as string | undefined,
-          status: req.query.status as ProjectStatus | undefined,
-          projectManagerEmployeeId: req.query.projectManagerEmployeeId as string | undefined,
-          page: Number(req.query.page) || 1,
-          pageSize: Number(req.query.pageSize) || 20,
-        },
-        req.user!,
-      )
+      const result = await projectsService.getProjects(req.query, req.user!)
       return sendList(res, result.data, {
         page: result.page,
         pageSize: result.pageSize,
@@ -25,32 +14,35 @@ export const projectsController = {
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  getProjectDetail: (async (req, res, next) => {
+  async createProject(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await projectsService.getProjectDetail(getParam(req.params.id), req.user!)
-      return sendSuccess(res, data)
+      const project = await projectsService.createProject(req.body, req.user!)
+      return res.status(201).json({
+        data: project,
+        meta: { message: 'Create project scaffold - Ready for Sprint 1 development' },
+      })
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  createProject: (async (req, res, next) => {
+  async getProjectDetail(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await projectsService.createProject(req.body, req.user!)
-      return sendCreated(res, data)
+      const project = await projectsService.getProjectDetail(req.params.id as string, req.user!)
+      return sendSuccess(res, project)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  updateProject: (async (req, res, next) => {
+  async updateProject(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await projectsService.updateProject(getParam(req.params.id), req.body, req.user!)
-      return sendSuccess(res, data)
+      const updated = await projectsService.updateProject(req.params.id as string, req.body, req.user!)
+      return sendSuccess(res, updated)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 }

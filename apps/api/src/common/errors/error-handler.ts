@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { ErrorRequestHandler } from 'express'
 import { AppError } from './app-error.js'
 import { logger } from '../logging/logger.js'

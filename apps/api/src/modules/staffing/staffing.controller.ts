@@ -1,42 +1,44 @@
-import type { RequestHandler } from 'express'
+import type { Request, Response, NextFunction } from 'express'
+import { sendSuccess } from '../../common/http/response.js'
 import { staffingService } from './staffing.service.js'
-import { sendSuccess, sendCreated, sendNoContent } from '../../common/http/response.js'
-import { getParam } from '../../common/http/params.js'
 
 export const staffingController = {
-  getRequirementsForProject: (async (req, res, next) => {
+  async getRequirementsForProject(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await staffingService.getRequirementsForProject(getParam(req.params.id))
-      return sendSuccess(res, data)
+      const items = await staffingService.getRequirementsForProject(req.params.id as string)
+      return sendSuccess(res, items)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  createRequirement: (async (req, res, next) => {
+  async createRequirement(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await staffingService.createRequirement(getParam(req.params.id), req.body, req.user!)
-      return sendCreated(res, data)
+      const item = await staffingService.createRequirement(req.params.id as string, req.body, req.user!)
+      return res.status(201).json({
+        data: item,
+        meta: { message: 'Staffing requirement created scaffold' },
+      })
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  updateRequirement: (async (req, res, next) => {
+  async updateRequirement(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await staffingService.updateRequirement(getParam(req.params.id), req.body, req.user!)
-      return sendSuccess(res, data)
+      const item = await staffingService.updateRequirement(req.params.id as string, req.body, req.user!)
+      return sendSuccess(res, item)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  deleteRequirement: (async (req, res, next) => {
+  async deleteRequirement(req: Request, res: Response, next: NextFunction) {
     try {
-      await staffingService.deleteRequirement(getParam(req.params.id), req.user!)
-      return sendNoContent(res)
+      await staffingService.deleteRequirement(req.params.id as string, req.user!)
+      return res.status(204).send()
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 }

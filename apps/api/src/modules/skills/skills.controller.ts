@@ -1,70 +1,77 @@
-import type { RequestHandler } from 'express'
+import type { Request, Response, NextFunction } from 'express'
+import { sendSuccess } from '../../common/http/response.js'
 import { skillsService } from './skills.service.js'
-import { sendSuccess, sendCreated, sendNoContent } from '../../common/http/response.js'
-import { getParam } from '../../common/http/params.js'
 
 export const skillsController = {
-  getSkills: (async (_req, res, next) => {
+  async getSkills(_req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await skillsService.getSkills()
-      return sendSuccess(res, data)
+      const items = await skillsService.getSkills()
+      return sendSuccess(res, items)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  createSkill: (async (req, res, next) => {
+  async createSkill(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await skillsService.createSkill(req.body.name, req.user?.id)
-      return sendCreated(res, data)
+      const item = await skillsService.createSkill(req.body)
+      return res.status(201).json({ data: item })
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  getEmployeeSkills: (async (req, res, next) => {
+  async updateSkill(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await skillsService.getEmployeeSkills(getParam(req.params.id))
-      return sendSuccess(res, data)
+      const item = await skillsService.updateSkill(req.params.id as string, req.body)
+      return sendSuccess(res, item)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  assignSkill: (async (req, res, next) => {
+  async getEmployeeSkills(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await skillsService.assignSkill(
-        getParam(req.params.id),
-        req.body.skillId,
-        req.body.proficiencyLevel,
-        req.user?.id,
-      )
-      return sendCreated(res, data)
+      const items = await skillsService.getEmployeeSkills(req.params.id as string)
+      return sendSuccess(res, items)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  updateProficiency: (async (req, res, next) => {
+  async assignSkill(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await skillsService.updateProficiency(
-        getParam(req.params.id),
-        getParam(req.params.skillId),
-        req.body.proficiencyLevel,
-        req.user?.id,
-      )
-      return sendSuccess(res, data)
+      const item = await skillsService.assignSkill(req.params.id as string, req.body)
+      return res.status(201).json({ data: item })
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  removeSkill: (async (req, res, next) => {
+  async updateProficiency(req: Request, res: Response, next: NextFunction) {
     try {
-      await skillsService.removeSkill(getParam(req.params.id), getParam(req.params.skillId))
-      return sendNoContent(res)
+      const item = await skillsService.updateProficiency(req.params.id as string, req.params.skillId as string, req.body)
+      return sendSuccess(res, item)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
+
+  async removeSkill(req: Request, res: Response, next: NextFunction) {
+    try {
+      await skillsService.removeSkill(req.params.id as string, req.params.skillId as string)
+      return res.status(204).send()
+    } catch (err) {
+      next(err)
+    }
+  },
+
+  async upsertEmployeeSkills(req: Request, res: Response, next: NextFunction) {
+    try {
+      const items = await skillsService.upsertEmployeeSkills(req.params.id as string, req.body)
+      return sendSuccess(res, items)
+    } catch (err) {
+      next(err)
+    }
+  },
 }

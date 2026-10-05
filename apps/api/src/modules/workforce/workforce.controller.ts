@@ -1,55 +1,47 @@
-import type { RequestHandler } from 'express'
+import type { Request, Response, NextFunction } from 'express'
+import { sendSuccess, sendList } from '../../common/http/response.js'
 import { workforceService } from './workforce.service.js'
-import { sendSuccess, sendCreated, sendList } from '../../common/http/response.js'
-import { getParam } from '../../common/http/params.js'
 
 export const workforceController = {
-  getDepartments: (async (_req, res, next) => {
+  async getDepartments(_req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await workforceService.getDepartments()
-      return sendSuccess(res, data)
+      const items = await workforceService.getDepartments()
+      return sendSuccess(res, items)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  createDepartment: (async (req, res, next) => {
+  async createDepartment(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await workforceService.createDepartment(req.body.name, req.user?.id)
-      return sendCreated(res, data)
+      const item = await workforceService.createDepartment(req.body)
+      return res.status(201).json({ data: item })
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  getJobRoles: (async (_req, res, next) => {
+  async getJobRoles(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await workforceService.getJobRoles()
-      return sendSuccess(res, data)
+      const items = await workforceService.getJobRoles(req.query.departmentId as string | undefined)
+      return sendSuccess(res, items)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  createJobRole: (async (req, res, next) => {
+  async createJobRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await workforceService.createJobRole(req.body.name, req.user?.id)
-      return sendCreated(res, data)
+      const item = await workforceService.createJobRole(req.body)
+      return res.status(201).json({ data: item })
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  getEmployees: (async (req, res, next) => {
+  async getEmployees(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await workforceService.getEmployees({
-        search: req.query.search as string | undefined,
-        departmentId: req.query.departmentId as string | undefined,
-        jobRoleId: req.query.jobRoleId as string | undefined,
-        status: req.query.status as 'ACTIVE' | 'INACTIVE' | undefined,
-        page: Number(req.query.page) || 1,
-        pageSize: Number(req.query.pageSize) || 20,
-      })
+      const result = await workforceService.getEmployees(req.query)
       return sendList(res, result.data, {
         page: result.page,
         pageSize: result.pageSize,
@@ -58,35 +50,32 @@ export const workforceController = {
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  getEmployeeDetail: (async (req, res, next) => {
+  async createEmployee(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await workforceService.getEmployeeDetail(getParam(req.params.id), {
-        startDate: req.query.startDate as string | undefined,
-        endDate: req.query.endDate as string | undefined,
-      })
-      return sendSuccess(res, data)
+      const item = await workforceService.createEmployee(req.body)
+      return res.status(201).json({ data: item })
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  createEmployee: (async (req, res, next) => {
+  async getEmployeeDetail(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await workforceService.createEmployee(req.body, req.user?.id)
-      return sendCreated(res, data)
+      const item = await workforceService.getEmployeeDetail(req.params.id as string)
+      return sendSuccess(res, item)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 
-  updateEmployee: (async (req, res, next) => {
+  async updateEmployee(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await workforceService.updateEmployee(getParam(req.params.id), req.body, req.user?.id)
-      return sendSuccess(res, data)
+      const item = await workforceService.updateEmployee(req.params.id as string, req.body)
+      return sendSuccess(res, item)
     } catch (err) {
       next(err)
     }
-  }) as RequestHandler,
+  },
 }
