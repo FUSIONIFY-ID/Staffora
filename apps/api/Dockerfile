@@ -5,6 +5,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
 RUN npm ci
 COPY apps/api apps/api
+RUN npm run db:generate -w @staffora/api
 RUN npm run build -w @staffora/api
 FROM node:24-alpine
 WORKDIR /app
