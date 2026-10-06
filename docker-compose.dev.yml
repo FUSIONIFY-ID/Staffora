@@ -1,0 +1,51 @@
+# Local development override: adds hot reload for web and API on top of docker-compose.yml.
+#
+# Usage:
+#   npm run stack:up        # or: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#   npm run stack:down      # or: docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+#
+# The base file keeps its production-shaped build; this override only switches the build
+# target to the `dev` stage and bind-mounts the workspace source so edits are picked up
+# immediately. node_modules stays inside the image (anonymous volume) so the Linux
+# binaries installed at build time are never shadowed by a host checkout.
+services:
+  api:
+    build:
+      target: dev
+    environment:
+      NODE_ENV: development
+      # Windows-host bind mounts do not forward inotify events into the container, so the
+      # tsx watcher must poll for edits to be picked up. No effect on host-native dev.
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./apps/api:/app/apps/api
+      - /app/apps/api/node_modules
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/v1/health/live || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+  web:
+    build:
+      target: dev
+    ports: !override
+      - "5173:5173"
+    environment:
+      NODE_ENV: development
+      # Inside the compose network the API is reachable by service name, not localhost.
+      VITE_API_PROXY_TARGET: http://api:3000
+      # Same bind-mount limitation as the API: Vite must poll to see host edits.
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./apps/web:/app/apps/web
+      - /app/apps/web/node_modules
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5173/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    depends_on:
+      api:
+        condition: service_healthy
