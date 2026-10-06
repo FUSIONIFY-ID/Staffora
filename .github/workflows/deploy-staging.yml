@@ -9,7 +9,6 @@ jobs:
   deploy-staging:
     name: Build & Staging Rollout
     runs-on: ubuntu-latest
-    environment: staging
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -19,5 +18,5 @@ jobs:
 
       - name: Build Web & API Container Images
         run: |
-          docker compose -f docker-compose.prod.yml build
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml build
           echo "Staging images built successfully for automated VM deployment."

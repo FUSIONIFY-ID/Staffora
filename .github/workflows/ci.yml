@@ -10,6 +10,22 @@ jobs:
   validate:
     name: Lint, Typecheck, Test & Build
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: staffora
+          POSTGRES_PASSWORD: staffora_local
+          POSTGRES_DB: staffora
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U staffora -d staffora"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,14 +39,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Prisma Client
+        run: npm run db:generate -w @staffora/api
+
       - name: Code Quality Checks (Lint)
         run: npm run lint
 
       - name: Static Typecheck
         run: npm run typecheck
 
+      - name: Run Database Migrations & Seed
+        run: |
+          npm run db:migrate:deploy -w @staffora/api
+          npm run db:seed -w @staffora/api
+        env:
+          DATABASE_URL: postgresql://staffora:staffora_local@localhost:5432/staffora
+
       - name: Automated Tests
         run: npm test
+        env:
+          DATABASE_URL: postgresql://staffora:staffora_local@localhost:5432/staffora
+          SESSION_SECRET: local-dev-session-secret-at-least-32-characters-long
 
       - name: Production Bundle Build
         run: npm run build
