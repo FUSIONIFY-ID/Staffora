@@ -1,4 +1,33 @@
-Read @CLAUDE.md
+# Agent Instructions: Staffora
+
+Read @CLAUDE.md, @AGENTS.md, @GEMINI.md
+
+## 🚨 Mandatory Agent Guardrails (Read Before Any Action)
+
+1. **Mandatory Pre-Task Analysis & Alignment:**
+   Before creating, scaffolding, or modifying ANY code or files, you MUST thoroughly read and analyze the project contracts, guidelines, and specifications:
+   - Primary agent guidelines: @CLAUDE.md, @AGENTS.md, @GEMINI.md
+   - Architecture & standards: `docs/architecture/overview.md`, `docs/CODING_STANDARD.md`
+   - Data & API contracts: `docs/database/erd.md`, `docs/api/openapi.yaml`, `apps/api/prisma/schema.prisma`
+   - PRD specifications: Approved PRD v1.0 (`Staffora — Product Requirements, User Stories & Acceptance Criteria MVP v1.0`)
+   NEVER write code blindly without structural understanding of the task boundaries.
+
+2. **Absolute Ban on `git push` (Agents Stop at `git commit`):**
+   - AI agents are **STRICTLY PROHIBITED** from executing `git push` to ANY remote branch (`origin dev`, `origin main`, or feature branches).
+   - Your execution boundary terminates strictly at local `git commit` on the developer's assigned feature branch.
+   - Pushing to GitHub is an exclusive human developer responsibility (`Human-in-the-loop`).
+   - Before committing locally, you MUST ensure all 4 verification gates pass:
+     ```powershell
+     npm run lint
+     npm run typecheck
+     npm test
+     npm run build
+     ```
+   - Once committed, inform the developer and provide the exact command for them to push manually after their own review:
+     ```bash
+     # To be executed manually by the human developer:
+     git push origin <feature-branch-name>
+     ```
 
 <!-- code-review-graph MCP tools -->
 
