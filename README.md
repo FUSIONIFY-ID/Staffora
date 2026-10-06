@@ -162,6 +162,15 @@ npm run dev:api
 npm run dev:web
 ```
 
+Alternatif — seluruh stack dalam Docker (hot reload aktif untuk API dan Web):
+
+```bash
+npm run stack:up
+```
+
+Perintah ini membangun image `dev` (target) dan menjalankan `db` + `api` + `web` dengan bind-mount
+source sehingga setiap edit langsung ter-apply. Berhentikan stack dengan `npm run stack:down`.
+
 ---
 
 ### 8. Buka Aplikasi di Browser
