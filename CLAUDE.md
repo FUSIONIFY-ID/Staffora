@@ -40,10 +40,11 @@ Because team members are junior developers, strict discipline, precise task scop
 | **Backend Engineers**  | **Saiful & Jundy** | Express API endpoints, Prisma schema & migrations, Capacity engine, RBAC (Stream A & B) |
 
 ### Strict Operational Guardrails:
-1. **No Rogue Development:** Developers and AI agents MUST NOT invent unapproved features, extra endpoints, or bypass PRD/TSD contracts. Work only on assigned user stories (`USxx.xx — ACxx.xx`).
-2. **Backend is Authoritative:** Never fake persistence, authorization, or capacity validation in the Web UI.
-3. **No Direct Pushes:** Pushing directly to `dev` or `main` is strictly prohibited.
-4. **Commit & Push Safety Gate:** AI agents are **FORBIDDEN** to spontaneously run `git add .`, commit, or push without explicit confirmation, scope explanation, and passed quality checks (`npm run lint`, `npm run typecheck`, `npm test`, `npm run build`).
+1. **Mandatory Pre-Task Analysis & Contract Alignment:** Before creating, scaffolding, or writing ANY code, the AI agent MUST first read and analyze the project contracts. The agent MUST reference and adhere to @CLAUDE.md, @AGENTS.md, and @GEMINI.md, as well as the relevant documentation under `docs/` (PRD, TSD, ERD, OpenAPI, Coding Standards). NEVER start coding blindly without understanding the domain constraints.
+2. **Absolute Ban on Agent `git push` (Commit-Only Boundary):** AI agents are **STRICTLY PROHIBITED** from running `git push` under ANY circumstances (to `dev`, `main`, or feature branches). An agent's execution boundary terminates strictly at local `git commit`. Pushing to GitHub remote is an EXCLUSIVE human developer responsibility after manual inspection and review.
+3. **No Rogue Development:** Developers and AI agents MUST NOT invent unapproved features, extra endpoints, or bypass PRD/TSD contracts. Work only on assigned user stories (`USxx.xx — ACxx.xx`).
+4. **Backend is Authoritative:** Never fake persistence, authorization, or capacity validation in the Web UI.
+5. **Pre-Commit Verification Gates:** AI agents may only create a local `git commit` if all 4 quality gates pass: `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. If any check fails, do NOT commit.
 
 ## Git Workflow & Branching Discipline
 
@@ -93,11 +94,16 @@ Resolve any conflicts cleanly, re-verify tests, and push your scoped branch.
 - **Release Promotion:** `main` is protected and strictly promoted by **Arya Isnaidi (Tech Lead)** upon milestone acceptance.
 - **Reviewer:** Arya Isnaidi conducts final review against `docs/CODE_REVIEW_CHECKLIST.md`.
 
-## Commit and Push Safety Gate
+## Commit Safety Gate (AI Agents Forbidden from Pushing)
 
 When an AI agent is instructed to make commits or prepare branches:
-- **NO BLIND ACTIONS:** Do not run `git add .` or `git add -A` blindly. Stage only the files specifically relevant to the assigned task.
-- **NEVER PUSH DIRECTLY TO `dev` OR `main`.**
+- **ABSOLUTE BAN ON `git push`:** AI agents are **STRICTLY FORBIDDEN** from running `git push` to ANY remote branch. The agent's work stops immediately after the local `git commit`. After committing, the agent must output the suggested push command for the human developer to run manually after inspection:
+  ```bash
+  # Manual human execution only:
+  git push origin <your-branch>
+  ```
+- **NO BLIND STAGING:** Do not run `git add .` or `git add -A` blindly. Stage only the files specifically relevant to the assigned task.
+- **NEVER COMMIT DIRECTLY TO `dev` OR `main`.** Always work on an assigned feature branch.
 - **PRE-COMMIT MANDATORY GATES:** Verify all 4 checks pass before committing:
   ```powershell
   npm run lint
@@ -105,7 +111,7 @@ When an AI agent is instructed to make commits or prepare branches:
   npm test
   npm run build
   ```
-- If any check fails, do NOT commit or push. Stop, fix the issue, or report to Tech Lead Arya Isnaidi.
+- If any check fails, do NOT commit. Stop, fix the issue, or report to Tech Lead Arya Isnaidi.
 - Commit message format:
   ```text
   <type>(<scope>): <subject> [USxx.xx - ACxx.xx]
