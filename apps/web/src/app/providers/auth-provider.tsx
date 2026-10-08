@@ -1,28 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { apiClient, setCachedCsrfToken } from '../../api/client.js'
+import type { Role } from '../../constants/roles.js'
+import type { UserProfile } from '../../types/auth.js'
 
-export type Role = 'ADMIN' | 'PROJECT_MANAGER' | 'RESOURCE_MANAGER' | 'EMPLOYEE'
+export type { Role, UserProfile }
 
-export interface UserProfile {
-  id: string
-  email: string
-  role: Role
-  isActive: boolean
-  employeeId?: string | null
-  employee?: {
-    id: string
-    employeeCode: string
-    fullName: string
-    workEmail: string
-    departmentId: string
-    departmentName: string
-    jobRoleId: string
-    jobRoleTitle: string
-  } | null
-}
-
-interface AuthContextType {
+export interface AuthContextType {
   user: UserProfile | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<UserProfile>

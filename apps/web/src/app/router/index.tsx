@@ -2,8 +2,11 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router'
 import { AppLayout } from '../layouts/app-layout.js'
 import { ProtectedRoute } from './protected-route.js'
+import { PublicRoute } from './public-route.js'
 import { useAuth } from '../providers/auth-provider.js'
-import { Spinner } from '../../components/ui/spinner.js'
+import { LoadingState } from '../../components/feedback/loading-state.js'
+import { NotFoundState } from '../../components/feedback/not-found-state.js'
+import { MANAGEMENT_ROLES, ALL_ROLES } from '../../constants/roles.js'
 
 // Feature Pages
 import { LoginPage } from '../../features/auth/login-page.js'
@@ -22,12 +25,7 @@ const RootRedirect: React.FC = () => {
   const { user, isLoading } = useAuth()
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 gap-3">
-        <Spinner size="lg" />
-        <p className="text-sm text-slate-400">Loading Staffora...</p>
-      </div>
-    )
+    return <LoadingState message="Loading Staffora..." fullScreen />
   }
 
   if (!user) {
@@ -45,18 +43,31 @@ export const AppRouter: React.FC = () => {
   return (
     <Routes>
       {/* Public Route */}
-      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
 
       {/* Root redirect */}
       <Route path="/" element={<RootRedirect />} />
 
       {/* Protected Application Routes inside AppLayout */}
-      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
         {/* Dashboard */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER']}>
+            <ProtectedRoute allowedRoles={MANAGEMENT_ROLES}>
               <DashboardPage />
             </ProtectedRoute>
           }
@@ -66,7 +77,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/resources"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER']}>
+            <ProtectedRoute allowedRoles={MANAGEMENT_ROLES}>
               <ResourcesPage />
             </ProtectedRoute>
           }
@@ -74,7 +85,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/resources/:employeeId"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER']}>
+            <ProtectedRoute allowedRoles={MANAGEMENT_ROLES}>
               <ResourceDetailPage />
             </ProtectedRoute>
           }
@@ -84,7 +95,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/skills"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER']}>
+            <ProtectedRoute allowedRoles={MANAGEMENT_ROLES}>
               <SkillsPage />
             </ProtectedRoute>
           }
@@ -94,7 +105,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/capacity"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER']}>
+            <ProtectedRoute allowedRoles={MANAGEMENT_ROLES}>
               <CapacityPage />
             </ProtectedRoute>
           }
@@ -104,7 +115,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/projects"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE']}>
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
               <ProjectsPage />
             </ProtectedRoute>
           }
@@ -112,7 +123,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/projects/:projectId"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE']}>
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
               <ProjectDetailPage />
             </ProtectedRoute>
           }
@@ -120,7 +131,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/projects/:projectId/staffing"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE']}>
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
               <ProjectDetailPage />
             </ProtectedRoute>
           }
@@ -128,7 +139,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/projects/:projectId/resources"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE']}>
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
               <ProjectDetailPage />
             </ProtectedRoute>
           }
@@ -138,7 +149,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/allocations"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER']}>
+            <ProtectedRoute allowedRoles={MANAGEMENT_ROLES}>
               <AllocationsPage />
             </ProtectedRoute>
           }
@@ -148,7 +159,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/my-profile"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE']}>
+            <ProtectedRoute allowedRoles={ALL_ROLES}>
               <MyProfilePage />
             </ProtectedRoute>
           }
@@ -163,10 +174,10 @@ export const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-      </Route>
 
-      {/* Catch-all fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch-all route inside AppLayout renders NotFoundState */}
+        <Route path="*" element={<NotFoundState />} />
+      </Route>
     </Routes>
   )
 }

@@ -1,3 +1,5 @@
+import { env } from '../lib/validation/env.js'
+
 export interface ApiErrorPayload {
   message: string
   code: string
@@ -26,24 +28,38 @@ export class ApiError extends Error {
 
 let csrfTokenCache: string | null = null
 
-export function setCachedCsrfToken(token: string | null) {
+export function setCachedCsrfToken(token: string | null): void {
   csrfTokenCache = token
+}
+
+export function getCachedCsrfToken(): string | null {
+  return csrfTokenCache
+}
+
+export function buildApiUrl(endpoint: string): string {
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return endpoint
+  }
+  const base = env.VITE_API_BASE_URL.replace(/\/+$/, '')
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  return `${base}${cleanEndpoint}`
 }
 
 export async function fetchCsrfToken(): Promise<string | null> {
   try {
-    const res = await fetch('/api/v1/auth/csrf-token', {
+    const url = buildApiUrl('/auth/csrf-token')
+    const res = await fetch(url, {
       method: 'GET',
       credentials: 'include',
       headers: { Accept: 'application/json' },
     })
     if (res.ok) {
       const body = await res.json()
-      csrfTokenCache = body.data?.csrfToken || null
+      csrfTokenCache = body?.data?.csrfToken || null
       return csrfTokenCache
     }
   } catch {
-    // ignore
+    // ignore network or unexpected errors when probing csrf
   }
   return null
 }
@@ -52,7 +68,7 @@ export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const url = endpoint.startsWith('http') ? endpoint : `/api/v1${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
+  const url = buildApiUrl(endpoint)
   const method = (options.method || 'GET').toUpperCase()
   const headers = new Headers(options.headers || {})
 
@@ -91,14 +107,18 @@ export async function apiClient<T>(
   if (!response.ok) {
     if (response.status === 401) {
       csrfTokenCache = null
-      // Do not redirect if we are already testing auth/me
-      if (endpoint !== '/auth/me' && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      // Do not redirect if we are probing /auth/me or already on /login
+      if (
+        !endpoint.includes('/auth/me') &&
+        typeof window !== 'undefined' &&
+        window.location.pathname !== '/login'
+      ) {
         window.location.href = '/login'
       }
     }
 
-    const payload: ApiErrorPayload = isJson
-      ? body
+    const payload: ApiErrorPayload = isJson && typeof body === 'object' && body !== null
+      ? (body as ApiErrorPayload)
       : {
           message: typeof body === 'string' ? body : 'API request failed.',
           code: `HTTP_${response.status}`,
