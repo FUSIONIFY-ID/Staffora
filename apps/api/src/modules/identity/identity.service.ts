@@ -74,7 +74,7 @@ export const identityService = {
     }
 
     const linkageCheck = validateUserEmployeeLinkage({ role: input.role, employeeId: input.employeeId })
-    if (!linkageCheck.valid && input.employeeId !== undefined) {
+    if (!linkageCheck.valid) {
       throw new ValidationError(linkageCheck.reason ?? 'Invalid employee linkage.')
     }
 
@@ -141,7 +141,7 @@ export const identityService = {
     const targetRole = input.role ?? existing.role
     const targetEmployeeId = input.employeeId !== undefined ? input.employeeId : existing.employeeId
     const linkageCheck = validateUserEmployeeLinkage({ role: targetRole, employeeId: targetEmployeeId })
-    if (!linkageCheck.valid && input.employeeId !== undefined) {
+    if (!linkageCheck.valid) {
       throw new ValidationError(linkageCheck.reason ?? 'Invalid employee linkage.')
     }
 

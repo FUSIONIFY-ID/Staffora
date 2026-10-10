@@ -33,7 +33,7 @@ export const projectsService = {
     }
   },
 
-  async updateProject(id: string, _data: Record<string, unknown>, user: AuthenticatedUser) {
+  async updateProject(id: string, data: Record<string, unknown>, user: AuthenticatedUser) {
     const project = await projectsRepository.findById(id)
     if (!project) {
       throw new NotFoundError('Project not found.')
@@ -41,11 +41,15 @@ export const projectsService = {
 
     projectsPolicy.assertCanUpdate(user, project.projectManagerEmployeeId)
 
+    const updated = await projectsRepository.update(id, {
+      ...(typeof data.name === 'string' ? {name: data.name} : {}),
+      updatedBy: user.id
+    })
+
     return {
-      id: project.id,
-      name: project.name,
-      status: project.status,
-      message: 'Project updated scaffold',
+      id: updated.id,
+      name: updated.name,
+      status: updated.status,
     }
   },
 }

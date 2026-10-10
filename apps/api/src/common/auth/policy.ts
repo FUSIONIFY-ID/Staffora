@@ -122,10 +122,10 @@ export function canAccessEmployeeProfile(
 export function assertCanAccessEmployeeProfile(
   user: AuthenticatedUser,
   targetEmployeeId: string,
-  message = 'You do not have permission to access another employee profile.',
+  message = 'Employee not found.',
 ): void {
   if (!canAccessEmployeeProfile(user, targetEmployeeId)) {
-    throw new ForbiddenError(message)
+    throw new NotFoundError(message)
   }
 }
 

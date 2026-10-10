@@ -16,7 +16,7 @@ export const workforcePolicy = {
   assertCanViewEmployee(
     user: AuthenticatedUser,
     employeeId: string,
-    message = 'You do not have permission to access another employee profile.',
+    message = 'Employee not found.',
   ): void {
     assertCanAccessEmployeeProfile(user, employeeId, message)
   },
