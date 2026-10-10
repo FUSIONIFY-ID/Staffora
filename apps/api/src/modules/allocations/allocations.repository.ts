@@ -6,6 +6,9 @@ export const allocationsRepository = {
   async findById(id: string) {
     return prisma.allocation.findUnique({
       where: { id },
+      include: {
+        project: true,
+      },
     })
   },
 }
