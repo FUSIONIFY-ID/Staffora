@@ -7,6 +7,14 @@ RUN npm ci
 COPY apps/api apps/api
 RUN npm run db:generate -w @staffora/api
 RUN npm run build -w @staffora/api
+
+# Development stage: source is bind-mounted by docker-compose.dev.yml, so this only
+# provides the runtime (tsx watch) on top of the installed workspace. Placed before the
+# production stage so the default build target stays production.
+FROM build AS dev
+ENV NODE_ENV=development
+EXPOSE 3000
+CMD ["npm", "run", "dev", "-w", "@staffora/api"]
 FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production
