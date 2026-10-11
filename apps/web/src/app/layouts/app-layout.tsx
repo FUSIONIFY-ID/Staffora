@@ -17,6 +17,7 @@ export const AppLayout: React.FC = () => {
   const navItems = [
     { label: 'Dashboard', path: '/dashboard', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
     { label: 'Resources', path: '/resources', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
+    { label: 'Find Resources', path: '/resource-finder', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
     { label: 'Skills', path: '/skills', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
     { label: 'Capacity', path: '/capacity', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
     { label: 'Projects', path: '/projects', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE'] },
