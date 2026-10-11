@@ -41,22 +41,13 @@ export const AppLayout: React.FC = () => {
           <div className="flex items-center gap-8">
             <Link to="/dashboard" className="flex items-center gap-3 group">
               <img
-                src="/logo.png"
-                alt="Staffora"
-                className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
-                onError={(e) => {
-                  // Fallback to text if image not accessible in dev
-                  const target = e.currentTarget
-                  target.style.display = 'none'
-                  const parent = target.parentElement
-                  if (parent && !parent.querySelector('.brand-fallback')) {
-                    const span = document.createElement('span')
-                    span.className = 'brand-fallback text-xl font-extrabold text-blue-500'
-                    span.innerText = '◆ Staffora'
-                    parent.appendChild(span)
-                  }
-                }}
+                src="/logo-icon.png"
+                alt="Staffora Emblem"
+                className="h-8 w-8 object-contain transition-transform group-hover:scale-105"
               />
+              <span className="text-xl font-bold tracking-tight text-white group-hover:text-blue-400 transition-colors">
+                Staffora
+              </span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-1">
