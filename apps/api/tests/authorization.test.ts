@@ -25,6 +25,9 @@ import {
   requireLinkedEmployee as requireLinkedEmployeeMiddleware,
 } from '../src/common/auth/rbac.js'
 import { hashPassword } from '../src/common/auth/password.js'
+import { projectsPolicy } from '../src/modules/projects/projects.policy.js'
+import { workforcePolicy } from '../src/modules/workforce/workforce.policy.js'
+import { staffingPolicy } from '../src/modules/staffing/staffing.policy.js'
 
 describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () => {
   const app = createApp({ useMemorySession: true })
@@ -41,9 +44,13 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
   let otherEmployeeId: string
   let pmOwnProjectId: string
   let otherPmProjectId: string
+  let otherPmStaffingRequirementId: string
+  let rolePMId: string
 
   let createdEmployeeId: string | null = null
   let createdProjectId: string | null = null
+  let createdPmOwnProjectId: string | null = null
+  let createdStaffingRequirementId: string | null = null
 
   beforeAll(async () => {
     // 1. Authenticate seeded users
@@ -75,42 +82,75 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
     const emp4 = await prisma.employee.findUniqueOrThrow({ where: { employeeCode: 'EMP-004' } })
     otherEmployeeId = emp4.id
 
-    // 3. Fetch PM's own project
-    const ownProj = await prisma.project.findUniqueOrThrow({ where: { projectCode: 'PRJ-STAFFORA-01' } })
+    const testSuffix = Date.now().toString()
+    const pmEmployeeId = pmRes.body.data.user.employeeId
+
+    // 3. Create dedicated PM test project (Safe fixture: prevents mutating seeded PRJ-STAFFORA-01)
+    const ownProj = await prisma.project.create({
+      data: {
+        projectCode: `TEST-PM-OWN-${testSuffix}`,
+        name: 'PM Dedicated Test Project',
+        projectManagerEmployeeId: pmEmployeeId,
+        startDate: new Date('2026-10-01T00:00:00Z'),
+        endDate: new Date('2026-12-31T00:00:00Z'),
+        status: 'ACTIVE',
+      },
+    })
+    createdPmOwnProjectId = ownProj.id
     pmOwnProjectId = ownProj.id
 
     // 4. Create another PM and another project for cross-PM ownership tests
-    const testSuffix = Date.now().toString();
     const dept = await prisma.department.findFirstOrThrow()
     const rolePM = await prisma.jobRole.findFirstOrThrow({ where: { name: 'Project Manager' } })
+    rolePMId = rolePM.id
 
-      const otherPmEmp = await prisma.employee.create({
-        data: {
-          employeeCode: `TEST-EMP-${testSuffix}`,
-          fullName: 'Other PM User',
-          workEmail: `other.pm.${testSuffix}@staffora.internal`,
-          departmentId: dept.id,
-          jobRoleId: rolePM.id,
-          status: 'ACTIVE',
+    const otherPmEmp = await prisma.employee.create({
+      data: {
+        employeeCode: `TEST-EMP-${testSuffix}`,
+        fullName: 'Other PM User',
+        workEmail: `other.pm.${testSuffix}@staffora.internal`,
+        departmentId: dept.id,
+        jobRoleId: rolePM.id,
+        status: 'ACTIVE',
       },
     })
-      createdEmployeeId = otherPmEmp.id
-      const otherProj = await prisma.project.create({
-        data: {
-          projectCode: `TEST-PRJ-${testSuffix}`,
-          name: 'Another PM Project',
-          projectManagerEmployeeId: otherPmEmp.id,
-          startDate: new Date('2026-11-01T00:00:00Z'),
-          endDate: new Date('2026-12-31T00:00:00Z'),
-          status: 'PLANNED',
-        },
-      })
-      createdProjectId = otherProj.id
-      otherPmProjectId = otherProj.id
+    createdEmployeeId = otherPmEmp.id
+
+    const otherProj = await prisma.project.create({
+      data: {
+        projectCode: `TEST-PRJ-${testSuffix}`,
+        name: 'Another PM Project',
+        projectManagerEmployeeId: otherPmEmp.id,
+        startDate: new Date('2026-11-01T00:00:00Z'),
+        endDate: new Date('2026-12-31T00:00:00Z'),
+        status: 'PLANNED',
+      },
+    })
+    createdProjectId = otherProj.id
+    otherPmProjectId = otherProj.id
+
+    const otherReq = await prisma.staffingRequirement.create({
+      data: {
+        projectId: otherProj.id,
+        jobRoleId: rolePM.id,
+        headcount: 1,
+        allocationPercentage: 100,
+        startDate: new Date('2026-11-01T00:00:00Z'),
+        endDate: new Date('2026-12-31T00:00:00Z'),
+      },
+    })
+    createdStaffingRequirementId = otherReq.id
+    otherPmStaffingRequirementId = otherReq.id
   })
 
-   afterAll(async () => {
+  afterAll(async () => {
     // Cleanup hanya data yang benar-benar dibuat oleh test ini
+    if (createdStaffingRequirementId) {
+      await prisma.staffingRequirement.deleteMany({ where: { id: createdStaffingRequirementId } })
+    }
+    if (createdPmOwnProjectId) {
+      await prisma.project.deleteMany({ where: { id: createdPmOwnProjectId } })
+    }
     if (createdProjectId) {
       await prisma.project.deleteMany({ where: { id: createdProjectId } })
     }
@@ -272,15 +312,25 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(persisted?.name).toBe('Updated Staffora Platform')
     })
 
-    it('disallows PROJECT_MANAGER from updating another PM project (HTTP 403)', async () => {
+    it('disallows PROJECT_MANAGER from updating another PM project via non-disclosure (HTTP 404)', async () => {
       const res = await request(app)
         .patch(`/api/v1/projects/${otherPmProjectId}`)
         .set('Cookie', pmCookie)
         .set('X-CSRF-Token', pmCsrf)
         .send({ name: 'Unauthorized Hijack Attempt' })
-      expect(res.status).toBe(403)
-      expect(res.body.code).toBe('FORBIDDEN')
-      expect(res.body.message).toContain('manage this project')
+      expect(res.status).toBe(404)
+      expect(res.body.code).toBe('NOT_FOUND')
+    })
+
+    it('returns HTTP 404 identically when project does not exist (non-disclosure parity)', async () => {
+      const fakeUuid = '00000000-0000-0000-0000-000000000000'
+      const res = await request(app)
+        .patch(`/api/v1/projects/${fakeUuid}`)
+        .set('Cookie', pmCookie)
+        .set('X-CSRF-Token', pmCsrf)
+        .send({ name: 'Non Existent Project' })
+      expect(res.status).toBe(404)
+      expect(res.body.code).toBe('NOT_FOUND')
     })
 
     it('disallows PROJECT_MANAGER from creating allocation in another PM project (HTTP 403)', async () => {
@@ -301,6 +351,73 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(res.body.message).toContain('manage allocations')
     })
 
+    it('disallows PROJECT_MANAGER from creating staffing requirement in another PM project (HTTP 404)', async () => {
+      const res = await request(app)
+        .post(`/api/v1/projects/${otherPmProjectId}/staffing-requirements`)
+        .set('Cookie', pmCookie)
+        .set('X-CSRF-Token', pmCsrf)
+        .send({
+          jobRoleId: rolePMId,
+          headcount: 1,
+          allocationPercentage: 100,
+          startDate: '2026-11-01',
+          endDate: '2026-12-31',
+        })
+      expect(res.status).toBe(404)
+      expect(res.body.code).toBe('NOT_FOUND')
+    })
+
+    it('disallows PROJECT_MANAGER from updating staffing requirement in another PM project (HTTP 404)', async () => {
+      const res = await request(app)
+        .patch(`/api/v1/staffing-requirements/${otherPmStaffingRequirementId}`)
+        .set('Cookie', pmCookie)
+        .set('X-CSRF-Token', pmCsrf)
+        .send({
+          headcount: 2,
+        })
+      expect(res.status).toBe(404)
+      expect(res.body.code).toBe('NOT_FOUND')
+    })
+
+    it('disallows PROJECT_MANAGER from deleting staffing requirement in another PM project (HTTP 404)', async () => {
+      const res = await request(app)
+        .delete(`/api/v1/staffing-requirements/${otherPmStaffingRequirementId}`)
+        .set('Cookie', pmCookie)
+        .set('X-CSRF-Token', pmCsrf)
+      expect(res.status).toBe(404)
+      expect(res.body.code).toBe('NOT_FOUND')
+    })
+
+    it('allows PROJECT_MANAGER to create staffing requirement in their own project (HTTP 201)', async () => {
+      const res = await request(app)
+        .post(`/api/v1/projects/${pmOwnProjectId}/staffing-requirements`)
+        .set('Cookie', pmCookie)
+        .set('X-CSRF-Token', pmCsrf)
+        .send({
+          jobRoleId: rolePMId,
+          headcount: 1,
+          allocationPercentage: 100,
+          startDate: '2026-11-01',
+          endDate: '2026-12-31',
+        })
+      expect(res.status).toBe(201)
+      expect(res.body.data.projectId).toBe(pmOwnProjectId)
+    })
+
+    it('allows ADMIN to create staffing requirement in any project (HTTP 201)', async () => {
+      const res = await request(app)
+        .post(`/api/v1/projects/${otherPmProjectId}/staffing-requirements`)
+        .set('Cookie', adminCookie)
+        .set('X-CSRF-Token', adminCsrf)
+        .send({
+          jobRoleId: rolePMId,
+          headcount: 1,
+          allocationPercentage: 100,
+          startDate: '2026-11-01',
+          endDate: '2026-12-31',
+        })
+      expect(res.status).toBe(201)
+    })
 
     it('allows ADMIN to update any project regardless of assigned PM (HTTP 200)', async () => {
       const res = await request(app)
@@ -334,11 +451,13 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
   })
 
   describe('7. User-to-Employee Linkage Validation & Reusable Policies', () => {
-    it('validates employee linkage requirements for EMPLOYEE and PM roles', () => {
+    it('validates employee linkage requirements for EMPLOYEE, PM, and RM roles', () => {
       expect(validateUserEmployeeLinkage({ role: 'EMPLOYEE', employeeId: null }).valid).toBe(false)
       expect(validateUserEmployeeLinkage({ role: 'PROJECT_MANAGER', employeeId: '' }).valid).toBe(false)
+      expect(validateUserEmployeeLinkage({ role: 'RESOURCE_MANAGER', employeeId: null }).valid).toBe(false)
       expect(validateUserEmployeeLinkage({ role: 'ADMIN', employeeId: null }).valid).toBe(true)
       expect(validateUserEmployeeLinkage({ role: 'EMPLOYEE', employeeId: 'valid-uuid' }).valid).toBe(true)
+      expect(validateUserEmployeeLinkage({ role: 'RESOURCE_MANAGER', employeeId: 'valid-uuid' }).valid).toBe(true)
     })
 
     it('rejects creating user with non-existent employee ID via Admin API (HTTP 404)', async () => {
@@ -403,6 +522,21 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(res.body.message).toContain('requires linkage')
     })
 
+    it('rejects creating RESOURCE_MANAGER user without employeeId linkage (HTTP 422)', async () => {
+      const res = await request(app)
+        .post('/api/v1/users')
+        .set('Cookie', adminCookie)
+        .set('X-CSRF-Token', adminCsrf)
+        .send({
+          email: `no.linkage.rm.${Date.now()}@staffora.internal`,
+          password: 'ValidPassword123!',
+          role: 'RESOURCE_MANAGER',
+        })
+      expect(res.status).toBe(422)
+      expect(res.body.code).toBe('UNPROCESSABLE_ENTITY')
+      expect(res.body.message).toContain('requires linkage')
+    })
+
     it('rejects updating user to EMPLOYEE role without employee linkage (HTTP 422)', async () => {
       const createRes = await request(app)
         .post('/api/v1/users')
@@ -421,6 +555,32 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
         .set('X-CSRF-Token', adminCsrf)
         .send({
           role: 'EMPLOYEE',
+        })
+      expect(updateRes.status).toBe(422)
+      expect(updateRes.body.code).toBe('UNPROCESSABLE_ENTITY')
+      expect(updateRes.body.message).toContain('requires linkage')
+
+      await prisma.user.delete({ where: { id: tempUserId } })
+    })
+
+    it('rejects updating user to RESOURCE_MANAGER role without employee linkage (HTTP 422)', async () => {
+      const createRes = await request(app)
+        .post('/api/v1/users')
+        .set('Cookie', adminCookie)
+        .set('X-CSRF-Token', adminCsrf)
+        .send({
+          email: `temp.admin.rm.${Date.now()}@staffora.internal`,
+          password: 'ValidPassword123!',
+          role: 'ADMIN',
+        })
+      const tempUserId = createRes.body.data.id
+
+      const updateRes = await request(app)
+        .patch(`/api/v1/users/${tempUserId}`)
+        .set('Cookie', adminCookie)
+        .set('X-CSRF-Token', adminCsrf)
+        .send({
+          role: 'RESOURCE_MANAGER',
         })
       expect(updateRes.status).toBe(422)
       expect(updateRes.body.code).toBe('UNPROCESSABLE_ENTITY')
@@ -459,7 +619,7 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(canManageAllocation(userPM, 'emp-other')).toBe(false)
 
       expect(() => assertCanManageProject(userPM, 'emp-1')).not.toThrow()
-      expect(() => assertCanManageProject(userPM, 'emp-2')).toThrowError('manage this project')
+      expect(() => assertCanManageProject(userPM, 'emp-2')).toThrowError('Project not found')
 
       expect(() => assertCanManageAllocation(userPM, 'emp-1')).not.toThrow()
       expect(() => assertCanManageAllocation(userPM, 'emp-2')).toThrowError('manage allocations')
@@ -477,6 +637,34 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
 
       expect(requireLinkedEmployeePolicy(userPM)).toBe('emp-1')
       expect(() => requireLinkedEmployeePolicy(userAdmin)).toThrowError('linked to an employee')
+
+      // projectsPolicy module helpers
+      expect(projectsPolicy.canCreate(userAdmin)).toBe(true)
+      expect(projectsPolicy.canCreate(userPM)).toBe(true)
+      expect(projectsPolicy.canCreate(userEmp)).toBe(false)
+      expect(projectsPolicy.canUpdate(userPM, 'emp-1')).toBe(true)
+      expect(projectsPolicy.canUpdate(userPM, 'emp-2')).toBe(false)
+      expect(projectsPolicy.canView(userAdmin)).toBe(true)
+      expect(projectsPolicy.isOwner(userPM, 'emp-1')).toBe(true)
+      expect(projectsPolicy.isOwner(userPM, 'emp-2')).toBe(false)
+      expect(() => projectsPolicy.assertCanUpdate(userPM, 'emp-1')).not.toThrow()
+      expect(() => projectsPolicy.assertCanUpdate(userPM, 'emp-2')).toThrowError('Project not found')
+
+      // workforcePolicy module helpers
+      expect(workforcePolicy.canViewEmployee(userEmp, 'emp-2')).toBe(true)
+      expect(workforcePolicy.canViewEmployee(userEmp, 'emp-1')).toBe(false)
+      expect(workforcePolicy.canManageEmployee(userAdmin)).toBe(true)
+      expect(workforcePolicy.canManageEmployee(userRM)).toBe(true)
+      expect(workforcePolicy.canManageEmployee(userEmp)).toBe(false)
+      expect(() => workforcePolicy.assertCanViewEmployee(userEmp, 'emp-2')).not.toThrow()
+      expect(() => workforcePolicy.assertCanViewEmployee(userEmp, 'emp-1')).toThrowError('Employee not found')
+
+      // staffingPolicy module helpers
+      expect(staffingPolicy.canManage(userPM, 'emp-1')).toBe(true)
+      expect(staffingPolicy.canManage(userPM, 'emp-2')).toBe(false)
+      expect(staffingPolicy.canManage(userAdmin, 'emp-2')).toBe(true)
+      expect(() => staffingPolicy.assertCanManage(userPM, 'emp-1')).not.toThrow()
+      expect(() => staffingPolicy.assertCanManage(userPM, 'emp-2')).toThrowError('Staffing requirement not found')
     })
 
     it('covers RBAC middleware branches directly', () => {

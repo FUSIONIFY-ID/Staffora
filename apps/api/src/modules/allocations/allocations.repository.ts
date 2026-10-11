@@ -11,4 +11,10 @@ export const allocationsRepository = {
       },
     })
   },
+
+  async findProjectById(id: string) {
+    return prisma.project.findUnique({
+      where: { id },
+    })
+  },
 }

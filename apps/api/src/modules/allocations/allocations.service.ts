@@ -1,8 +1,7 @@
 import type { AuthenticatedUser } from '../../common/auth/types.js'
 import { assertCanManageAllocation } from '../../common/auth/policy.js'
-import { prisma } from '../../common/database/prisma.js'
 import { NotFoundError } from '../../common/errors/app-error.js'
-import {allocationsRepository} from './allocations.repository.js'
+import { allocationsRepository } from './allocations.repository.js'
 
 export const allocationsService = {
   async getAllocations(_query: Record<string, unknown>, _user: AuthenticatedUser) {
@@ -24,7 +23,7 @@ export const allocationsService = {
     // TODO: Implement allocation creation with SELECT ... FOR UPDATE capacity lock in Sprint (PIC: Saiful & Jundy)
     const projectId = data.projectId as string
     if (projectId) {
-      const project = await prisma.project.findUnique({ where: { id: projectId }})
+      const project = await allocationsRepository.findProjectById(projectId)
       if (!project) {
         throw new NotFoundError('Project not found')
       }

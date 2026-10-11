@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage:auth": "vitest run tests/authorization.test.ts --coverage.enabled --coverage.provider=v8 --coverage.include=\"src/common/auth/**/*.ts\" --coverage.include=\"src/modules/projects/projects.policy.ts\" --coverage.include=\"src/modules/workforce/workforce.policy.ts\" --coverage.include=\"src/modules/staffing/staffing.policy.ts\" --coverage.reporter=text --coverage.thresholds.branches=80",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",

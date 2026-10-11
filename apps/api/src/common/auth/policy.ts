@@ -72,7 +72,11 @@ export function validateUserEmployeeLinkage(user: {
   role: Role
   employeeId?: string | null
 }): LinkageValidationResult {
-  if (user.role === ROLES.EMPLOYEE || user.role === ROLES.PROJECT_MANAGER) {
+  if (
+    user.role === ROLES.EMPLOYEE ||
+    user.role === ROLES.PROJECT_MANAGER ||
+    user.role === ROLES.RESOURCE_MANAGER
+  ) {
     if (!user.employeeId || user.employeeId.trim() === '') {
       return {
         valid: false,
@@ -161,10 +165,10 @@ export function canManageProject(
 export function assertCanManageProject(
   user: AuthenticatedUser,
   projectManagerEmployeeId: string | null | undefined,
-  message = 'You do not have permission to manage this project.',
+  message = 'Project not found.',
 ): void {
   if (!canManageProject(user, projectManagerEmployeeId)) {
-    throw new ForbiddenError(message)
+    throw new NotFoundError(message)
   }
 }
 

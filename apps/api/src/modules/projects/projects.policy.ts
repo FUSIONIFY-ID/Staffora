@@ -26,7 +26,7 @@ export const projectsPolicy = {
   assertCanUpdate(
     user: AuthenticatedUser,
     projectManagerEmployeeId: string | null | undefined,
-    message = 'You do not have permission to manage this project.',
+    message = 'Project not found.',
   ): void {
     assertCanManageProject(user, projectManagerEmployeeId, message)
   },

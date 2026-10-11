@@ -6,6 +6,15 @@ export const staffingRepository = {
   async findById(id: string) {
     return prisma.staffingRequirement.findUnique({
       where: { id },
+      include: {
+        project: true,
+      },
+    })
+  },
+
+  async findProjectById(projectId: string) {
+    return prisma.project.findUnique({
+      where: { id: projectId },
     })
   },
 }
