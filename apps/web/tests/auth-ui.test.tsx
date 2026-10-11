@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { LoginPage } from '../src/features/auth/login-page.js'
 import * as AuthContextModule from '../src/app/providers/auth-provider.js'
@@ -16,9 +17,11 @@ describe('LoginPage (AC01 - Login Form)', () => {
     })
 
     render(
-      <MemoryRouter>
-        <LoginPage />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <LoginPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
     )
 
     // AC01.01: Email and Password fields provided
@@ -33,18 +36,21 @@ describe('LoginPage (AC01 - Login Form)', () => {
     expect(submitButton).toBeInTheDocument()
   })
 
-  it('allows filling credentials and shows quick test hints', () => {
-    render(
-      <MemoryRouter>
-        <LoginPage />
-      </MemoryRouter>,
+  it('allows filling credentials and never ships seeded credentials in the UI', () => {
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <LoginPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
     )
 
     const emailInput = screen.getByLabelText(/Work Email/i) as HTMLInputElement
     fireEvent.change(emailInput, { target: { value: 'admin@staffora.internal' } })
     expect(emailInput.value).toBe('admin@staffora.internal')
 
-    expect(screen.getByText(/Quick Sign-in/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Quick Sign-in/i)).not.toBeInTheDocument()
+    expect(container.innerHTML).not.toMatch(/Staffora(Admin|PM|RM|Emp)2026/)
   })
 })
 

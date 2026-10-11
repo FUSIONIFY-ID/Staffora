@@ -36,6 +36,23 @@ export function getCachedCsrfToken(): string | null {
   return csrfTokenCache
 }
 
+type UnauthorizedListener = () => void
+const unauthorizedListeners = new Set<UnauthorizedListener>()
+
+/**
+ * Subscribes to session loss (HTTP 401 on any request except login and the initial
+ * `/auth/me` probe). The auth provider uses this to clear the session in-app so the
+ * route guard can send the user to /login and back to where they were.
+ */
+export function onUnauthorized(listener: UnauthorizedListener): () => void {
+  unauthorizedListeners.add(listener)
+  return () => {
+    unauthorizedListeners.delete(listener)
+  }
+}
+
+const SESSION_PROBE_ENDPOINTS = ['/auth/login', '/auth/me']
+
 export function buildApiUrl(endpoint: string): string {
   if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
     return endpoint
@@ -107,13 +124,8 @@ export async function apiClient<T>(
   if (!response.ok) {
     if (response.status === 401) {
       csrfTokenCache = null
-      // Do not redirect if we are probing /auth/me or already on /login
-      if (
-        !endpoint.includes('/auth/me') &&
-        typeof window !== 'undefined' &&
-        window.location.pathname !== '/login'
-      ) {
-        window.location.href = '/login'
+      if (!SESSION_PROBE_ENDPOINTS.some((probe) => endpoint.endsWith(probe))) {
+        unauthorizedListeners.forEach((listener) => listener())
       }
     }
 

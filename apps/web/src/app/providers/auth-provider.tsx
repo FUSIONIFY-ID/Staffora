@@ -1,6 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { apiClient, setCachedCsrfToken } from '../../api/client.js'
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react'
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { onUnauthorized, setCachedCsrfToken } from '../../api/client.js'
+import {
+  AUTH_ME_QUERY_KEY,
+  fetchCurrentUser,
+  loginRequest,
+  logoutRequest,
+} from '../../features/auth/api.js'
 import type { Role } from '../../constants/roles.js'
 import type { UserProfile } from '../../types/auth.js'
 
@@ -16,63 +23,56 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+/**
+ * Drops every cached server response from the previous session so the next user
+ * never sees stale data, then marks the session as signed out.
+ */
+function clearSession(queryClient: QueryClient): void {
+  setCachedCsrfToken(null)
+  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== AUTH_ME_QUERY_KEY[0] })
+  queryClient.setQueryData(AUTH_ME_QUERY_KEY, null)
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
+  const meQuery = useQuery({
+    queryKey: AUTH_ME_QUERY_KEY,
+    queryFn: fetchCurrentUser,
+    retry: false,
+    staleTime: Infinity,
+  })
 
-  const fetchCurrentUser = async () => {
-    try {
-      const res = await apiClient<{ data: UserProfile }>('/auth/me')
-      setUser(res.data)
-    } catch {
-      setUser(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // 401 recovery: any request that loses the session signs the user out in-app.
+  useEffect(() => onUnauthorized(() => clearSession(queryClient)), [queryClient])
 
-  useEffect(() => {
-    let isMounted = true
-    const init = async () => {
-      try {
-        const res = await apiClient<{ data: UserProfile }>('/auth/me')
-        if (isMounted) setUser(res.data)
-      } catch {
-        if (isMounted) setUser(null)
-      } finally {
-        if (isMounted) setIsLoading(false)
-      }
-    }
-    void init()
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  const login = async (email: string, password: string): Promise<UserProfile> => {
-    const res = await apiClient<{ data: { user: UserProfile; csrfToken: string } }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    })
-    setCachedCsrfToken(res.data.csrfToken)
-    setUser(res.data.user)
-    return res.data.user
-  }
-
-  const logout = async () => {
-    try {
-      await apiClient('/auth/logout', { method: 'POST' })
-    } finally {
-      setUser(null)
-      setCachedCsrfToken(null)
-    }
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, refresh: fetchCurrentUser }}>
-      {children}
-    </AuthContext.Provider>
+  const login = useCallback(
+    async (email: string, password: string): Promise<UserProfile> => {
+      const result = await loginRequest(email, password)
+      setCachedCsrfToken(result.csrfToken)
+      queryClient.setQueryData(AUTH_ME_QUERY_KEY, result.user)
+      return result.user
+    },
+    [queryClient],
   )
+
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      await logoutRequest()
+    } finally {
+      clearSession(queryClient)
+    }
+  }, [queryClient])
+
+  const refresh = useCallback(async (): Promise<void> => {
+    await queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY })
+  }, [queryClient])
+
+  const value = useMemo<AuthContextType>(
+    () => ({ user: meQuery.data ?? null, isLoading: meQuery.isPending, login, logout, refresh }),
+    [meQuery.data, meQuery.isPending, login, logout, refresh],
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth(): AuthContextType {
