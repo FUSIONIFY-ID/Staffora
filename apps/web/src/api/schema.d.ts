@@ -559,13 +559,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get employee detail */
+        /**
+         * Get employee detail
+         * @description Returns the employee profile with department, job role, skills, allocations, and a capacity summary. An EMPLOYEE may only read their own record.
+         */
         get: {
             parameters: {
-                query?: {
-                    startDate?: string;
-                    endDate?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
                     id: string;
@@ -583,6 +583,24 @@ export interface paths {
                         "application/json": {
                             data?: components["schemas"]["EmployeeDetail"];
                         };
+                    };
+                };
+                /** @description Employee attempting to read another employee's profile */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Employee not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -617,6 +635,24 @@ export interface paths {
                         "application/json": {
                             data?: components["schemas"]["Employee"];
                         };
+                    };
+                };
+                /** @description Insufficient role */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Employee not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1449,7 +1485,23 @@ export interface components {
             /** Format: uuid */
             skillId: string;
             skillName: string;
+            skillIsActive: boolean;
             proficiencyLevel: number;
+        };
+        EmployeeCapacitySummary: {
+            evaluatedPeriod: {
+                /** Format: date */
+                startDate: string;
+                /** Format: date */
+                endDate: string;
+            };
+            /** @example 50 */
+            activeAllocation: number;
+            /** @example 50 */
+            peakConcurrentAllocation: number;
+            /** @example 50 */
+            remainingCapacity: number;
+            hasCapacityConflict: boolean;
         };
         CreateEmployeeInput: {
             employeeCode: string;
@@ -1481,30 +1533,33 @@ export interface components {
             employeeCode: string;
             fullName: string;
             workEmail: string;
-            /** Format: uuid */
-            departmentId: string;
-            departmentName?: string;
-            /** Format: uuid */
-            jobRoleId: string;
-            jobRoleTitle?: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
-            /** @default 0 */
-            currentAllocation: number;
-            /** @default 100 */
-            currentRemainingCapacity: number;
+            /** Format: uuid */
+            departmentId: string;
+            departmentName: string;
+            /** Format: uuid */
+            jobRoleId: string;
+            jobRoleTitle: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
         };
         EmployeeDetail: components["schemas"]["Employee"] & {
-            skills?: components["schemas"]["EmployeeSkill"][];
-            allocations?: components["schemas"]["Allocation"][];
-            evaluatedPeriod?: {
-                /** Format: date */
-                startDate?: string;
-                /** Format: date */
-                endDate?: string;
-                peakConcurrentAllocation?: number;
-                remainingCapacity?: number;
+            department?: {
+                /** Format: uuid */
+                id?: string;
+                name?: string;
             };
+            jobRole?: {
+                /** Format: uuid */
+                id?: string;
+                name?: string;
+            };
+            skills?: components["schemas"]["EmployeeSkill"][];
+            allocations?: components["schemas"]["EmployeeAllocation"][];
+            capacitySummary?: components["schemas"]["EmployeeCapacitySummary"];
         };
         EmployeeListResponse: {
             data?: components["schemas"]["Employee"][];
@@ -1653,6 +1708,26 @@ export interface components {
         };
         AllocationListResponse: {
             data?: components["schemas"]["Allocation"][];
+        };
+        EmployeeAllocation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            projectCode: string;
+            projectName: string;
+            /** Format: uuid */
+            jobRoleId: string;
+            jobRoleTitle: string;
+            allocationPercentage: number;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** @enum {string} */
+            displayStatus: "PLANNED" | "ACTIVE" | "ENDED" | "CANCELLED";
+            /** Format: date-time */
+            cancelledAt: string | null;
         };
         ResourceFinderItem: {
             /** Format: uuid */

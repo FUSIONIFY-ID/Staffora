@@ -302,17 +302,12 @@ paths:
   /employees/{id}:
     get:
       summary: Get employee detail
+      description: Returns the employee profile with department, job role, skills, allocations, and a capacity summary. An EMPLOYEE may only read their own record.
       parameters:
         - name: id
           in: path
           required: true
           schema: { type: string, format: uuid }
-        - name: startDate
-          in: query
-          schema: { type: string, format: date }
-        - name: endDate
-          in: query
-          schema: { type: string, format: date }
       responses:
         '200':
           description: Employee detail with skills, allocations, and capacity
@@ -323,6 +318,18 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EmployeeDetail'
+        '403':
+          description: Employee attempting to read another employee's profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       summary: Update employee profile
       parameters:
@@ -346,6 +353,18 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Employee'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /skills:
     get:
@@ -906,12 +925,28 @@ components:
 
     EmployeeSkill:
       type: object
-      required: [id, skillId, skillName, proficiencyLevel]
+      required: [id, skillId, skillName, skillIsActive, proficiencyLevel]
       properties:
         id: { type: string, format: uuid }
         skillId: { type: string, format: uuid }
         skillName: { type: string }
+        skillIsActive: { type: boolean }
         proficiencyLevel: { type: integer, minimum: 1, maximum: 5 }
+
+    EmployeeCapacitySummary:
+      type: object
+      required: [evaluatedPeriod, activeAllocation, peakConcurrentAllocation, remainingCapacity, hasCapacityConflict]
+      properties:
+        evaluatedPeriod:
+          type: object
+          required: [startDate, endDate]
+          properties:
+            startDate: { type: string, format: date }
+            endDate: { type: string, format: date }
+        activeAllocation: { type: integer, example: 50 }
+        peakConcurrentAllocation: { type: integer, example: 50 }
+        remainingCapacity: { type: integer, example: 50 }
+        hasCapacityConflict: { type: boolean }
 
     CreateEmployeeInput:
       type: object
@@ -934,25 +969,35 @@ components:
 
     Employee:
       type: object
-      required: [id, employeeCode, fullName, workEmail, departmentId, jobRoleId, status]
+      required: [id, employeeCode, fullName, workEmail, departmentId, departmentName, jobRoleId, jobRoleTitle, status, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         employeeCode: { type: string }
         fullName: { type: string }
         workEmail: { type: string }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
         departmentId: { type: string, format: uuid }
         departmentName: { type: string }
         jobRoleId: { type: string, format: uuid }
         jobRoleTitle: { type: string }
-        status: { type: string, enum: [ACTIVE, INACTIVE] }
-        currentAllocation: { type: integer, default: 0 }
-        currentRemainingCapacity: { type: integer, default: 100 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
 
     EmployeeDetail:
       allOf:
         - $ref: '#/components/schemas/Employee'
         - type: object
           properties:
+            department:
+              type: object
+              properties:
+                id: { type: string, format: uuid }
+                name: { type: string }
+            jobRole:
+              type: object
+              properties:
+                id: { type: string, format: uuid }
+                name: { type: string }
             skills:
               type: array
               items:
@@ -960,14 +1005,9 @@ components:
             allocations:
               type: array
               items:
-                $ref: '#/components/schemas/Allocation'
-            evaluatedPeriod:
-              type: object
-              properties:
-                startDate: { type: string, format: date }
-                endDate: { type: string, format: date }
-                peakConcurrentAllocation: { type: integer }
-                remainingCapacity: { type: integer }
+                $ref: '#/components/schemas/EmployeeAllocation'
+            capacitySummary:
+              $ref: '#/components/schemas/EmployeeCapacitySummary'
 
     EmployeeListResponse:
       type: object
@@ -1125,6 +1165,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Allocation'
+
+    EmployeeAllocation:
+      type: object
+      required: [id, projectId, projectCode, projectName, jobRoleId, jobRoleTitle, allocationPercentage, startDate, endDate, displayStatus, cancelledAt]
+      properties:
+        id: { type: string, format: uuid }
+        projectId: { type: string, format: uuid }
+        projectCode: { type: string }
+        projectName: { type: string }
+        jobRoleId: { type: string, format: uuid }
+        jobRoleTitle: { type: string }
+        allocationPercentage: { type: integer }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        displayStatus: { type: string, enum: [PLANNED, ACTIVE, ENDED, CANCELLED] }
+        cancelledAt: { type: string, format: date-time, nullable: true }
 
     ResourceFinderItem:
       type: object

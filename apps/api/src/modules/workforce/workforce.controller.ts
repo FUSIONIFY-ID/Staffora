@@ -1,48 +1,49 @@
 import type { Request, Response, NextFunction } from 'express'
-import { sendSuccess, sendList } from '../../common/http/response.js'
+import { sendCreated, sendList, sendSuccess } from '../../common/http/response.js'
+import { ForbiddenError, NotFoundError } from '../../common/errors/app-error.js'
 import { workforceService } from './workforce.service.js'
 
 export const workforceController = {
-  async getDepartments(_req: Request, res: Response, next: NextFunction) {
+  async getDepartments(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const items = await workforceService.getDepartments()
-      return sendSuccess(res, items)
+      sendSuccess(res, items)
     } catch (err) {
       next(err)
     }
   },
 
-  async createDepartment(req: Request, res: Response, next: NextFunction) {
+  async createDepartment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.createDepartment(req.body)
-      return res.status(201).json({ data: item })
+      const item = await workforceService.createDepartment(req.body, req.user?.id)
+      sendCreated(res, item)
     } catch (err) {
       next(err)
     }
   },
 
-  async getJobRoles(req: Request, res: Response, next: NextFunction) {
+  async getJobRoles(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const items = await workforceService.getJobRoles(req.query.departmentId as string | undefined)
-      return sendSuccess(res, items)
+      const items = await workforceService.getJobRoles()
+      sendSuccess(res, items)
     } catch (err) {
       next(err)
     }
   },
 
-  async createJobRole(req: Request, res: Response, next: NextFunction) {
+  async createJobRole(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.createJobRole(req.body)
-      return res.status(201).json({ data: item })
+      const item = await workforceService.createJobRole(req.body, req.user?.id)
+      sendCreated(res, item)
     } catch (err) {
       next(err)
     }
   },
 
-  async getEmployees(req: Request, res: Response, next: NextFunction) {
+  async getEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await workforceService.getEmployees(req.query)
-      return sendList(res, result.data, {
+      sendList(res, result.data, {
         page: result.page,
         pageSize: result.pageSize,
         total: result.total,
@@ -52,28 +53,36 @@ export const workforceController = {
     }
   },
 
-  async createEmployee(req: Request, res: Response, next: NextFunction) {
+  async createEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.createEmployee(req.body)
-      return res.status(201).json({ data: item })
+      const item = await workforceService.createEmployee(req.body, req.user?.id)
+      sendCreated(res, item)
     } catch (err) {
       next(err)
     }
   },
 
-  async getEmployeeDetail(req: Request, res: Response, next: NextFunction) {
+  async getEmployeeDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const item = await workforceService.getEmployeeDetail(req.params.id as string)
-      return sendSuccess(res, item)
+      if (!item) {
+        throw new NotFoundError('Employee profile was not found.')
+      }
+
+      if (req.user?.role === 'EMPLOYEE' && req.user.employeeId !== item.id) {
+        throw new ForbiddenError('You may only view your own employee profile.')
+      }
+
+      sendSuccess(res, item)
     } catch (err) {
       next(err)
     }
   },
 
-  async updateEmployee(req: Request, res: Response, next: NextFunction) {
+  async updateEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.updateEmployee(req.params.id as string, req.body)
-      return sendSuccess(res, item)
+      const item = await workforceService.updateEmployee(req.params.id as string, req.body, req.user?.id)
+      sendSuccess(res, item)
     } catch (err) {
       next(err)
     }

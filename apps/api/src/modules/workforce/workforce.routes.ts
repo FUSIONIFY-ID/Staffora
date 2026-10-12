@@ -1,12 +1,11 @@
 import { Router } from 'express'
 import { workforceController } from './workforce.controller.js'
-import { validateBody, validateQuery } from '../../common/validation/validate.js'
+import { validateBody } from '../../common/validation/validate.js'
 import {
   createDepartmentSchema,
   createJobRoleSchema,
   createEmployeeSchema,
   updateEmployeeSchema,
-  queryEmployeesSchema,
 } from './workforce.schema.js'
 import { requireAuth, requireRole } from '../../common/auth/rbac.js'
 
@@ -35,12 +34,7 @@ jobRolesRouter.post(
 // Employees Router
 export const employeesRouter = Router()
 employeesRouter.use(requireAuth())
-employeesRouter.get(
-  '/',
-  requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'),
-  validateQuery(queryEmployeesSchema),
-  workforceController.getEmployees,
-)
+employeesRouter.get('/', requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'), workforceController.getEmployees)
 employeesRouter.post(
   '/',
   requireRole('ADMIN', 'RESOURCE_MANAGER'),
