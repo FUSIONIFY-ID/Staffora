@@ -82,9 +82,9 @@ describe('Auth session flow (US01.01, US01.02)', () => {
     renderApp('/capacity')
 
     expect(await screen.findByText('Please sign in to continue.')).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Work Email'), { target: { value: 'admin@staffora.internal' } })
+    fireEvent.change(screen.getByLabelText('Work email'), { target: { value: 'admin@staffora.internal' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'correct-password' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Sign In' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(await screen.findByText('Capacity page')).toBeInTheDocument()
     expect(getCachedCsrfToken()).toBe('csrf-1')
@@ -138,7 +138,7 @@ describe('Auth session flow (US01.01, US01.02)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
 
     // Both the route guard and the button navigate to /login, so wait for the settled page.
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Sign in to Staffora' })).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeInTheDocument())
     const logoutCall = fetchSpy.mock.calls.find(([url]) => String(url).endsWith('/auth/logout'))
     expect(new Headers(logoutCall?.[1]?.headers).get('X-CSRF-Token')).toBe('csrf-logout')
     expect(getCachedCsrfToken()).toBeNull()

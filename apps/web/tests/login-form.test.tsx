@@ -26,9 +26,9 @@ function renderLogin(login: AuthContextModule.AuthContextType['login'], state?: 
 }
 
 function fillAndSubmit(email: string, password: string) {
-  fireEvent.change(screen.getByLabelText('Work Email'), { target: { value: email } })
+  fireEvent.change(screen.getByLabelText('Work email'), { target: { value: email } })
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: password } })
-  fireEvent.click(screen.getByRole('button', { name: 'Sign In' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 }
 
 afterEach(() => {
@@ -40,11 +40,11 @@ describe('LoginForm validation (AC01.05)', () => {
     const login = vi.fn()
     renderLogin(login)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sign In' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(await screen.findByText('Work email is required.')).toBeInTheDocument()
     expect(screen.getByText('Password is required.')).toBeInTheDocument()
-    expect(screen.getByLabelText('Work Email')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Work email')).toHaveAttribute('aria-invalid', 'true')
     expect(login).not.toHaveBeenCalled()
   })
 
@@ -70,7 +70,7 @@ describe('LoginForm submission', () => {
     await waitFor(() => expect(login).toHaveBeenCalledWith('admin@staffora.internal', 'secret-password'))
     const submit = screen.getByRole('button', { name: /Signing in/ })
     expect(submit).toBeDisabled()
-    expect(screen.getByLabelText('Work Email')).toBeDisabled()
+    expect(screen.getByLabelText('Work email')).toBeDisabled()
     resolveLogin(undefined as never)
   })
 
@@ -84,18 +84,17 @@ describe('LoginForm submission', () => {
 
     expect(await screen.findByText('Invalid email or password.')).toBeInTheDocument()
     expect(screen.queryByText(/inactive/i)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Sign In' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled()
   })
 
-  it('toggles password visibility, masked by default (AC01.04)', () => {
+  it('renders the design copy with a masked password (AC01.04)', () => {
     renderLogin(vi.fn())
 
-    const password = screen.getByLabelText('Password')
-    expect(password).toHaveAttribute('type', 'password')
-    fireEvent.click(screen.getByRole('button', { name: 'Show password' }))
-    expect(password).toHaveAttribute('type', 'text')
-    fireEvent.click(screen.getByRole('button', { name: 'Hide password' }))
-    expect(password).toHaveAttribute('type', 'password')
+    expect(screen.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeInTheDocument()
+    expect(screen.getByText('Sign in to continue to Staffora')).toBeInTheDocument()
+    expect(screen.getByText('Right People. Right Project.')).toBeInTheDocument()
+    expect(screen.getByText(/Authorized users only/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'password')
   })
 
   it('explains why the user landed on login after a redirect', () => {

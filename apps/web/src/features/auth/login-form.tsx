@@ -1,11 +1,9 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '../../app/providers/auth-provider.js'
-import { Alert } from '../../components/ui/alert.js'
-import { Button } from '../../components/ui/button.js'
-import { Input } from '../../components/ui/input.js'
+import { AuthField } from './auth-field.js'
 import { getLoginErrorMessage } from './login-error.js'
 import { loginFormSchema, type LoginFormValues } from './schemas.js'
 
@@ -15,7 +13,6 @@ import { loginFormSchema, type LoginFormValues } from './schemas.js'
  */
 export const LoginForm: React.FC = () => {
   const { login } = useAuth()
-  const [showPassword, setShowPassword] = useState(false)
   const {
     register,
     handleSubmit,
@@ -37,47 +34,46 @@ export const LoginForm: React.FC = () => {
       noValidate
       aria-busy={isSubmitting}
     >
-      {loginMutation.isError && <Alert type="error">{getLoginErrorMessage(loginMutation.error)}</Alert>}
+      {loginMutation.isError && (
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          {getLoginErrorMessage(loginMutation.error)}
+        </div>
+      )}
 
-      <Input
+      <AuthField
         {...register('email')}
         id="login-email"
-        label="Work Email"
+        label="Work email"
         type="email"
         autoComplete="username"
         placeholder="you@company.com"
         autoFocus
         disabled={isSubmitting}
         error={errors.email?.message}
-        aria-invalid={Boolean(errors.email)}
       />
 
-      <div className="space-y-2">
-        <Input
-          {...register('password')}
-          id="login-password"
-          label="Password"
-          type={showPassword ? 'text' : 'password'}
-          autoComplete="current-password"
-          placeholder="••••••••••••"
-          disabled={isSubmitting}
-          error={errors.password?.message}
-          aria-invalid={Boolean(errors.password)}
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword((current) => !current)}
-          aria-pressed={showPassword}
-          aria-controls="login-password"
-          className="cursor-pointer text-xs font-medium text-slate-400 transition-colors hover:text-slate-200"
-        >
-          {showPassword ? 'Hide password' : 'Show password'}
-        </button>
-      </div>
+      <AuthField
+        {...register('password')}
+        id="login-password"
+        label="Password"
+        type="password"
+        autoComplete="current-password"
+        placeholder="Enter your password"
+        disabled={isSubmitting}
+        error={errors.password?.message}
+      />
 
-      <Button type="submit" className="w-full" isLoading={isSubmitting} id="login-submit-button">
-        {isSubmitting ? 'Signing in...' : 'Sign In'}
-      </Button>
+      <button
+        type="submit"
+        id="login-submit-button"
+        disabled={isSubmitting}
+        className="mt-3 inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#2563eb] text-sm font-semibold text-white transition-colors hover:bg-[#1d4ed8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {isSubmitting && (
+          <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+        )}
+        {isSubmitting ? 'Signing in...' : 'Sign in'}
+      </button>
     </form>
   )
 }

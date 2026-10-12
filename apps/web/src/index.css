@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
+
+/* Brand typeface for the auth screens (Staffora login design). */
+@theme {
+  --font-brand: 'Exo 2', system-ui, -apple-system, sans-serif;
+}
 
 :root {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
