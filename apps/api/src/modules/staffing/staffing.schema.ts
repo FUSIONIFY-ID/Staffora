@@ -31,3 +31,6 @@ export const updateStaffingRequirementSchema = z.object({
     )
     .optional(),
 })
+
+export type CreateStaffingRequirementInput = z.infer<typeof createStaffingRequirementSchema>
+export type UpdateStaffingRequirementInput = z.infer<typeof updateStaffingRequirementSchema>

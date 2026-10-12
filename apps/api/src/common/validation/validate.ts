@@ -31,7 +31,7 @@ export function validateQuery(schema: ZodType): RequestHandler {
     if (!result.success) {
       return next(new ValidationError('Validation failed for query parameters.', formatZodErrors(result.error)))
     }
-    req.query = result.data as unknown as Record<string, string>
+    Object.defineProperty(req, 'query', { value: result.data, writable: true, configurable: true })
     next()
   }
 }
@@ -42,7 +42,7 @@ export function validateParams(schema: ZodType): RequestHandler {
     if (!result.success) {
       return next(new ValidationError('Validation failed for path parameters.', formatZodErrors(result.error)))
     }
-    req.params = result.data as unknown as Record<string, string>
+    Object.defineProperty(req, 'params', { value: result.data, writable: true, configurable: true })
     next()
   }
 }

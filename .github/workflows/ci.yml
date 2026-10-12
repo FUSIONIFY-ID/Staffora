@@ -76,5 +76,8 @@ jobs:
       - name: Automated Tests
         run: npm test
 
+      - name: Authorization Coverage Gate
+        run: npm run test:coverage:auth
+
       - name: Production Bundle Build
         run: npm run build

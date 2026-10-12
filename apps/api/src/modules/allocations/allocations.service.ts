@@ -2,6 +2,11 @@ import type { AuthenticatedUser } from '../../common/auth/types.js'
 import { assertCanManageAllocation } from '../../common/auth/policy.js'
 import { NotFoundError } from '../../common/errors/app-error.js'
 import { allocationsRepository } from './allocations.repository.js'
+import type {
+  CreateAllocationInput,
+  UpdateAllocationInput,
+  EndAllocationInput,
+} from './allocations.schema.js'
 
 export const allocationsService = {
   async getAllocations(_query: Record<string, unknown>, _user: AuthenticatedUser) {
@@ -19,9 +24,9 @@ export const allocationsService = {
     return { id }
   },
 
-  async createAllocation(data: Record<string, unknown>, user: AuthenticatedUser) {
+  async createAllocation(data: Partial<CreateAllocationInput>, user: AuthenticatedUser) {
     // TODO: Implement allocation creation with SELECT ... FOR UPDATE capacity lock in Sprint (PIC: Saiful & Jundy)
-    const projectId = data.projectId as string
+    const projectId = data.projectId
     if (projectId) {
       const project = await allocationsRepository.findProjectById(projectId)
       if (!project) {
@@ -34,19 +39,19 @@ export const allocationsService = {
     return null
   },
 
-  async updateAllocation(id: string, _data: Record<string, unknown>, user: AuthenticatedUser) {
+  async updateAllocation(id: string, _data: UpdateAllocationInput, user: AuthenticatedUser) {
     // TODO: Implement allocation update with concurrency protection in Sprint (PIC: Saiful & Jundy)
     const allocation = await allocationsRepository.findById(id)
-      if (!allocation) {
-        throw new NotFoundError('Allocation not found.')
-      }
-      assertCanManageAllocation(user, allocation.project.projectManagerEmployeeId)
-      return allocation
-    },
+    if (!allocation) {
+      throw new NotFoundError('Allocation not found.')
+    }
+    assertCanManageAllocation(user, allocation.project.projectManagerEmployeeId)
+    return allocation
+  },
 
-  async endAllocation(id: string, _data: Record<string, unknown>, user: AuthenticatedUser) {
+  async endAllocation(id: string, _data: EndAllocationInput, user: AuthenticatedUser) {
     // TODO: Implement ending an allocation in Sprint (PIC: Saiful & Jundy)
-     const allocation = await allocationsRepository.findById(id)
+    const allocation = await allocationsRepository.findById(id)
     if (!allocation) {
       throw new NotFoundError('Allocation not found.')
     }

@@ -43,3 +43,8 @@ export const updateAllocationSchema = z
 export const endAllocationSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be YYYY-MM-DD'),
 })
+
+export type CreateAllocationInput = z.infer<typeof createAllocationSchema>
+export type UpdateAllocationInput = z.infer<typeof updateAllocationSchema>
+export type EndAllocationInput = z.infer<typeof endAllocationSchema>
+

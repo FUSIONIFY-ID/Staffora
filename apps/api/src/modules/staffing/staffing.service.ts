@@ -2,28 +2,44 @@ import type { AuthenticatedUser } from '../../common/auth/types.js'
 import { staffingRepository } from './staffing.repository.js'
 import { staffingPolicy } from './staffing.policy.js'
 import { NotFoundError } from '../../common/errors/app-error.js'
+import type {
+  CreateStaffingRequirementInput,
+  UpdateStaffingRequirementInput,
+} from './staffing.schema.js'
 
 export const staffingService = {
-  async getRequirementsForProject(_projectId: string) {
-    // TODO: Implement staffing requirements query in Sprint 1/2 (PIC: Saiful & Jundy)
-    return []
+  async getRequirementsForProject(projectId: string) {
+    return staffingRepository.findByProjectId(projectId)
   },
 
-  async createRequirement(projectId: string, _data: Record<string, unknown>, user: AuthenticatedUser) {
+  async createRequirement(
+    projectId: string,
+    data: CreateStaffingRequirementInput,
+    user: AuthenticatedUser,
+  ) {
     const project = await staffingRepository.findProjectById(projectId)
     if (!project) {
       throw new NotFoundError('Project not found.')
     }
     staffingPolicy.assertCanManage(user, project.projectManagerEmployeeId, 'Project not found.')
 
-    // Scaffold response
-    return {
-      id: 'scaffold-requirement-id',
+    return staffingRepository.create({
       projectId,
-    }
+      jobRoleId: data.jobRoleId,
+      headcount: data.headcount,
+      allocationPercentage: data.allocationPercentage,
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
+      skills: data.skills,
+      createdBy: user.id,
+    })
   },
 
-  async updateRequirement(id: string, _data: Record<string, unknown>, user: AuthenticatedUser) {
+  async updateRequirement(
+    id: string,
+    data: UpdateStaffingRequirementInput,
+    user: AuthenticatedUser,
+  ) {
     const requirement = await staffingRepository.findById(id)
     if (!requirement) {
       throw new NotFoundError('Staffing requirement not found.')
@@ -34,7 +50,15 @@ export const staffingService = {
       'Staffing requirement not found.',
     )
 
-    return requirement
+    return staffingRepository.update(id, {
+      jobRoleId: data.jobRoleId,
+      headcount: data.headcount,
+      allocationPercentage: data.allocationPercentage,
+      startDate: data.startDate ? new Date(data.startDate) : undefined,
+      endDate: data.endDate ? new Date(data.endDate) : undefined,
+      skills: data.skills,
+      updatedBy: user.id,
+    })
   },
 
   async deleteRequirement(id: string, user: AuthenticatedUser) {
@@ -47,5 +71,8 @@ export const staffingService = {
       requirement.project.projectManagerEmployeeId,
       'Staffing requirement not found.',
     )
+
+    await staffingRepository.delete(id)
   },
 }
+
