@@ -10,6 +10,8 @@ export interface ResourceAllocationsTableProps {
 export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> = ({
   allocations,
 }): React.JSX.Element => {
+  const today = new Date().toISOString().slice(0, 10)
+
   return (
     <Card className="border-slate-800 bg-slate-900/60 p-6">
       <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -35,17 +37,19 @@ export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> =
                 <th scope="col" className="px-4 py-3">Peran Proyek</th>
                 <th scope="col" className="px-4 py-3">Rentang Waktu</th>
                 <th scope="col" className="px-4 py-3 text-center">Beban Kerja</th>
-                <th scope="col" className="px-4 py-3 text-right">Status</th>
+                <th scope="col" className="px-4 py-3 text-right">Status Penugasan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {allocations.map((alloc) => {
-                const isCancelled = Boolean(alloc.cancelledAt)
-                const statusBadge = isCancelled ? (
-                  <Badge variant="red">Dibatalkan</Badge>
-                ) : (
-                  <Badge variant="blue">Aktif</Badge>
-                )
+                let badgeNode = <Badge variant="blue">Terencana</Badge>
+                if (alloc.cancelledAt) {
+                  badgeNode = <Badge variant="red">Dibatalkan</Badge>
+                } else if (alloc.startDate <= today && alloc.endDate >= today) {
+                  badgeNode = <Badge variant="green">Aktif Hari Ini</Badge>
+                } else if (alloc.endDate < today) {
+                  badgeNode = <Badge variant="gray">Selesai</Badge>
+                }
 
                 return (
                   <tr key={alloc.id} className="transition hover:bg-slate-800/30">
@@ -62,7 +66,7 @@ export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> =
                       {alloc.allocationPercentage}%
                     </td>
                     <td className="px-4 py-3.5 text-right">
-                      {statusBadge}
+                      {badgeNode}
                     </td>
                   </tr>
                 )

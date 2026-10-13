@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client.js'
 import { useAuth } from '../../app/providers/auth-provider.js'
@@ -20,19 +21,32 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const canManage = user?.role === 'ADMIN' || user?.role === 'RESOURCE_MANAGER'
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [filters, setFilters] = useState<ResourceFiltersState>({
-    search: '',
-    departmentId: '',
-    jobRoleId: '',
-    status: 'ALL',
-    page: 1,
-    pageSize: 20,
-  })
+  const [filters, setFilters] = useState<ResourceFiltersState>(() => ({
+    search: searchParams.get('search') ?? '',
+    departmentId: searchParams.get('departmentId') ?? '',
+    jobRoleId: searchParams.get('jobRoleId') ?? '',
+    status: (searchParams.get('status') as ResourceFiltersState['status']) || 'ALL',
+    page: Number(searchParams.get('page') ?? '1') || 1,
+    pageSize: Number(searchParams.get('pageSize') ?? '20') || 20,
+  }))
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingResource, setEditingResource] = useState<ResourceItem | null>(null)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  const updateFilters = (updates: Partial<ResourceFiltersState>): void => {
+    const next = { ...filters, ...updates }
+    const newParams = new URLSearchParams()
+    if (next.search) newParams.set('search', next.search)
+    if (next.departmentId) newParams.set('departmentId', next.departmentId)
+    if (next.jobRoleId) newParams.set('jobRoleId', next.jobRoleId)
+    if (next.status !== 'ALL') newParams.set('status', next.status)
+    if (next.page > 1) newParams.set('page', String(next.page))
+    setSearchParams(newParams, { replace: true })
+    setFilters(next)
+  }
 
   // 1. Fetch Departments
   const departmentsQuery = useQuery({
@@ -132,6 +146,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
   }
 
   const handleResetFilters = (): void => {
+    setSearchParams(new URLSearchParams(), { replace: true })
     setFilters({
       search: '',
       departmentId: '',
@@ -188,7 +203,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
         filters={filters}
         departments={departmentsQuery.data ?? []}
         jobRoles={jobRolesQuery.data ?? []}
-        onFilterChange={(updates) => setFilters((prev) => ({ ...prev, ...updates }))}
+        onFilterChange={updateFilters}
         onReset={handleResetFilters}
       />
 
@@ -213,7 +228,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
         isLoading={employeesQuery.isLoading}
         pagination={pagination}
         canEdit={canManage}
-        onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
+        onPageChange={(page) => updateFilters({ page })}
         onEdit={handleOpenEdit}
       />
 

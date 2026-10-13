@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '../../../components/ui/button.js'
 import type { DepartmentItem, JobRoleItem, ResourceFiltersState } from './types.js'
 
@@ -17,10 +17,26 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
   onFilterChange,
   onReset,
 }): React.JSX.Element => {
+  const [searchTerm, setSearchTerm] = useState(filters.search)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchTerm !== filters.search) {
+        onFilterChange({ search: searchTerm, page: 1 })
+      }
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [searchTerm, filters.search, onFilterChange])
+
+  const handleResetClick = (): void => {
+    setSearchTerm('')
+    onReset()
+  }
+
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Search Input */}
+        {/* Search Input with 300ms debounce */}
         <div className="space-y-1.5 text-left">
           <label htmlFor="resource-search" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
             Cari Karyawan
@@ -29,8 +45,8 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
             id="resource-search"
             type="text"
             placeholder="Nama atau Kode (e.g. EMP001)..."
-            value={filters.search}
-            onChange={(e) => onFilterChange({ search: e.target.value, page: 1 })}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-lg bg-slate-900/80 border border-slate-700/80 px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
@@ -99,7 +115,7 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
           type="button"
           variant="outline"
           size="sm"
-          onClick={onReset}
+          onClick={handleResetClick}
         >
           Reset Filter
         </Button>

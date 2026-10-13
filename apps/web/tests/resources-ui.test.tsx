@@ -312,4 +312,66 @@ describe('US02.01 - Employee Resource Directory & Profile', () => {
 
     expect(await screen.findByText('Akses Ditolak')).toBeInTheDocument()
   })
+
+  it('displays duplicate error alert when API returns 409 conflict', async () => {
+    apiClient.mockImplementation((endpoint: string, options?: RequestInit) => {
+      if (endpoint === '/departments') {
+        return Promise.resolve({ data: [{ id: 'dept-1', name: 'Engineering' }] })
+      }
+      if (endpoint === '/job-roles') {
+        return Promise.resolve({ data: [{ id: 'role-1', name: 'Developer' }] })
+      }
+      if (endpoint.startsWith('/employees') && options?.method === 'POST') {
+        return Promise.reject(
+          new ApiError(409, {
+            code: 'CONFLICT',
+            message: 'A user or employee with this code or email already exists.',
+          }),
+        )
+      }
+      if (endpoint.startsWith('/employees')) {
+        return Promise.resolve({ data: [], meta: { page: 1, pageSize: 20, total: 0 } })
+      }
+      return Promise.resolve({ data: [] })
+    })
+
+    renderWithClient(<ResourcesPage />)
+
+    fireEvent.click(await screen.findByRole('button', { name: '+ Tambah Karyawan' }))
+
+    fireEvent.change(screen.getByLabelText('Kode Karyawan'), { target: { value: 'EMP001' } })
+    fireEvent.change(screen.getByLabelText('Nama Lengkap'), { target: { value: 'Duplikat User' } })
+    fireEvent.change(screen.getByLabelText('Email Kerja'), { target: { value: 'budi@staffora.test' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah Karyawan' }))
+
+    expect(await screen.findByText('Gagal Menyimpan')).toBeInTheDocument()
+    expect(
+      screen.getByText(/already exists|sudah terdaftar/i),
+    ).toBeInTheDocument()
+  })
+
+  it('handles pagination navigation when changing pages', async () => {
+    apiClient.mockImplementation((endpoint: string) => {
+      if (endpoint.startsWith('/employees')) {
+        return Promise.resolve({
+          data: mockEmployeeData,
+          meta: { page: 1, pageSize: 20, total: 40, totalPages: 2 },
+        })
+      }
+      return Promise.resolve({ data: [] })
+    })
+
+    renderWithClient(<ResourcesPage />)
+
+    expect(await screen.findByText('Halaman 1 dari 2')).toBeInTheDocument()
+    const nextBtn = screen.getByRole('button', { name: 'Berikutnya' })
+    expect(nextBtn).toBeEnabled()
+
+    fireEvent.click(nextBtn)
+
+    await waitFor(() => {
+      expect(apiClient).toHaveBeenCalledWith(expect.stringContaining('page=2'))
+    })
+  })
 })

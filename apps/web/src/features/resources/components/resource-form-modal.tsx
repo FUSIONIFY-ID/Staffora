@@ -6,6 +6,7 @@ import { Modal } from '../../../components/ui/modal.js'
 import { Button } from '../../../components/ui/button.js'
 import { Input } from '../../../components/ui/input.js'
 import { Alert } from '../../../components/ui/alert.js'
+import { ApiError } from '../../../api/client.js'
 import type { DepartmentItem, JobRoleItem, ResourceItem } from './types.js'
 
 const resourceSchema = z.object({
@@ -85,6 +86,12 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       await onSubmit(data)
       onClose()
     } catch (err: unknown) {
+      if (err instanceof ApiError && (err.status === 409 || err.code === 'CONFLICT')) {
+        setServerError(
+          err.message || 'Kode karyawan atau email kerja sudah terdaftar dalam sistem. Gunakan kode atau email yang berbeda.',
+        )
+        return
+      }
       const msg = (err as Error)?.message || 'Gagal menyimpan data karyawan.'
       setServerError(msg)
     } finally {
