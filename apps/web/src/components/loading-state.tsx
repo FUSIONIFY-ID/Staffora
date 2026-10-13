@@ -10,10 +10,10 @@ export const LoadingState: React.FC<LoadingStateProps> = ({ message, fullHeight 
   return (
     <div
       role="status"
-      className={`flex flex-col items-center justify-center gap-3 ${fullHeight ? 'min-h-screen bg-slate-950' : 'min-h-[50vh]'}`}
+      className={`flex flex-col items-center justify-center gap-3 ${fullHeight ? 'min-h-screen bg-[#F7F8FA]' : 'min-h-[50vh]'}`}
     >
       <Spinner size="lg" />
-      {message && <p className="text-sm text-slate-400">{message}</p>}
+      {message && <p className="text-sm text-[#525252]">{message}</p>}
     </div>
   )
 }

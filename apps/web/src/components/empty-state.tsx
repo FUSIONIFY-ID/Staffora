@@ -10,15 +10,15 @@ export interface EmptyStateProps {
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ title, description, icon, action }) => {
   return (
-    <Card className="p-8 text-center border-dashed border-slate-800 bg-slate-900/30">
+    <Card className="p-8 text-center border-dashed border-[#E5E7EB] bg-[#FAFAFA]">
       <div className="max-w-md mx-auto space-y-3">
         {icon && (
-          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto text-xl font-semibold">
+          <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center mx-auto text-xl font-semibold">
             {icon}
           </div>
         )}
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
-        {description && <p className="text-sm text-slate-400">{description}</p>}
+        <h3 className="text-lg font-semibold text-[#171717]">{title}</h3>
+        {description && <p className="text-sm text-[#525252]">{description}</p>}
         {action && <div className="pt-2 flex justify-center">{action}</div>}
       </div>
     </Card>

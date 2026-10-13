@@ -17,7 +17,7 @@ export const AppLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-950 text-slate-100">
+    <div className="min-h-screen flex bg-[#F7F8FA] text-[#171717]">
       {user && <AppSidebar role={user.role} />}
 
       <div className="flex-1 min-w-0 flex flex-col">
@@ -33,13 +33,13 @@ export const AppLayout: React.FC = () => {
           }
         />
 
-        <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 w-full max-w-[1440px] mx-auto px-9 py-8">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
         </main>
 
-        <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+        <footer className="border-t border-[#E5E7EB] py-6 text-center text-xs text-[#737373]">
           Staffora MVP v1.0 &middot; Project Resource Allocation & Workforce Planning System
         </footer>
       </div>

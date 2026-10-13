@@ -45,13 +45,13 @@ export const AppUserMenu: React.FC<AppUserMenuProps> = ({ user, onSignOut }) => 
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-800/60 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500"
+        className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-[#F5F5F5] transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/15 text-sm font-semibold text-indigo-300">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-semibold text-[#1D4ED8]">
           {displayName.charAt(0).toUpperCase()}
         </span>
         <span className="hidden lg:block text-left">
-          <span className="block text-sm font-medium text-slate-200 leading-tight">{displayName}</span>
+          <span className="block text-sm font-medium text-[#171717] leading-tight">{displayName}</span>
           <span className="block mt-0.5">
             <Badge variant={ROLE_BADGE[user.role]}>{user.role.replace('_', ' ')}</Badge>
           </span>
@@ -61,11 +61,11 @@ export const AppUserMenu: React.FC<AppUserMenuProps> = ({ user, onSignOut }) => 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-64 rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-xl shadow-black/40 z-50"
+          className="absolute right-0 mt-2 w-64 rounded-xl border border-[#E5E7EB] bg-white p-3 shadow-lg z-50"
         >
-          <div className="px-1 pb-3 border-b border-slate-800">
-            <div className="text-sm font-medium text-slate-200 truncate">{displayName}</div>
-            <div className="text-xs text-slate-500 truncate">{user.email}</div>
+          <div className="px-1 pb-3 border-b border-[#E5E7EB]">
+            <div className="text-sm font-medium text-[#171717] truncate">{displayName}</div>
+            <div className="text-xs text-[#737373] truncate">{user.email}</div>
             <div className="mt-2">
               <Badge variant={ROLE_BADGE[user.role]}>{user.role.replace('_', ' ')}</Badge>
             </div>

@@ -22,7 +22,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, ch
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <PermissionDenied role={user.role} homePath={homePathForRole(user.role)} />
+    return (
+      <PermissionDenied
+        role={user.role}
+        homePath={homePathForRole(user.role)}
+        requiredRoles={allowedRoles}
+      />
+    )
   }
 
   return children ? <>{children}</> : <Outlet />

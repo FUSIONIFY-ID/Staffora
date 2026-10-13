@@ -67,19 +67,34 @@ describe('LoadingState', () => {
 })
 
 describe('PermissionDenied', () => {
-  it('reports the denied role and links back to the role home', () => {
+  it('shows the denied role, the required roles, and a link back to the role home', () => {
     render(
       <MemoryRouter>
-        <PermissionDenied role="EMPLOYEE" homePath="/my-profile" />
+        <PermissionDenied
+          role="EMPLOYEE"
+          homePath="/my-profile"
+          requiredRoles={['ADMIN', 'RESOURCE_MANAGER']}
+        />
       </MemoryRouter>,
     )
 
-    const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent('403 - Forbidden Access')
-    expect(alert).toHaveTextContent('EMPLOYEE')
-    expect(screen.getByRole('link', { name: /Return to accessible home/i })).toHaveAttribute(
+    expect(screen.getByRole('heading', { level: 1, name: 'Access denied' })).toBeInTheDocument()
+    expect(screen.getByText('Employee')).toBeInTheDocument()
+    expect(screen.getByText('Required: Admin / Resource Manager')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Back to Dashboard' })).toHaveAttribute(
       'href',
       '/my-profile',
     )
+  })
+
+  it('omits the required-role line when the caller does not know the allowed roles', () => {
+    render(
+      <MemoryRouter>
+        <PermissionDenied role="PROJECT_MANAGER" homePath="/dashboard" />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Project Manager')).toBeInTheDocument()
+    expect(screen.queryByText(/^Required:/)).not.toBeInTheDocument()
   })
 })

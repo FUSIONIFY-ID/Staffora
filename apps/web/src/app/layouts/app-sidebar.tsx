@@ -11,8 +11,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ role }) => {
   const groups = visibleNavGroups(role)
 
   return (
-    <aside className="hidden md:flex w-60 xl:w-64 shrink-0 flex-col sticky top-0 h-screen border-r border-slate-800/80 bg-slate-900/70">
-      <div className="h-16 flex items-center px-5 border-b border-slate-800/80">
+    <aside className="hidden md:flex w-[240px] shrink-0 flex-col sticky top-0 h-screen border-r border-[#E5E7EB] bg-white">
+      <div className="h-[72px] flex items-center px-5 border-b border-[#E5E7EB]">
         <Link to="/" className="flex items-center gap-3 group">
           <img
             src="/logo.png"
@@ -25,7 +25,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ role }) => {
               const parent = target.parentElement
               if (parent && !parent.querySelector('.brand-fallback')) {
                 const span = document.createElement('span')
-                span.className = 'brand-fallback text-lg font-extrabold text-blue-500'
+                span.className = 'brand-fallback text-lg font-extrabold text-blue-600'
                 span.innerText = '◆ Staffora'
                 parent.appendChild(span)
               }
@@ -37,7 +37,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ role }) => {
       <nav aria-label="Main" className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
         {groups.map((group) => (
           <div key={group.label} role="group" aria-label={group.label} className="space-y-1">
-            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[#737373]">
               {group.label}
             </p>
             {group.items.map((item) => (
@@ -47,8 +47,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ role }) => {
                 className={({ isActive }) =>
                   `flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-blue-600/15 text-blue-400 font-semibold'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-[#EFF6FF] text-[#1D4ED8] font-semibold'
+                      : 'text-[#525252] hover:text-[#171717] hover:bg-[#F5F5F5]'
                   }`
                 }
               >

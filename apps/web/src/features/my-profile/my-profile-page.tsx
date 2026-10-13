@@ -8,10 +8,10 @@ export const MyProfilePage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E5E7EB]">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">My Profile</h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-[#171717]">My Profile</h1>
+          <p className="text-sm text-[#525252] mt-1">
             Informasi profil personal, keahlian, dan jadwal alokasi proyek aktif.
           </p>
         </div>
@@ -20,13 +20,13 @@ export const MyProfilePage: React.FC = () => {
         </Badge>
       </div>
 
-      <Card className="p-8 text-center border-dashed border-slate-800 bg-slate-900/30">
+      <Card className="p-8 text-center border-dashed border-[#E5E7EB] bg-[#FAFAFA]">
         <div className="max-w-md mx-auto space-y-3">
-          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto text-xl font-semibold">
+          <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center mx-auto text-xl font-semibold">
             {user?.employee?.fullName?.charAt(0) ?? 'U'}
           </div>
-          <h3 className="text-lg font-semibold text-white">{user?.employee?.fullName ?? user?.email}</h3>
-          <p className="text-sm text-slate-400">
+          <h3 className="text-lg font-semibold text-[#171717]">{user?.employee?.fullName ?? user?.email}</h3>
+          <p className="text-sm text-[#525252]">
             Halaman ini siap diimplementasikan untuk self-service profil karyawan (keahlian & jadwal proyek).
           </p>
         </div>

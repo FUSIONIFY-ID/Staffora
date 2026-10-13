@@ -149,7 +149,11 @@ describe('Shell fallbacks', () => {
     )
 
     expect(screen.getByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Back to home' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.getByRole('link', { name: 'Go to Dashboard' })).toHaveAttribute(
+      'href',
+      '/dashboard',
+    )
+    expect(screen.getByRole('button', { name: 'Go Back' })).toBeInTheDocument()
     // The shell chrome still wraps the fallback.
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
   })
