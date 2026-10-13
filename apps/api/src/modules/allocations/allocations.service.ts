@@ -1,6 +1,6 @@
 import type { AuthenticatedUser } from '../../common/auth/types.js'
 import { assertCanManageAllocation } from '../../common/auth/policy.js'
-import { NotFoundError } from '../../common/errors/app-error.js'
+import { NotFoundError, NotImplementedError } from '../../common/errors/app-error.js'
 import { allocationsRepository } from './allocations.repository.js'
 import type {
   CreateAllocationInput,
@@ -10,7 +10,7 @@ import type {
 
 export const allocationsService = {
   async getAllocations(_query: Record<string, unknown>, _user: AuthenticatedUser) {
-    // TODO: Implement allocations query in Sprint (PIC: Saiful & Jundy)
+    // TODO: Implement allocations query in Sprint 2 (US04)
     return {
       data: [],
       total: 0,
@@ -19,13 +19,11 @@ export const allocationsService = {
     }
   },
 
-  async getAllocationById(id: string, _user: AuthenticatedUser) {
-    // TODO: Implement single allocation query in Sprint (PIC: Saiful & Jundy)
-    return { id }
+  async getAllocationById(_id: string, _user: AuthenticatedUser) {
+    throw new NotImplementedError('Fetching single allocation is not implemented in Sprint 1.')
   },
 
   async createAllocation(data: CreateAllocationInput, user: AuthenticatedUser) {
-    // TODO: Implement allocation creation with SELECT ... FOR UPDATE capacity lock in Sprint (PIC: Saiful & Jundy)
     const project = await allocationsRepository.findProjectById(data.projectId)
     if (!project) {
       throw new NotFoundError('Project not found')
@@ -33,36 +31,33 @@ export const allocationsService = {
 
     assertCanManageAllocation(user, project.projectManagerEmployeeId)
 
-    return null
+    throw new NotImplementedError('Allocation creation is not implemented in Sprint 1.')
   },
 
   async updateAllocation(id: string, _data: UpdateAllocationInput, user: AuthenticatedUser) {
-    // TODO: Implement allocation update with concurrency protection in Sprint (PIC: Saiful & Jundy)
     const allocation = await allocationsRepository.findById(id)
     if (!allocation) {
       throw new NotFoundError('Allocation not found.')
     }
     assertCanManageAllocation(user, allocation.project.projectManagerEmployeeId)
-    return allocation
+    throw new NotImplementedError('Allocation update is not implemented in Sprint 1.')
   },
 
   async endAllocation(id: string, _data: EndAllocationInput, user: AuthenticatedUser) {
-    // TODO: Implement ending an allocation in Sprint (PIC: Saiful & Jundy)
     const allocation = await allocationsRepository.findById(id)
     if (!allocation) {
       throw new NotFoundError('Allocation not found.')
     }
     assertCanManageAllocation(user, allocation.project.projectManagerEmployeeId)
-    return { id }
+    throw new NotImplementedError('Ending allocation is not implemented in Sprint 1.')
   },
 
-
   async cancelAllocation(id: string, user: AuthenticatedUser) {
-    // TODO: Implement allocation cancellation in Sprint (PIC: Saiful & Jundy)
     const allocation = await allocationsRepository.findById(id)
     if (!allocation) {
       throw new NotFoundError('Allocation not found.')
     }
     assertCanManageAllocation(user, allocation.project.projectManagerEmployeeId)
+    throw new NotImplementedError('Cancelling allocation is not implemented in Sprint 1.')
   },
 }

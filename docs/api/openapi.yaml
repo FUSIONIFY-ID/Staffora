@@ -500,7 +500,7 @@ paths:
   /staffing-requirements/{id}:
     patch:
       summary: Update staffing requirement
-      description: Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager.
+      description: Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager. Passing an empty array for skills removes all existing required skills.
       parameters:
         - name: id
           in: path
@@ -522,6 +522,21 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/StaffingRequirement'
+    delete:
+      summary: Delete staffing requirement (Not Implemented)
+      description: Staffing requirement physical deletion is disabled per BR-G15. Soft-delete / archival will be designed in Sprint 2 (US03).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '501':
+          description: Not Implemented (pending soft-delete design in US03)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /allocations:
     get:

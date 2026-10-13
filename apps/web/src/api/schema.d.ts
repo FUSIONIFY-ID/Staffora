@@ -920,12 +920,37 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete staffing requirement (Not Implemented)
+         * @description Staffing requirement physical deletion is disabled per BR-G15. Soft-delete / archival will be designed in Sprint 2 (US03).
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Not Implemented (pending soft-delete design in US03) */
+                501: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         /**
          * Update staffing requirement
-         * @description Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager.
+         * @description Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager. Passing an empty array for skills removes all existing required skills.
          */
         patch: {
             parameters: {

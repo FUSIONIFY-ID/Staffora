@@ -401,7 +401,7 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(res.body.message).toContain('manage allocations')
     })
 
-    it('allows PROJECT_MANAGER to create allocation in their own project (HTTP 201)', async () => {
+    it('allows PROJECT_MANAGER to reach create allocation in their own project (HTTP 501 Not Implemented)', async () => {
       const res = await request(app)
         .post('/api/v1/allocations')
         .set('Cookie', pmCookie)
@@ -414,7 +414,8 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
           startDate: '2026-11-01',
           endDate: '2026-12-01',
         })
-      expect(res.status).toBe(201)
+      expect(res.status).toBe(501)
+      expect(res.body.code).toBe('NOT_IMPLEMENTED')
     })
 
     it('disallows PROJECT_MANAGER from creating allocation for non-existent project (HTTP 404)', async () => {
@@ -434,13 +435,14 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(res.body.code).toBe('NOT_FOUND')
     })
 
-    it('allows PROJECT_MANAGER to update allocation in their own project (HTTP 200)', async () => {
+    it('allows PROJECT_MANAGER to reach update allocation in their own project (HTTP 501 Not Implemented)', async () => {
       const res = await request(app)
         .patch(`/api/v1/allocations/${pmOwnAllocationId}`)
         .set('Cookie', pmCookie)
         .set('X-CSRF-Token', pmCsrf)
         .send({ allocationPercentage: 80 })
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(501)
+      expect(res.body.code).toBe('NOT_IMPLEMENTED')
     })
 
     it('disallows PROJECT_MANAGER from updating allocation in another PM project (HTTP 403)', async () => {
@@ -463,13 +465,14 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(res.body.code).toBe('NOT_FOUND')
     })
 
-    it('allows PROJECT_MANAGER to end allocation in their own project (HTTP 200)', async () => {
+    it('allows PROJECT_MANAGER to reach end allocation in their own project (HTTP 501 Not Implemented)', async () => {
       const res = await request(app)
         .post(`/api/v1/allocations/${pmOwnAllocationId}/end`)
         .set('Cookie', pmCookie)
         .set('X-CSRF-Token', pmCsrf)
         .send({ endDate: '2026-11-30' })
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(501)
+      expect(res.body.code).toBe('NOT_IMPLEMENTED')
     })
 
     it('disallows PROJECT_MANAGER from ending allocation in another PM project (HTTP 403)', async () => {
@@ -510,12 +513,13 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(res.body.code).toBe('NOT_FOUND')
     })
 
-    it('allows PROJECT_MANAGER to cancel allocation in their own project (HTTP 204)', async () => {
+    it('allows PROJECT_MANAGER to reach cancel allocation in their own project (HTTP 501 Not Implemented)', async () => {
       const res = await request(app)
         .post(`/api/v1/allocations/${pmOwnAllocationId}/cancel`)
         .set('Cookie', pmCookie)
         .set('X-CSRF-Token', pmCsrf)
-      expect(res.status).toBe(204)
+      expect(res.status).toBe(501)
+      expect(res.body.code).toBe('NOT_IMPLEMENTED')
     })
 
     it('disallows creating staffing requirement on non-existent project (HTTP 404)', async () => {
@@ -608,6 +612,15 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(res.body.code).toBe('NOT_FOUND')
     })
 
+    it('returns HTTP 501 when PROJECT_MANAGER attempts to delete staffing requirement in another PM project', async () => {
+      const res = await request(app)
+        .delete(`/api/v1/staffing-requirements/${otherPmStaffingRequirementId}`)
+        .set('Cookie', pmCookie)
+        .set('X-CSRF-Token', pmCsrf)
+      expect(res.status).toBe(501)
+      expect(res.body.code).toBe('NOT_IMPLEMENTED')
+    })
+
     it('allows PROJECT_MANAGER to create staffing requirement in their own project (HTTP 201)', async () => {
       const res = await request(app)
         .post(`/api/v1/projects/${pmOwnProjectId}/staffing-requirements`)
@@ -633,8 +646,9 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
 
     it('allows PROJECT_MANAGER to update and delete staffing requirement in their own project', async () => {
       const skills = await prisma.skill.findMany({ take: 2 })
-      const skill1 = skills[0]
-      const skill2 = skills[1]
+      expect(skills.length).toBeGreaterThanOrEqual(2)
+      const skill1 = skills[0]!
+      const skill2 = skills[1]!
 
       // 1. Create requirement in own project with initial skill
       const reqRes = await request(app)
@@ -1200,21 +1214,23 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       const list = await allocationsService.getAllocations({}, userPM)
       expect(list.data).toEqual([])
 
-      const single = await allocationsService.getAllocationById('alloc-1', userPM)
-      expect(single.id).toBe('alloc-1')
-
-      const validResult = await allocationsService.createAllocation(
-        {
-          projectId: pmOwnProjectId,
-          employeeId: otherEmployeeId,
-          jobRoleId: rolePMId,
-          allocationPercentage: 50,
-          startDate: '2026-11-01',
-          endDate: '2026-12-01',
-        },
-        userPM,
+      await expect(allocationsService.getAllocationById('alloc-1', userPM)).rejects.toThrow(
+        'not implemented',
       )
-      expect(validResult).toBeNull()
+
+      await expect(
+        allocationsService.createAllocation(
+          {
+            projectId: pmOwnProjectId,
+            employeeId: otherEmployeeId,
+            jobRoleId: rolePMId,
+            allocationPercentage: 50,
+            startDate: '2026-11-01',
+            endDate: '2026-12-01',
+          },
+          userPM,
+        ),
+      ).rejects.toThrow('not implemented')
 
       await expect(
         allocationsService.createAllocation(

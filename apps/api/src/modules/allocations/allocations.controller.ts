@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-import { sendSuccess, sendList } from '../../common/http/response.js'
+import { sendSuccess, sendList, sendCreated, sendNoContent } from '../../common/http/response.js'
 import { allocationsService } from './allocations.service.js'
 
 export const allocationsController = {
@@ -28,10 +28,7 @@ export const allocationsController = {
   async createAllocation(req: Request, res: Response, next: NextFunction) {
     try {
       const item = await allocationsService.createAllocation(req.body, req.user!)
-      return res.status(201).json({
-        data: item,
-        meta: { message: 'Allocation created scaffold' },
-      })
+      return sendCreated(res, item)
     } catch (err) {
       next(err)
     }
@@ -58,7 +55,7 @@ export const allocationsController = {
   async cancelAllocation(req: Request, res: Response, next: NextFunction) {
     try {
       await allocationsService.cancelAllocation(req.params.id as string, req.user!)
-      return res.status(204).send()
+      return sendNoContent(res)
     } catch (err) {
       next(err)
     }

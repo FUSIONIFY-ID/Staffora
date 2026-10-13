@@ -6,7 +6,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const requestId = (req.headers['x-request-id'] as string) || (req as unknown as { id?: string }).id || 'req-unknown'
 
   if (err instanceof AppError) {
-    if (err.statusCode >= 500) {
+    if (err.statusCode >= 500 && err.statusCode !== 501) {
       logger.error({ err, requestId }, err.message)
     } else {
       logger.warn({ err, requestId, code: err.code }, err.message)
