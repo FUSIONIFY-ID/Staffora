@@ -107,6 +107,7 @@ export function createApp(options?: {
   apiV1.use('/dashboard', dashboardRouter)
   apiV1.use('/me', meRouter)
 
+  app.use('/health', healthRouter)
   app.use('/api/v1', apiV1)
 
   // 10. Not-found handler
