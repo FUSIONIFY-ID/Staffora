@@ -51,8 +51,12 @@ modules/<domain>/
    - Menu navigasi dan action button disembunyikan berdasarkan role user saat ini.
    - Route dilindungi oleh `ProtectedRoute` di `src/app/router/protected-route.tsx`. Jika role tidak berhak, tampilkan status 403 Forbidden secara eksplisit, jangan menyamarkannya sebagai empty list.
 4. **Design System & Styling**:
-   - Gunakan token Tailwind CSS 4 dan utility classes yang konsisten dengan tema dark `#0a0f1d` dan aksen brand biru (`#2563eb`).
-   - Gunakan reusable primitives dari `src/components/ui/` (`Button`, `Card`, `Badge`, `Modal`, `Alert`, `Input`, `Spinner`).
+   - **Sumber kebenaran visual adalah design reference Figma: "Staffora — Product Design & Prototype (MVP v1.0)".** Light mode saja untuk MVP; dark mode belum ada dan tidak dikerjakan.
+   - Token lengkap (warna, tipografi, radius, ukuran komponen, dan state screen) ada di `docs/ui-specs/design-system/design-system.md` beserta versi mesinnya `design-system.json`. Jangan menebak nilai visual di luar dokumen itu.
+   - Ringkasnya: page `#F7F8FA`, surface `#FFFFFF`, border `#E5E7EB`, primary `#2563EB`, text `#171717` / `#525252` / `#737373`. Font `Exo 2`. Sidebar 240px, header 72px, gutter halaman 36px.
+   - Gunakan token Tailwind CSS 4 dan utility classes, lalu definisikan nilai token sebagai CSS custom property di `src/index.css`.
+   - Gunakan reusable primitives dari `src/components/ui/` (`Button`, `Card`, `Badge`, `Modal`, `Alert`, `Input`, `Spinner`). Jangan membuat set komponen kedua untuk peran yang sama.
+   - Catatan sejarah: dokumen ini sebelumnya menetapkan tema dark `#0a0f1d`. Aturan itu **sudah tidak berlaku** setelah Tech Lead menetapkan Figma sebagai acuan pada 2026-10-13. Jika menemukan sisa kode bertema dark, itu utang teknis, bukan contoh yang boleh diikuti.
 
 ---
 
