@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { DashboardPage } from '../src/features/dashboard/dashboard-page.js'
 import { MyProfilePage } from '../src/features/my-profile/my-profile-page.js'
 import { ResourceFinderPage } from '../src/features/resource-finder/resource-finder-page.js'
@@ -16,6 +16,10 @@ function renderPage(page: React.ReactNode): void {
 }
 
 describe('overview, profile, and resource finder', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('renders API-backed dashboard metrics', async () => {
     apiClient.mockResolvedValueOnce({ data: { totalActiveResources: 4, totalActiveProjects: 2, fullyAvailableResources: 1, fullyAllocatedResources: 1, openStaffingRequirements: 3, capacityDistribution: { fullyAvailable: 1, partiallyAvailable: 2, fullyAllocated: 1 } } })
     renderPage(<DashboardPage />)

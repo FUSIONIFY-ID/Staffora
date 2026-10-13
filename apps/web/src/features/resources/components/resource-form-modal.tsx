@@ -1,0 +1,231 @@
+import React, { useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Modal } from '../../../components/ui/modal.js'
+import { Button } from '../../../components/ui/button.js'
+import { Input } from '../../../components/ui/input.js'
+import { Alert } from '../../../components/ui/alert.js'
+import type { DepartmentItem, JobRoleItem, ResourceItem } from './types.js'
+
+const resourceSchema = z.object({
+  employeeCode: z
+    .string()
+    .min(1, 'Kode karyawan wajib diisi')
+    .max(50, 'Kode karyawan maksimal 50 karakter'),
+  fullName: z
+    .string()
+    .min(2, 'Nama lengkap minimal 2 karakter')
+    .max(255, 'Nama lengkap maksimal 255 karakter'),
+  workEmail: z.string().email('Format email kerja tidak valid'),
+  departmentId: z.string().min(1, 'Departemen wajib dipilih'),
+  jobRoleId: z.string().min(1, 'Peran/jabatan wajib dipilih'),
+  status: z.enum(['ACTIVE', 'INACTIVE']),
+})
+
+export type ResourceFormData = z.infer<typeof resourceSchema>
+
+export interface ResourceFormModalProps {
+  isOpen: boolean
+  onClose: () => void
+  resourceToEdit: ResourceItem | null
+  departments: DepartmentItem[]
+  jobRoles: JobRoleItem[]
+  onSubmit: (data: ResourceFormData) => Promise<void>
+}
+
+export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
+  isOpen,
+  onClose,
+  resourceToEdit,
+  departments,
+  jobRoles,
+  onSubmit,
+}): React.JSX.Element => {
+  const isEditing = Boolean(resourceToEdit)
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<ResourceFormData>({
+    resolver: zodResolver(resourceSchema),
+    values: resourceToEdit
+      ? {
+          employeeCode: resourceToEdit.employeeCode,
+          fullName: resourceToEdit.fullName,
+          workEmail: resourceToEdit.workEmail,
+          departmentId: resourceToEdit.departmentId,
+          jobRoleId: resourceToEdit.jobRoleId,
+          status: resourceToEdit.status,
+        }
+      : {
+          employeeCode: '',
+          fullName: '',
+          workEmail: '',
+          departmentId: departments[0]?.id ?? '',
+          jobRoleId: jobRoles[0]?.id ?? '',
+          status: 'ACTIVE',
+        },
+  })
+
+  const currentStatus = useWatch({
+    control,
+    name: 'status',
+    defaultValue: 'ACTIVE',
+  })
+
+  const handleFormSubmit = async (data: ResourceFormData): Promise<void> => {
+    setServerError(null)
+    setIsSubmitting(true)
+    try {
+      await onSubmit(data)
+      onClose()
+    } catch (err: unknown) {
+      const msg = (err as Error)?.message || 'Gagal menyimpan data karyawan.'
+      setServerError(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? 'Edit Profil Karyawan' : 'Tambah Karyawan Baru'}
+      size="lg"
+    >
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+        {serverError && (
+          <Alert type="error" title="Gagal Menyimpan">
+            {serverError}
+          </Alert>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Employee Code */}
+          <Input
+            id="resource-form-code"
+            label="Kode Karyawan"
+            placeholder="e.g. EMP001"
+            disabled={isEditing}
+            error={errors.employeeCode?.message}
+            {...register('employeeCode')}
+          />
+
+          {/* Full Name */}
+          <Input
+            id="resource-form-name"
+            label="Nama Lengkap"
+            placeholder="Nama lengkap..."
+            error={errors.fullName?.message}
+            {...register('fullName')}
+          />
+
+          {/* Work Email */}
+          <Input
+            id="resource-form-email"
+            label="Email Kerja"
+            type="email"
+            placeholder="nama@staffora.internal"
+            disabled={isEditing}
+            error={errors.workEmail?.message}
+            {...register('workEmail')}
+          />
+
+          {/* Employment Status */}
+          <div className="w-full space-y-1.5 text-left">
+            <label htmlFor="resource-form-status" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+              Status Kerja
+            </label>
+            <select
+              id="resource-form-status"
+              className="w-full rounded-lg bg-slate-900/80 border border-slate-700/80 px-3.5 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              {...register('status')}
+            >
+              <option value="ACTIVE">Aktif</option>
+              <option value="INACTIVE">Non-Aktif</option>
+            </select>
+          </div>
+
+          {/* Department */}
+          <div className="w-full space-y-1.5 text-left">
+            <label htmlFor="resource-form-department" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+              Departemen
+            </label>
+            <select
+              id="resource-form-department"
+              className={`w-full rounded-lg bg-slate-900/80 border ${
+                errors.departmentId ? 'border-red-500' : 'border-slate-700/80'
+              } px-3.5 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+              {...register('departmentId')}
+            >
+              <option value="">Pilih Departemen</option>
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </option>
+              ))}
+            </select>
+            {errors.departmentId && (
+              <p className="text-xs text-red-400">{errors.departmentId.message}</p>
+            )}
+          </div>
+
+          {/* Job Role */}
+          <div className="w-full space-y-1.5 text-left">
+            <label htmlFor="resource-form-role" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+              Peran / Jabatan
+            </label>
+            <select
+              id="resource-form-role"
+              className={`w-full rounded-lg bg-slate-900/80 border ${
+                errors.jobRoleId ? 'border-red-500' : 'border-slate-700/80'
+              } px-3.5 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+              {...register('jobRoleId')}
+            >
+              <option value="">Pilih Peran</option>
+              {jobRoles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+            {errors.jobRoleId && (
+              <p className="text-xs text-red-400">{errors.jobRoleId.message}</p>
+            )}
+          </div>
+        </div>
+
+        {currentStatus === 'INACTIVE' && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+            ⚠️ <strong>Perhatian:</strong> Menetapkan status Non-Aktif akan mencegah karyawan dialokasikan pada proyek baru, namun riwayat alokasi sebelumnya tetap dipertahankan untuk audit historis.
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Batal
+          </Button>
+          <Button
+            id="resource-form-submit"
+            type="submit"
+            variant="primary"
+            isLoading={isSubmitting}
+          >
+            {isEditing ? 'Perbarui Karyawan' : 'Tambah Karyawan'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
