@@ -1,6 +1,6 @@
 import { evaluateCapacity, toDateString } from '../capacity/capacity.service.js'
 import type { AllocationInterval } from '../capacity/capacity.types.js'
-import type { EmployeeDetailRecord, EmployeeSkillView } from './workforce.types.js'
+import type { EmployeeDetailRecord, EmployeeCapacitySummary, EmployeeSkillView } from './workforce.types.js'
 import type { EmployeeSummaryRecord } from './workforce.types.js'
 
 export interface EmployeeView {
@@ -9,6 +9,8 @@ export interface EmployeeView {
   fullName: string
   workEmail: string
   status: string
+  availability: AvailabilityState
+  remainingCapacity: number
   departmentId: string
   departmentName: string
   jobRoleId: string
@@ -17,13 +19,33 @@ export interface EmployeeView {
   updatedAt: string
 }
 
-export function toEmployeeView(employee: EmployeeSummaryRecord): EmployeeView {
+export type AvailabilityState = 'AVAILABLE' | 'PARTIAL' | 'FULLY_ALLOCATED' | 'NOT_ASSIGNABLE'
+
+/**
+ * Maps remaining capacity onto the availability states required by PRD US05.01 - AC03.
+ * Inactive employees are reported as NOT_ASSIGNABLE so the list can satisfy
+ * US02.01 - AC01.03, which requires a current availability indicator, and
+ * US05.01 - AC03.04, which requires inactive employees to be visibly distinguished.
+ */
+export function toAvailabilityState(status: string, remainingCapacity: number): AvailabilityState {
+  if (status !== 'ACTIVE') return 'NOT_ASSIGNABLE'
+  if (remainingCapacity <= 0) return 'FULLY_ALLOCATED'
+  if (remainingCapacity >= 100) return 'AVAILABLE'
+  return 'PARTIAL'
+}
+
+export function toEmployeeView(
+  employee: EmployeeSummaryRecord,
+  remainingCapacity: number,
+): EmployeeView {
   return {
     id: employee.id,
     employeeCode: employee.employeeCode,
     fullName: employee.fullName,
     workEmail: employee.workEmail,
     status: employee.status,
+    availability: toAvailabilityState(employee.status, remainingCapacity),
+    remainingCapacity,
     departmentId: employee.departmentId,
     departmentName: employee.department.name,
     jobRoleId: employee.jobRoleId,
@@ -54,11 +76,22 @@ function resolveAllocationDisplayStatus(
 }
 
 /**
- * Summarises an employee's capacity using the shared capacity engine
- * (apps/api/src/modules/capacity), evaluated from today until the latest
- * known allocation end date.
+ * Sweep-line evaluation of remaining capacity from today until the latest known
+ * allocation end date, using the shared capacity engine in
+ * apps/api/src/modules/capacity (TSD Section 10).
+ *
+ * Accepts only the fields the engine needs, so the list endpoint can pass its
+ * lighter allocation projection while the detail view passes its full records.
  */
-export function summarizeCapacity(allocations: EmployeeDetailRecord['allocations']) {
+export function evaluateRemainingCapacity(
+  allocations: ReadonlyArray<{
+    id: string
+    allocationPercentage: number
+    startDate: Date
+    endDate: Date
+    cancelledAt: Date | null
+  }>,
+): EmployeeCapacitySummary {
   const intervals: AllocationInterval[] = allocations.map((allocation) => ({
     id: allocation.id,
     allocationPercentage: allocation.allocationPercentage,
@@ -90,11 +123,19 @@ export function summarizeCapacity(allocations: EmployeeDetailRecord['allocations
   }
 }
 
+/** Employee detail capacity summary, PRD US02.01 - AC04.04. */
+export function summarizeCapacity(allocations: EmployeeDetailRecord['allocations']) {
+  return evaluateRemainingCapacity(allocations)
+}
+
 export function toDetailView(employee: EmployeeDetailRecord) {
   const referenceDate = toDateString(new Date())
 
   return {
-    ...toEmployeeView(employee),
+    // AC04.04: show allocation effective today, or peak concurrent allocation
+    // and remaining capacity for a selected date range. summarizeCapacity
+    // evaluates from today to the latest allocation end date.
+    ...toEmployeeView(employee, summarizeCapacity(employee.allocations).remainingCapacity),
     department: { id: employee.department.id, name: employee.department.name },
     jobRole: { id: employee.jobRole.id, name: employee.jobRole.name },
     skills: employee.skills.map(toSkillView),

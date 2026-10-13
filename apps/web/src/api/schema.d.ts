@@ -1535,6 +1535,13 @@ export interface components {
             workEmail: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
+            /**
+             * @description Current availability for US02.01 - AC01.03. NOT_ASSIGNABLE is reported for INACTIVE employees per US05.01 - AC03.04. AVAILABLE, PARTIAL and FULLY_ALLOCATED follow US05.01 - AC03.01 to AC03.03.
+             * @enum {string}
+             */
+            availability: "AVAILABLE" | "PARTIAL" | "FULLY_ALLOCATED" | "NOT_ASSIGNABLE";
+            /** @description 100 minus peak concurrent allocation from today to the latest known allocation end date, using the shared capacity engine. */
+            remainingCapacity: number;
             /** Format: uuid */
             departmentId: string;
             departmentName: string;

@@ -4,6 +4,15 @@ import { prisma } from '../../common/database/prisma.js'
 export const employeeSummaryInclude = {
   department: { select: { id: true, name: true } },
   jobRole: { select: { id: true, name: true } },
+  allocations: {
+    select: {
+      id: true,
+      allocationPercentage: true,
+      startDate: true,
+      endDate: true,
+      cancelledAt: true,
+    },
+  },
 } satisfies Prisma.EmployeeInclude
 
 export const employeeDetailInclude = {

@@ -9,7 +9,7 @@ import {
 } from './workforce.schema.js'
 import type { EmployeeListQuery } from './workforce.schema.js'
 import { workforceRepository } from './workforce.repository.js'
-import { toDetailView, toEmployeeView } from './workforce.views.js'
+import { toDetailView, toEmployeeView, evaluateRemainingCapacity } from './workforce.views.js'
 
 const EMPLOYEE_NOT_FOUND = 'Employee profile was not found.'
 
@@ -105,7 +105,12 @@ export const workforceService = {
     ])
 
     return {
-      data: rows.map(toEmployeeView),
+      // PRD US02.01 - AC01.03 requires a current availability indicator on each
+      // row. evaluateRemainingCapacity is the same helper the detail view uses, so the
+      // indicator and AC04.04 cannot drift apart.
+      data: rows.map((row) =>
+        toEmployeeView(row, evaluateRemainingCapacity(row.allocations).remainingCapacity),
+      ),
       total,
       page,
       pageSize,
@@ -140,7 +145,7 @@ export const workforceService = {
       createdBy: actorId,
     })
 
-    return toEmployeeView(employee)
+    return toEmployeeView(employee, evaluateRemainingCapacity(employee.allocations).remainingCapacity)
   },
 
   async getEmployeeDetail(id: string) {
@@ -168,6 +173,6 @@ export const workforceService = {
       updatedBy: actorId,
     })
 
-    return toEmployeeView(updated)
+    return toEmployeeView(updated, evaluateRemainingCapacity(updated.allocations).remainingCapacity)
   },
 }

@@ -969,13 +969,25 @@ components:
 
     Employee:
       type: object
-      required: [id, employeeCode, fullName, workEmail, departmentId, departmentName, jobRoleId, jobRoleTitle, status, createdAt, updatedAt]
+      required: [id, employeeCode, fullName, workEmail, departmentId, departmentName, jobRoleId, jobRoleTitle, status, availability, remainingCapacity, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         employeeCode: { type: string }
         fullName: { type: string }
         workEmail: { type: string }
         status: { type: string, enum: [ACTIVE, INACTIVE] }
+        availability:
+          type: string
+          enum: [AVAILABLE, PARTIAL, FULLY_ALLOCATED, NOT_ASSIGNABLE]
+          description: >-
+            Current availability for US02.01 - AC01.03. NOT_ASSIGNABLE is reported for
+            INACTIVE employees per US05.01 - AC03.04. AVAILABLE, PARTIAL and
+            FULLY_ALLOCATED follow US05.01 - AC03.01 to AC03.03.
+        remainingCapacity:
+          type: integer
+          description: >-
+            100 minus peak concurrent allocation from today to the latest known
+            allocation end date, using the shared capacity engine.
         departmentId: { type: string, format: uuid }
         departmentName: { type: string }
         jobRoleId: { type: string, format: uuid }
