@@ -21,18 +21,24 @@ vi.mock('../src/app/providers/auth-provider.js', () => ({
   useAuth: () => ({ user: mockCurrentUser }),
 }))
 
-function renderWithClient(ui: React.ReactNode): void {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  })
+function renderWithClient(
+  ui: React.ReactNode,
+  options?: { initialEntries?: string[]; queryClient?: QueryClient },
+): { queryClient: QueryClient } {
+  const queryClient =
+    options?.queryClient ??
+    new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    })
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/resources']}>{ui}</MemoryRouter>
+      <MemoryRouter initialEntries={options?.initialEntries ?? ['/resources']}>{ui}</MemoryRouter>
     </QueryClientProvider>,
   )
+  return { queryClient }
 }
 
 function renderDetailWithClient(employeeId: string): void {
@@ -78,7 +84,7 @@ const mockEmployeeData = [
     jobRoleTitle: 'UI/UX Designer',
     status: 'INACTIVE',
     currentAllocation: 0,
-    currentRemainingCapacity: 100,
+    currentRemainingCapacity: null, // explicit missing capacity
   },
 ]
 
@@ -88,7 +94,7 @@ describe('US02.01 - Employee Resource Directory & Profile', () => {
     mockCurrentUser = { role: 'ADMIN', email: 'admin@staffora.test' }
   })
 
-  it('renders resource directory table with availability indicators and meta', async () => {
+  it('renders resource directory table with availability indicators and explicit missing state', async () => {
     apiClient.mockImplementation((endpoint: string) => {
       if (endpoint === '/departments') {
         return Promise.resolve({ data: [{ id: 'dept-1', name: 'Engineering' }] })
@@ -110,9 +116,11 @@ describe('US02.01 - Employee Resource Directory & Profile', () => {
     expect(await screen.findByText('Budi Santoso')).toBeInTheDocument()
     expect(screen.getByText('EMP001')).toBeInTheDocument()
     expect(screen.getByText('Senior Backend Engineer')).toBeInTheDocument()
+    // Explicit 40% availability badge
     expect(screen.getByText('40% Tersedia')).toBeInTheDocument()
-    expect(screen.getByText('100% Tersedia')).toBeInTheDocument()
-    expect(screen.getAllByText('Non-Aktif')).toHaveLength(2)
+    // Explicit missing availability badge (does not default to 100%)
+    expect(screen.getByText('Tidak Tersedia')).toBeInTheDocument()
+    expect(screen.queryByText('100% Tersedia')).not.toBeInTheDocument()
   })
 
   it('handles empty state when no employees match filters', async () => {
@@ -128,27 +136,46 @@ describe('US02.01 - Employee Resource Directory & Profile', () => {
     expect(await screen.findByText('Tidak Ada Karyawan Ditemukan')).toBeInTheDocument()
   })
 
-  it('handles error state and provides retry button', async () => {
+  it('handles network failure state and provides retry button', async () => {
     apiClient.mockImplementation((endpoint: string) => {
       if (endpoint.startsWith('/employees')) {
-        return Promise.reject(new Error('Network connectivity issue'))
+        return Promise.reject(new TypeError('Failed to fetch'))
       }
       return Promise.resolve({ data: [] })
     })
 
     renderWithClient(<ResourcesPage />)
 
-    expect(await screen.findByText('Gagal Memuat Data')).toBeInTheDocument()
+    expect(await screen.findByText('Gangguan Koneksi Jaringan')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Coba Lagi' })).toBeInTheDocument()
   })
 
-  it('triggers search and filters on input change', async () => {
+  it('handles 403 Forbidden authorization failure without retry button', async () => {
+    apiClient.mockImplementation((endpoint: string) => {
+      if (endpoint.startsWith('/employees')) {
+        return Promise.reject(new ApiError(403, { code: 'FORBIDDEN', message: 'Forbidden access' }))
+      }
+      return Promise.resolve({ data: [] })
+    })
+
+    renderWithClient(<ResourcesPage />)
+
+    expect(await screen.findByText('403 - Akses Ditolak')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Coba Lagi' })).not.toBeInTheDocument()
+  })
+
+  it('handles dropdown API failure in filters with retry option', async () => {
+    let deptCallCount = 0
     apiClient.mockImplementation((endpoint: string) => {
       if (endpoint === '/departments') {
+        deptCallCount++
+        if (deptCallCount === 1) {
+          return Promise.reject(new Error('Failed to load departments'))
+        }
         return Promise.resolve({ data: [{ id: 'dept-1', name: 'Engineering' }] })
       }
       if (endpoint === '/job-roles') {
-        return Promise.resolve({ data: [{ id: 'role-1', name: 'Engineer' }] })
+        return Promise.resolve({ data: [{ id: 'role-1', name: 'Developer' }] })
       }
       if (endpoint.startsWith('/employees')) {
         return Promise.resolve({ data: mockEmployeeData, meta: { page: 1, pageSize: 20, total: 2 } })
@@ -157,6 +184,31 @@ describe('US02.01 - Employee Resource Directory & Profile', () => {
     })
 
     renderWithClient(<ResourcesPage />)
+
+    const retryBtn = await screen.findByRole('button', { name: 'Gagal. Coba lagi' })
+    expect(retryBtn).toBeInTheDocument()
+    fireEvent.click(retryBtn)
+
+    await waitFor(() => {
+      expect(deptCallCount).toBeGreaterThanOrEqual(2)
+    })
+  })
+
+  it('triggers search and filters on input change and resets to page 1', async () => {
+    apiClient.mockImplementation((endpoint: string) => {
+      if (endpoint === '/departments') {
+        return Promise.resolve({ data: [{ id: 'dept-1', name: 'Engineering' }] })
+      }
+      if (endpoint === '/job-roles') {
+        return Promise.resolve({ data: [{ id: 'role-1', name: 'Engineer' }] })
+      }
+      if (endpoint.startsWith('/employees')) {
+        return Promise.resolve({ data: mockEmployeeData, meta: { page: 2, pageSize: 20, total: 40 } })
+      }
+      return Promise.resolve({ data: [] })
+    })
+
+    renderWithClient(<ResourcesPage />, { initialEntries: ['/resources?page=2'] })
     await screen.findByText('Budi Santoso')
 
     const searchInput = screen.getByLabelText('Cari Karyawan')
@@ -164,6 +216,8 @@ describe('US02.01 - Employee Resource Directory & Profile', () => {
 
     await waitFor(() => {
       expect(apiClient).toHaveBeenCalledWith(expect.stringContaining('search=Budi'))
+      // Changing search/filter must reset page back to 1
+      expect(apiClient).toHaveBeenCalledWith(expect.stringContaining('page=1'))
     })
   })
 
@@ -229,7 +283,12 @@ describe('US02.01 - Employee Resource Directory & Profile', () => {
       return Promise.resolve({ data: [] })
     })
 
-    renderWithClient(<ResourcesPage />)
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    renderWithClient(<ResourcesPage />, { queryClient })
 
     fireEvent.click(await screen.findByRole('button', { name: '+ Tambah Karyawan' }))
 
@@ -244,6 +303,55 @@ describe('US02.01 - Employee Resource Directory & Profile', () => {
         '/employees',
         expect.objectContaining({ method: 'POST' }),
       )
+      expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['employees'] }))
+      expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['dashboard'] }))
+      expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['capacity'] }))
+    })
+  })
+
+  it('submits edit employee and invalidates specific detail query [employee, id]', async () => {
+    apiClient.mockImplementation((endpoint: string, options?: RequestInit) => {
+      if (endpoint === '/departments') {
+        return Promise.resolve({ data: [{ id: 'dept-1', name: 'Engineering' }] })
+      }
+      if (endpoint === '/job-roles') {
+        return Promise.resolve({ data: [{ id: 'role-1', name: 'Senior Backend Engineer' }] })
+      }
+      if (endpoint === '/employees/emp-101' && options?.method === 'PATCH') {
+        return Promise.resolve({ data: { id: 'emp-101', fullName: 'Budi Santoso Updated' } })
+      }
+      if (endpoint.startsWith('/employees')) {
+        return Promise.resolve({ data: mockEmployeeData, meta: { page: 1, pageSize: 20, total: 2 } })
+      }
+      return Promise.resolve({ data: [] })
+    })
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    renderWithClient(<ResourcesPage />, { queryClient })
+
+    await screen.findByText('Budi Santoso')
+    const editButtons = screen.getAllByRole('button', { name: 'Edit' })
+    fireEvent.click(editButtons[0])
+
+    expect(await screen.findByText('Edit Profil Karyawan')).toBeInTheDocument()
+    const nameInput = screen.getByLabelText('Nama Lengkap')
+    fireEvent.change(nameInput, { target: { value: 'Budi Santoso Updated' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Perbarui Karyawan' }))
+
+    await waitFor(() => {
+      expect(apiClient).toHaveBeenCalledWith(
+        '/employees/emp-101',
+        expect.objectContaining({ method: 'PATCH' }),
+      )
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ queryKey: ['employee', 'emp-101'] }),
+      )
+      expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['employees'] }))
     })
   })
 

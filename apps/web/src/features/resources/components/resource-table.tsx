@@ -66,8 +66,11 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
           </thead>
           <tbody className="divide-y divide-slate-800/60">
             {resources.map((res) => {
-              const remaining = res.currentRemainingCapacity ?? 100
-              const availVariant = remaining === 100 ? 'green' : remaining > 0 ? 'amber' : 'red'
+              const hasCapacity =
+                typeof res.currentRemainingCapacity === 'number' &&
+                !Number.isNaN(res.currentRemainingCapacity) &&
+                res.currentRemainingCapacity >= 0
+              const remaining = res.currentRemainingCapacity
 
               return (
                 <tr key={res.id} className="transition hover:bg-slate-800/40">
@@ -90,9 +93,13 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
                     </Badge>
                   </td>
                   <td className="px-4 py-3.5">
-                    <Badge variant={availVariant}>
-                      {remaining}% Tersedia
-                    </Badge>
+                    {!hasCapacity || remaining === null || remaining === undefined ? (
+                      <Badge variant="gray">Tidak Tersedia</Badge>
+                    ) : (
+                      <Badge variant={remaining === 100 ? 'green' : remaining > 0 ? 'amber' : 'red'}>
+                        {remaining}% Tersedia
+                      </Badge>
+                    )}
                   </td>
                   <td className="px-4 py-3.5 text-right whitespace-nowrap space-x-2">
                     <Link to={`/resources/${res.id}`}>

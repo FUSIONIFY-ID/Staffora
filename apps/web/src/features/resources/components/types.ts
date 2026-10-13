@@ -7,6 +7,7 @@ export interface DepartmentItem {
 export interface JobRoleItem {
   id: string
   name: string
+  title?: string
   isActive?: boolean
 }
 
@@ -20,8 +21,8 @@ export interface ResourceItem {
   jobRoleId: string
   jobRoleTitle?: string
   status: 'ACTIVE' | 'INACTIVE'
-  currentAllocation: number
-  currentRemainingCapacity: number
+  currentAllocation?: number
+  currentRemainingCapacity?: number | null
 }
 
 export interface ResourceSkillItem {

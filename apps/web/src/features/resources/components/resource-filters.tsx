@@ -6,6 +6,12 @@ export interface ResourceFiltersProps {
   filters: ResourceFiltersState
   departments: DepartmentItem[]
   jobRoles: JobRoleItem[]
+  isDepartmentsLoading?: boolean
+  departmentsError?: Error | null
+  onRetryDepartments?: () => void
+  isJobRolesLoading?: boolean
+  jobRolesError?: Error | null
+  onRetryJobRoles?: () => void
   onFilterChange: (updates: Partial<ResourceFiltersState>) => void
   onReset: () => void
 }
@@ -14,6 +20,12 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
   filters,
   departments,
   jobRoles,
+  isDepartmentsLoading = false,
+  departmentsError = null,
+  onRetryDepartments,
+  isJobRolesLoading = false,
+  jobRolesError = null,
+  onRetryJobRoles,
   onFilterChange,
   onReset,
 }): React.JSX.Element => {
@@ -53,16 +65,30 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
 
         {/* Department Filter */}
         <div className="space-y-1.5 text-left">
-          <label htmlFor="resource-department-filter" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-            Departemen
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="resource-department-filter" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+              Departemen
+            </label>
+            {departmentsError && onRetryDepartments && (
+              <button
+                type="button"
+                onClick={onRetryDepartments}
+                className="text-[11px] text-red-400 hover:underline cursor-pointer"
+              >
+                Gagal. Coba lagi
+              </button>
+            )}
+          </div>
           <select
             id="resource-department-filter"
             value={filters.departmentId}
+            disabled={isDepartmentsLoading}
             onChange={(e) => onFilterChange({ departmentId: e.target.value, page: 1 })}
-            className="w-full rounded-lg bg-slate-900/80 border border-slate-700/80 px-3.5 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-lg bg-slate-900/80 border border-slate-700/80 px-3.5 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
           >
-            <option value="">Semua Departemen</option>
+            <option value="">
+              {isDepartmentsLoading ? 'Memuat departemen...' : 'Semua Departemen'}
+            </option>
             {departments.map((dept) => (
               <option key={dept.id} value={dept.id}>
                 {dept.name}
@@ -73,16 +99,30 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
 
         {/* Job Role Filter */}
         <div className="space-y-1.5 text-left">
-          <label htmlFor="resource-role-filter" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-            Peran / Jabatan
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="resource-role-filter" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+              Peran / Jabatan
+            </label>
+            {jobRolesError && onRetryJobRoles && (
+              <button
+                type="button"
+                onClick={onRetryJobRoles}
+                className="text-[11px] text-red-400 hover:underline cursor-pointer"
+              >
+                Gagal. Coba lagi
+              </button>
+            )}
+          </div>
           <select
             id="resource-role-filter"
             value={filters.jobRoleId}
+            disabled={isJobRolesLoading}
             onChange={(e) => onFilterChange({ jobRoleId: e.target.value, page: 1 })}
-            className="w-full rounded-lg bg-slate-900/80 border border-slate-700/80 px-3.5 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-lg bg-slate-900/80 border border-slate-700/80 px-3.5 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
           >
-            <option value="">Semua Peran</option>
+            <option value="">
+              {isJobRolesLoading ? 'Memuat peran...' : 'Semua Peran'}
+            </option>
             {jobRoles.map((role) => (
               <option key={role.id} value={role.id}>
                 {role.name}

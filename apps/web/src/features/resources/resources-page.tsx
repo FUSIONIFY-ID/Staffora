@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client.js'
@@ -8,6 +8,7 @@ import { Alert } from '../../components/ui/alert.js'
 import { Badge } from '../../components/ui/badge.js'
 import { ResourceFilters } from './components/resource-filters.js'
 import { ResourceTable } from './components/resource-table.js'
+import { ResourceErrorAlert } from './components/resource-error-alert.js'
 import { ResourceFormModal, type ResourceFormData } from './components/resource-form-modal.js'
 import type {
   ResourceItem,
@@ -23,21 +24,28 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
   const canManage = user?.role === 'ADMIN' || user?.role === 'RESOURCE_MANAGER'
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const [filters, setFilters] = useState<ResourceFiltersState>(() => ({
-    search: searchParams.get('search') ?? '',
-    departmentId: searchParams.get('departmentId') ?? '',
-    jobRoleId: searchParams.get('jobRoleId') ?? '',
-    status: (searchParams.get('status') as ResourceFiltersState['status']) || 'ALL',
-    page: Number(searchParams.get('page') ?? '1') || 1,
-    pageSize: Number(searchParams.get('pageSize') ?? '20') || 20,
-  }))
+  const filters: ResourceFiltersState = useMemo(
+    () => ({
+      search: searchParams.get('search') ?? '',
+      departmentId: searchParams.get('departmentId') ?? '',
+      jobRoleId: searchParams.get('jobRoleId') ?? '',
+      status: (searchParams.get('status') as ResourceFiltersState['status']) || 'ALL',
+      page: Number(searchParams.get('page') ?? '1') || 1,
+      pageSize: Number(searchParams.get('pageSize') ?? '20') || 20,
+    }),
+    [searchParams],
+  )
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingResource, setEditingResource] = useState<ResourceItem | null>(null)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const updateFilters = (updates: Partial<ResourceFiltersState>): void => {
-    const next = { ...filters, ...updates }
+    const isFilterChange =
+      'search' in updates || 'departmentId' in updates || 'jobRoleId' in updates || 'status' in updates
+    const nextPage = isFilterChange && !('page' in updates) ? 1 : (updates.page ?? filters.page)
+    const next = { ...filters, ...updates, page: nextPage }
+
     const newParams = new URLSearchParams()
     if (next.search) newParams.set('search', next.search)
     if (next.departmentId) newParams.set('departmentId', next.departmentId)
@@ -45,10 +53,9 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
     if (next.status !== 'ALL') newParams.set('status', next.status)
     if (next.page > 1) newParams.set('page', String(next.page))
     setSearchParams(newParams, { replace: true })
-    setFilters(next)
   }
 
-  // 1. Fetch Departments
+  // 1. Fetch Departments with error/loading tracking
   const departmentsQuery = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
@@ -57,7 +64,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
     },
   })
 
-  // 2. Fetch Job Roles
+  // 2. Fetch Job Roles with error/loading tracking
   const jobRolesQuery = useQuery({
     queryKey: ['job-roles'],
     queryFn: async () => {
@@ -103,11 +110,12 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['employees'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      void queryClient.invalidateQueries({ queryKey: ['capacity'] })
       setFeedback({ type: 'success', message: 'Karyawan berhasil ditambahkan ke direktori.' })
     },
   })
 
-  // 5. Update Employee Mutation
+  // 5. Update Employee Mutation - Invalidates specific detail query ['employee', id]
   const updateMutation = useMutation({
     mutationFn: async ({ id, input }: { id: string; input: ResourceFormData }) => {
       return apiClient(`/employees/${id}`, {
@@ -120,9 +128,11 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
         }),
       })
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['employees'] })
+      void queryClient.invalidateQueries({ queryKey: ['employee', variables.id] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      void queryClient.invalidateQueries({ queryKey: ['capacity'] })
       setFeedback({ type: 'success', message: 'Profil karyawan berhasil diperbarui.' })
     },
   })
@@ -147,14 +157,6 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
 
   const handleResetFilters = (): void => {
     setSearchParams(new URLSearchParams(), { replace: true })
-    setFilters({
-      search: '',
-      departmentId: '',
-      jobRoleId: '',
-      status: 'ALL',
-      page: 1,
-      pageSize: 20,
-    })
   }
 
   const resources = employeesQuery.data?.data ?? []
@@ -203,23 +205,22 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
         filters={filters}
         departments={departmentsQuery.data ?? []}
         jobRoles={jobRolesQuery.data ?? []}
+        isDepartmentsLoading={departmentsQuery.isLoading}
+        departmentsError={departmentsQuery.error}
+        onRetryDepartments={() => void departmentsQuery.refetch()}
+        isJobRolesLoading={jobRolesQuery.isLoading}
+        jobRolesError={jobRolesQuery.error}
+        onRetryJobRoles={() => void jobRolesQuery.refetch()}
         onFilterChange={updateFilters}
         onReset={handleResetFilters}
       />
 
-      {/* Error state with retry */}
+      {/* Distinct Error Handling: 403 Forbidden vs Network vs Server */}
       {employeesQuery.isError && (
-        <Alert type="error" title="Gagal Memuat Data">
-          Terjadi kesalahan saat memuat direktori karyawan.{' '}
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-2"
-            onClick={() => void employeesQuery.refetch()}
-          >
-            Coba Lagi
-          </Button>
-        </Alert>
+        <ResourceErrorAlert
+          error={employeesQuery.error}
+          onRetry={() => void employeesQuery.refetch()}
+        />
       )}
 
       {/* Data Table */}
@@ -240,6 +241,12 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
           resourceToEdit={editingResource}
           departments={departmentsQuery.data ?? []}
           jobRoles={jobRolesQuery.data ?? []}
+          isDepartmentsLoading={departmentsQuery.isLoading}
+          departmentsError={departmentsQuery.error}
+          onRetryDepartments={() => void departmentsQuery.refetch()}
+          isJobRolesLoading={jobRolesQuery.isLoading}
+          jobRolesError={jobRolesQuery.error}
+          onRetryJobRoles={() => void jobRolesQuery.refetch()}
           onSubmit={handleFormSubmit}
         />
       )}

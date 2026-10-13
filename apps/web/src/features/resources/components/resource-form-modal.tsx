@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,6 +7,7 @@ import { Button } from '../../../components/ui/button.js'
 import { Input } from '../../../components/ui/input.js'
 import { Alert } from '../../../components/ui/alert.js'
 import { ApiError } from '../../../api/client.js'
+import { FormSelect } from './form-select.js'
 import type { DepartmentItem, JobRoleItem, ResourceItem } from './types.js'
 
 const resourceSchema = z.object({
@@ -32,6 +33,12 @@ export interface ResourceFormModalProps {
   resourceToEdit: ResourceItem | null
   departments: DepartmentItem[]
   jobRoles: JobRoleItem[]
+  isDepartmentsLoading?: boolean
+  departmentsError?: Error | null
+  onRetryDepartments?: () => void
+  isJobRolesLoading?: boolean
+  jobRolesError?: Error | null
+  onRetryJobRoles?: () => void
   onSubmit: (data: ResourceFormData) => Promise<void>
 }
 
@@ -41,6 +48,12 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   resourceToEdit,
   departments,
   jobRoles,
+  isDepartmentsLoading = false,
+  departmentsError = null,
+  onRetryDepartments,
+  isJobRolesLoading = false,
+  jobRolesError = null,
+  onRetryJobRoles,
   onSubmit,
 }): React.JSX.Element => {
   const isEditing = Boolean(resourceToEdit)
@@ -51,27 +64,65 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     register,
     handleSubmit,
     control,
+    reset,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm<ResourceFormData>({
     resolver: zodResolver(resourceSchema),
-    values: resourceToEdit
-      ? {
-          employeeCode: resourceToEdit.employeeCode,
-          fullName: resourceToEdit.fullName,
-          workEmail: resourceToEdit.workEmail,
-          departmentId: resourceToEdit.departmentId,
-          jobRoleId: resourceToEdit.jobRoleId,
-          status: resourceToEdit.status,
-        }
-      : {
-          employeeCode: '',
-          fullName: '',
-          workEmail: '',
-          departmentId: departments[0]?.id ?? '',
-          jobRoleId: jobRoles[0]?.id ?? '',
-          status: 'ACTIVE',
-        },
+    defaultValues: {
+      employeeCode: '',
+      fullName: '',
+      workEmail: '',
+      departmentId: '',
+      jobRoleId: '',
+      status: 'ACTIVE',
+    },
   })
+
+  const isResetDoneRef = React.useRef(false)
+
+  // Initialize form once when modal opens without wiping user edits on subsequent re-renders
+  useEffect(() => {
+    if (isOpen) {
+      if (!isResetDoneRef.current) {
+        if (resourceToEdit) {
+          reset({
+            employeeCode: resourceToEdit.employeeCode,
+            fullName: resourceToEdit.fullName,
+            workEmail: resourceToEdit.workEmail,
+            departmentId: resourceToEdit.departmentId,
+            jobRoleId: resourceToEdit.jobRoleId,
+            status: resourceToEdit.status,
+          })
+        } else {
+          reset({
+            employeeCode: '',
+            fullName: '',
+            workEmail: '',
+            departmentId: departments[0]?.id ?? '',
+            jobRoleId: jobRoles[0]?.id ?? '',
+            status: 'ACTIVE',
+          })
+        }
+        isResetDoneRef.current = true
+      }
+    } else {
+      isResetDoneRef.current = false
+    }
+  }, [isOpen, resourceToEdit, reset, departments, jobRoles])
+
+  // If options load asynchronously after open, populate without wiping other inputs
+  useEffect(() => {
+    if (isOpen && !resourceToEdit) {
+      if (departments.length > 0 && !getValues('departmentId')) {
+        setValue('departmentId', departments[0].id)
+      }
+      if (jobRoles.length > 0 && !getValues('jobRoleId')) {
+        setValue('jobRoleId', jobRoles[0].id)
+      }
+    }
+  }, [isOpen, resourceToEdit, departments, jobRoles, getValues, setValue])
 
   const currentStatus = useWatch({
     control,
@@ -110,6 +161,22 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         {serverError && (
           <Alert type="error" title="Gagal Menyimpan">
             {serverError}
+          </Alert>
+        )}
+
+        {(departmentsError || jobRolesError) && (
+          <Alert type="warning" title="Data Master Belum Lengkap">
+            Gagal memuat opsi departemen atau peran.{' '}
+            {onRetryDepartments && (
+              <Button type="button" size="sm" variant="outline" className="mr-2 mt-1" onClick={onRetryDepartments}>
+                Ulangi Departemen
+              </Button>
+            )}
+            {onRetryJobRoles && (
+              <Button type="button" size="sm" variant="outline" className="mt-1" onClick={onRetryJobRoles}>
+                Ulangi Peran
+              </Button>
+            )}
           </Alert>
         )}
 
@@ -160,52 +227,26 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           </div>
 
           {/* Department */}
-          <div className="w-full space-y-1.5 text-left">
-            <label htmlFor="resource-form-department" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-              Departemen
-            </label>
-            <select
-              id="resource-form-department"
-              className={`w-full rounded-lg bg-slate-900/80 border ${
-                errors.departmentId ? 'border-red-500' : 'border-slate-700/80'
-              } px-3.5 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-              {...register('departmentId')}
-            >
-              <option value="">Pilih Departemen</option>
-              {departments.map((dept) => (
-                <option key={dept.id} value={dept.id}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
-            {errors.departmentId && (
-              <p className="text-xs text-red-400">{errors.departmentId.message}</p>
-            )}
-          </div>
+          <FormSelect
+            id="resource-form-department"
+            label="Departemen"
+            placeholder={isDepartmentsLoading ? 'Memuat departemen...' : 'Pilih Departemen'}
+            options={departments}
+            registration={register('departmentId')}
+            disabled={isDepartmentsLoading}
+            error={errors.departmentId?.message}
+          />
 
           {/* Job Role */}
-          <div className="w-full space-y-1.5 text-left">
-            <label htmlFor="resource-form-role" className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-              Peran / Jabatan
-            </label>
-            <select
-              id="resource-form-role"
-              className={`w-full rounded-lg bg-slate-900/80 border ${
-                errors.jobRoleId ? 'border-red-500' : 'border-slate-700/80'
-              } px-3.5 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-              {...register('jobRoleId')}
-            >
-              <option value="">Pilih Peran</option>
-              {jobRoles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-            {errors.jobRoleId && (
-              <p className="text-xs text-red-400">{errors.jobRoleId.message}</p>
-            )}
-          </div>
+          <FormSelect
+            id="resource-form-role"
+            label="Peran / Jabatan"
+            placeholder={isJobRolesLoading ? 'Memuat peran...' : 'Pilih Peran'}
+            options={jobRoles.map((r) => ({ id: r.id, name: r.title || r.name }))}
+            registration={register('jobRoleId')}
+            disabled={isJobRolesLoading}
+            error={errors.jobRoleId?.message}
+          />
         </div>
 
         {currentStatus === 'INACTIVE' && (
