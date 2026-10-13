@@ -1,15 +1,27 @@
 import { z } from 'zod'
+import { Prisma } from '../../generated/prisma/client.js'
 import { ConflictError, NotFoundError, ValidationError } from '../../common/errors/app-error.js'
+import type { AuthenticatedUser } from '../../common/auth/types.js'
 import {
   createDepartmentSchema,
   createEmployeeSchema,
   createJobRoleSchema,
+  employeeDetailQuerySchema,
+  employeeIdParamsSchema,
   queryEmployeesSchema,
   updateEmployeeSchema,
 } from './workforce.schema.js'
-import type { EmployeeListQuery } from './workforce.schema.js'
+import type { EmployeeDetailQuery, EmployeeListQuery } from './workforce.schema.js'
 import { workforceRepository } from './workforce.repository.js'
-import { toDetailView, toEmployeeView, evaluateRemainingCapacity } from './workforce.views.js'
+import { toDateString } from '../capacity/capacity.service.js'
+import { toDetailView, toEmployeeView } from './workforce.views.js'
+import { workforcePolicy } from './workforce.policy.js'
+import type {
+  CapacityWindow,
+  EmployeeDetail,
+  EmployeeSummaryRecord,
+  EmployeeView,
+} from './workforce.types.js'
 
 const EMPLOYEE_NOT_FOUND = 'Employee profile was not found.'
 
@@ -25,23 +37,58 @@ export function formatZodErrors(error: z.ZodError): Record<string, string[]> {
   return formatted
 }
 
-function parseListQuery(query: unknown): EmployeeListQuery {
-  const result = queryEmployeesSchema.safeParse(query)
+/**
+ * The shared validateQuery/validateParams middleware in
+ * common/validation/validate.ts assigns to req.query / req.params, which
+ * Express 5 exposes as getter-only properties. Every request whose schema
+ * parses successfully therefore fails with a 500. Until that middleware is
+ * fixed, the workforce routes validate in the module and never write back to
+ * the request object.
+ */
+function parseOrThrow<T>(schema: z.ZodType<T>, value: unknown, label: string): T {
+  const result = schema.safeParse(value)
   if (!result.success) {
-    throw new ValidationError('Validation failed for query parameters.', formatZodErrors(result.error))
+    throw new ValidationError(`Validation failed for ${label}.`, formatZodErrors(result.error))
   }
   return result.data
 }
 
-function parseUpdateBody(body: unknown): z.infer<typeof updateEmployeeSchema> {
-  try {
-    return updateEmployeeSchema.parse(body)
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new ValidationError('Validation failed for request body.', formatZodErrors(error))
-    }
-    throw error
+function parseListQuery(query: unknown): EmployeeListQuery {
+  return parseOrThrow(queryEmployeesSchema, query, 'query parameters')
+}
+
+function parseDetailQuery(query: unknown): EmployeeDetailQuery {
+  return parseOrThrow(employeeDetailQuerySchema, query, 'query parameters')
+}
+
+function parseEmployeeId(params: unknown): string {
+  return parseOrThrow(employeeIdParamsSchema, params, 'path parameters').id
+}
+
+/** Default capacity window is the single day of today (AC04.04). */
+function toCapacityWindow(query: EmployeeDetailQuery): CapacityWindow {
+  const today = toDateString(new Date())
+  return {
+    startDate: query.startDate ?? today,
+    endDate: query.endDate ?? query.startDate ?? today,
   }
+}
+
+/**
+ * Maps a Prisma unique-constraint violation to a 409.
+ *
+ * The pre-flight existence checks are not atomic: two concurrent creates with
+ * the same code both pass the check and one of them then violates the
+ * constraint. Without this mapping that race surfaced as HTTP 500.
+ */
+function mapUniqueViolation(error: unknown, fieldCodes: Record<string, string>, message: string): never {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    const target = error.meta?.target
+    const fields = Array.isArray(target) ? target.map(String) : [String(target ?? '')]
+    const matched = fields.map((field) => fieldCodes[field]).find((code) => code !== undefined)
+    throw new ConflictError(message, matched ?? 'DUPLICATE_RESOURCE')
+  }
+  throw error
 }
 
 async function assertReferencesExist(departmentId?: string, jobRoleId?: string): Promise<void> {
@@ -62,35 +109,63 @@ async function assertReferencesExist(departmentId?: string, jobRoleId?: string):
   }
 }
 
+function toSummaryView(employee: EmployeeSummaryRecord): EmployeeView {
+  return toEmployeeView(employee, toDateString(new Date()))
+}
+
 export const workforceService = {
-  async getDepartments(): Promise<Awaited<ReturnType<typeof workforceRepository.listDepartments>>> {
+  async getDepartments(): Promise<Array<{ id: string; name: string; isActive: boolean }>> {
     return workforceRepository.listDepartments()
   },
 
-  async createDepartment(body: unknown, actorId?: string) {
-    const data = createDepartmentSchema.parse(body)
-    return workforceRepository.createDepartment(data.name, actorId)
+  async createDepartment(body: unknown, actorId?: string): Promise<{ id: string; name: string; isActive: boolean }> {
+    const data = parseOrThrow(createDepartmentSchema, body, 'request body')
+
+    // ERD 2.3: department names are unique on a normalised, case-insensitive basis.
+    if (await workforceRepository.findDepartmentByName(data.name)) {
+      throw new ConflictError('A department with this name already exists.', 'DUPLICATE_DEPARTMENT_NAME')
+    }
+
+    try {
+      return await workforceRepository.createDepartment(data.name, actorId)
+    } catch (error) {
+      return mapUniqueViolation(error, { name: 'DUPLICATE_DEPARTMENT_NAME' }, 'A department with this name already exists.')
+    }
   },
 
-  async getJobRoles(): Promise<Awaited<ReturnType<typeof workforceRepository.listJobRoles>>> {
+  async getJobRoles(): Promise<Array<{ id: string; name: string; isActive: boolean }>> {
     return workforceRepository.listJobRoles()
   },
 
-  async createJobRole(body: unknown, actorId?: string) {
-    const data = createJobRoleSchema.parse(body)
-    return workforceRepository.createJobRole(data.name, actorId)
+  async createJobRole(body: unknown, actorId?: string): Promise<{ id: string; name: string; isActive: boolean }> {
+    const data = parseOrThrow(createJobRoleSchema, body, 'request body')
+
+    if (await workforceRepository.findJobRoleByName(data.name)) {
+      throw new ConflictError('A job role with this title already exists.', 'DUPLICATE_JOB_ROLE_NAME')
+    }
+
+    try {
+      return await workforceRepository.createJobRole(data.name, actorId)
+    } catch (error) {
+      return mapUniqueViolation(error, { name: 'DUPLICATE_JOB_ROLE_NAME' }, 'A job role with this title already exists.')
+    }
   },
 
-  async getEmployees(query: unknown) {
+  async getEmployees(query: unknown): Promise<{
+    data: EmployeeView[]
+    total: number
+    page: number
+    pageSize: number
+  }> {
     const { search, departmentId, jobRoleId, status, page, pageSize } = parseListQuery(query)
 
     const searchTerm = search?.trim()
-    const where = {
+    const where: Prisma.EmployeeWhereInput = {
       ...(searchTerm
         ? {
             OR: [
-              { fullName: { contains: searchTerm, mode: 'insensitive' as const } },
-              { employeeCode: { contains: searchTerm, mode: 'insensitive' as const } },
+              { fullName: { contains: searchTerm, mode: 'insensitive' } },
+              { employeeCode: { contains: searchTerm, mode: 'insensitive' } },
             ],
           }
         : {}),
@@ -106,19 +181,16 @@ export const workforceService = {
 
     return {
       // PRD US02.01 - AC01.03 requires a current availability indicator on each
-      // row. evaluateRemainingCapacity is the same helper the detail view uses, so the
-      // indicator and AC04.04 cannot drift apart.
-      data: rows.map((row) =>
-        toEmployeeView(row, evaluateRemainingCapacity(row.allocations).remainingCapacity),
-      ),
+      // row, so the figure comes from allocation effective today.
+      data: rows.map(toSummaryView),
       total,
       page,
       pageSize,
     }
   },
 
-  async createEmployee(body: unknown, actorId?: string) {
-    const data = createEmployeeSchema.parse(body)
+  async createEmployee(body: unknown, actorId?: string): Promise<EmployeeView> {
+    const data = parseOrThrow(createEmployeeSchema, body, 'request body')
     const workEmail = data.workEmail.toLowerCase()
 
     const [byCode, byEmail] = await Promise.all([
@@ -135,34 +207,54 @@ export const workforceService = {
 
     await assertReferencesExist(data.departmentId, data.jobRoleId)
 
-    const employee = await workforceRepository.createEmployee({
-      employeeCode: data.employeeCode,
-      fullName: data.fullName,
-      workEmail,
-      departmentId: data.departmentId,
-      jobRoleId: data.jobRoleId,
-      status: data.status,
-      createdBy: actorId,
-    })
-
-    return toEmployeeView(employee, evaluateRemainingCapacity(employee.allocations).remainingCapacity)
-  },
-
-  async getEmployeeDetail(id: string) {
-    const employee = await workforceRepository.findEmployeeDetail(id)
-    if (!employee) {
-      return null
+    try {
+      const employee = await workforceRepository.createEmployee({
+        employeeCode: data.employeeCode,
+        fullName: data.fullName,
+        workEmail,
+        departmentId: data.departmentId,
+        jobRoleId: data.jobRoleId,
+        status: data.status,
+        createdBy: actorId,
+      })
+      return toSummaryView(employee)
+    } catch (error) {
+      return mapUniqueViolation(
+        error,
+        { employeeCode: 'DUPLICATE_EMPLOYEE_CODE', workEmail: 'DUPLICATE_WORK_EMAIL' },
+        'An employee with this code or work email already exists.',
+      )
     }
-    return toDetailView(employee)
   },
 
-  async updateEmployee(id: string, body: unknown, actorId?: string) {
+  async getEmployeeDetail(
+    params: unknown,
+    query: unknown,
+    user: AuthenticatedUser,
+  ): Promise<EmployeeDetail> {
+    const id = parseEmployeeId(params)
+    const window = toCapacityWindow(parseDetailQuery(query))
+
+    const employee = await workforceRepository.findEmployeeDetail(id)
+
+    // A missing record and a record the caller may not see both answer 404, so
+    // the response cannot be used to enumerate employee IDs.
+    if (!employee) {
+      throw new NotFoundError(EMPLOYEE_NOT_FOUND)
+    }
+    workforcePolicy.assertCanViewEmployee(user, employee.id)
+
+    return toDetailView(employee, window)
+  },
+
+  async updateEmployee(params: unknown, body: unknown, actorId?: string): Promise<EmployeeView> {
+    const id = parseEmployeeId(params)
     const existing = await workforceRepository.findEmployeeById(id)
     if (!existing) {
       throw new NotFoundError(EMPLOYEE_NOT_FOUND)
     }
 
-    const data = parseUpdateBody(body)
+    const data = parseOrThrow(updateEmployeeSchema, body, 'request body')
     await assertReferencesExist(data.departmentId, data.jobRoleId)
 
     const updated = await workforceRepository.updateEmployee(id, {
@@ -173,6 +265,6 @@ export const workforceService = {
       updatedBy: actorId,
     })
 
-    return toEmployeeView(updated, evaluateRemainingCapacity(updated.allocations).remainingCapacity)
+    return toSummaryView(updated)
   },
 }

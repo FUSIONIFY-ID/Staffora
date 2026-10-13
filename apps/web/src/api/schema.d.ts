@@ -565,7 +565,12 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description First day of the capacity evaluation window (US02.01 - AC04.04). Defaults to today. When only startDate is given the window is that single day. */
+                    startDate?: string;
+                    /** @description Last day of the capacity evaluation window, inclusive. Defaults to startDate, or to today when startDate is also absent. Must not be before startDate. */
+                    endDate?: string;
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -585,8 +590,8 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Employee attempting to read another employee's profile */
-                403: {
+                /** @description Employee not found, or a record the caller may not see. An EMPLOYEE requesting another employee's profile receives the same 404 as an unknown id, so the response cannot be used to enumerate employee ids. */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -594,8 +599,8 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Employee not found */
-                404: {
+                /** @description Malformed employee id, or an invalid capacity date range */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1535,13 +1540,15 @@ export interface components {
             workEmail: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
+            /** @description Sum of the allocation percentage that is effective today: not cancelled, and today falls inside the inclusive start and end date. This is the figure behind the current availability indicator required by US02.01 - AC01.03. */
+            currentAllocation: number;
+            /** @description 100 minus currentAllocation, floored at 0. */
+            currentRemainingCapacity: number;
             /**
-             * @description Current availability for US02.01 - AC01.03. NOT_ASSIGNABLE is reported for INACTIVE employees per US05.01 - AC03.04. AVAILABLE, PARTIAL and FULLY_ALLOCATED follow US05.01 - AC03.01 to AC03.03.
+             * @description Current availability for US02.01 - AC01.03, derived from currentRemainingCapacity. NOT_ASSIGNABLE is reported for INACTIVE employees per US05.01 - AC03.04. AVAILABLE, PARTIAL and FULLY_ALLOCATED follow US05.01 - AC03.01 to AC03.03.
              * @enum {string}
              */
             availability: "AVAILABLE" | "PARTIAL" | "FULLY_ALLOCATED" | "NOT_ASSIGNABLE";
-            /** @description 100 minus peak concurrent allocation from today to the latest known allocation end date, using the shared capacity engine. */
-            remainingCapacity: number;
             /** Format: uuid */
             departmentId: string;
             departmentName: string;
@@ -1566,6 +1573,15 @@ export interface components {
             };
             skills?: components["schemas"]["EmployeeSkill"][];
             allocations?: components["schemas"]["EmployeeAllocation"][];
+            /** @description Top-level window result retained from the approved contract in dev. capacitySummary carries the same window plus activeAllocation and hasCapacityConflict. */
+            evaluatedPeriod?: {
+                /** Format: date */
+                startDate: string;
+                /** Format: date */
+                endDate: string;
+                peakConcurrentAllocation: number;
+                remainingCapacity: number;
+            };
             capacitySummary?: components["schemas"]["EmployeeCapacitySummary"];
         };
         EmployeeListResponse: {

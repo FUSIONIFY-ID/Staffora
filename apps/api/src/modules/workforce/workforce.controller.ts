@@ -1,13 +1,25 @@
 import type { Request, Response, NextFunction } from 'express'
 import { sendCreated, sendList, sendSuccess } from '../../common/http/response.js'
-import { ForbiddenError, NotFoundError } from '../../common/errors/app-error.js'
+import { UnauthorizedError } from '../../common/errors/app-error.js'
+import type { AuthenticatedUser } from '../../common/auth/types.js'
 import { workforceService } from './workforce.service.js'
+
+/**
+ * `requireAuth()` on every workforce route guarantees an authenticated user.
+ * The narrowing lives here so the service can take a non-optional user and
+ * keep authorization decisions in workforce.policy.ts.
+ */
+function requireUser(req: Request): AuthenticatedUser {
+  if (!req.user) {
+    throw new UnauthorizedError()
+  }
+  return req.user
+}
 
 export const workforceController = {
   async getDepartments(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const items = await workforceService.getDepartments()
-      sendSuccess(res, items)
+      sendSuccess(res, await workforceService.getDepartments())
     } catch (err) {
       next(err)
     }
@@ -15,7 +27,7 @@ export const workforceController = {
 
   async createDepartment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.createDepartment(req.body, req.user?.id)
+      const item = await workforceService.createDepartment(req.body, requireUser(req).id)
       sendCreated(res, item)
     } catch (err) {
       next(err)
@@ -24,8 +36,7 @@ export const workforceController = {
 
   async getJobRoles(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const items = await workforceService.getJobRoles()
-      sendSuccess(res, items)
+      sendSuccess(res, await workforceService.getJobRoles())
     } catch (err) {
       next(err)
     }
@@ -33,7 +44,7 @@ export const workforceController = {
 
   async createJobRole(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.createJobRole(req.body, req.user?.id)
+      const item = await workforceService.createJobRole(req.body, requireUser(req).id)
       sendCreated(res, item)
     } catch (err) {
       next(err)
@@ -55,7 +66,7 @@ export const workforceController = {
 
   async createEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.createEmployee(req.body, req.user?.id)
+      const item = await workforceService.createEmployee(req.body, requireUser(req).id)
       sendCreated(res, item)
     } catch (err) {
       next(err)
@@ -64,15 +75,7 @@ export const workforceController = {
 
   async getEmployeeDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.getEmployeeDetail(req.params.id as string)
-      if (!item) {
-        throw new NotFoundError('Employee profile was not found.')
-      }
-
-      if (req.user?.role === 'EMPLOYEE' && req.user.employeeId !== item.id) {
-        throw new ForbiddenError('You may only view your own employee profile.')
-      }
-
+      const item = await workforceService.getEmployeeDetail(req.params, req.query, requireUser(req))
       sendSuccess(res, item)
     } catch (err) {
       next(err)
@@ -81,7 +84,7 @@ export const workforceController = {
 
   async updateEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.updateEmployee(req.params.id as string, req.body, req.user?.id)
+      const item = await workforceService.updateEmployee(req.params, req.body, requireUser(req).id)
       sendSuccess(res, item)
     } catch (err) {
       next(err)

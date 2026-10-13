@@ -1,44 +1,38 @@
 import { Router } from 'express'
 import { workforceController } from './workforce.controller.js'
-import { validateBody } from '../../common/validation/validate.js'
-import {
-  createDepartmentSchema,
-  createJobRoleSchema,
-  createEmployeeSchema,
-  updateEmployeeSchema,
-} from './workforce.schema.js'
 import { requireAuth, requireRole } from '../../common/auth/rbac.js'
+
+/**
+ * Workforce routes carry authentication and role gating only. Body, query, and
+ * path-parameter validation happens inside the module service, because the
+ * shared validate* middleware in common/validation/validate.ts assigns to
+ * req.query / req.params, which Express 5 exposes as getter-only and which
+ * turns a valid request into a 500.
+ */
 
 // Departments Router
 export const departmentsRouter = Router()
 departmentsRouter.use(requireAuth())
 departmentsRouter.get('/', workforceController.getDepartments)
-departmentsRouter.post(
-  '/',
-  requireRole('ADMIN'),
-  validateBody(createDepartmentSchema),
-  workforceController.createDepartment,
-)
+departmentsRouter.post('/', requireRole('ADMIN'), workforceController.createDepartment)
 
 // Job Roles Router
 export const jobRolesRouter = Router()
 jobRolesRouter.use(requireAuth())
 jobRolesRouter.get('/', workforceController.getJobRoles)
-jobRolesRouter.post(
-  '/',
-  requireRole('ADMIN'),
-  validateBody(createJobRoleSchema),
-  workforceController.createJobRole,
-)
+jobRolesRouter.post('/', requireRole('ADMIN'), workforceController.createJobRole)
 
 // Employees Router
 export const employeesRouter = Router()
 employeesRouter.use(requireAuth())
-employeesRouter.get('/', requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'), workforceController.getEmployees)
+employeesRouter.get(
+  '/',
+  requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'),
+  workforceController.getEmployees,
+)
 employeesRouter.post(
   '/',
   requireRole('ADMIN', 'RESOURCE_MANAGER'),
-  validateBody(createEmployeeSchema),
   workforceController.createEmployee,
 )
 employeesRouter.get(
@@ -49,6 +43,5 @@ employeesRouter.get(
 employeesRouter.patch(
   '/:id',
   requireRole('ADMIN', 'RESOURCE_MANAGER'),
-  validateBody(updateEmployeeSchema),
   workforceController.updateEmployee,
 )

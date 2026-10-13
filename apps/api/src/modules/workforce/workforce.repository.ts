@@ -1,10 +1,22 @@
 import { Prisma } from '../../generated/prisma/client.js'
 import { prisma } from '../../common/database/prisma.js'
 
+/**
+ * Projection for list rows.
+ *
+ * The list only needs capacity that is effective today (PRD US02.01 -
+ * AC01.03), so cancelled and already-ended allocations are excluded in the
+ * query rather than fetched and discarded in memory. Detail responses use
+ * employeeDetailInclude, which keeps the full history for AC04.04.
+ */
 export const employeeSummaryInclude = {
   department: { select: { id: true, name: true } },
   jobRole: { select: { id: true, name: true } },
   allocations: {
+    where: {
+      cancelledAt: null,
+      endDate: { gte: new Date() },
+    },
     select: {
       id: true,
       allocationPercentage: true,
@@ -47,8 +59,26 @@ export const workforceRepository = {
     return prisma.department.findUnique({ where: { id }, select: { id: true, name: true } })
   },
 
+  /**
+   * Case-insensitive lookup used to enforce the normalised uniqueness rule for
+   * department names (docs/database/erd.md 2.3).
+   */
+  findDepartmentByName(name: string): Promise<{ id: string } | null> {
+    return prisma.department.findFirst({
+      where: { name: { equals: name, mode: 'insensitive' } },
+      select: { id: true },
+    })
+  },
+
   findJobRoleById(id: string): Promise<{ id: string; name: string } | null> {
     return prisma.jobRole.findUnique({ where: { id }, select: { id: true, name: true } })
+  },
+
+  findJobRoleByName(name: string): Promise<{ id: string } | null> {
+    return prisma.jobRole.findFirst({
+      where: { name: { equals: name, mode: 'insensitive' } },
+      select: { id: true },
+    })
   },
 
   listDepartments(): Promise<Array<{ id: string; name: string; isActive: boolean }>> {
@@ -67,14 +97,14 @@ export const workforceRepository = {
     })
   },
 
-  createDepartment(name: string, actorId?: string) {
+  createDepartment(name: string, actorId?: string): Promise<{ id: string; name: string; isActive: boolean }> {
     return prisma.department.create({
       data: { name, createdBy: actorId },
       select: { id: true, name: true, isActive: true },
     })
   },
 
-  createJobRole(name: string, actorId?: string) {
+  createJobRole(name: string, actorId?: string): Promise<{ id: string; name: string; isActive: boolean }> {
     return prisma.jobRole.create({
       data: { name, createdBy: actorId },
       select: { id: true, name: true, isActive: true },

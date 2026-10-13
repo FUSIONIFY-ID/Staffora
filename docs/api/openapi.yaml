@@ -308,6 +308,20 @@ paths:
           in: path
           required: true
           schema: { type: string, format: uuid }
+        - name: startDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: >-
+            First day of the capacity evaluation window (US02.01 - AC04.04). Defaults to
+            today. When only startDate is given the window is that single day.
+        - name: endDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: >-
+            Last day of the capacity evaluation window, inclusive. Defaults to startDate,
+            or to today when startDate is also absent. Must not be before startDate.
       responses:
         '200':
           description: Employee detail with skills, allocations, and capacity
@@ -318,14 +332,17 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/EmployeeDetail'
-        '403':
-          description: Employee attempting to read another employee's profile
+        '404':
+          description: >-
+            Employee not found, or a record the caller may not see. An EMPLOYEE requesting
+            another employee's profile receives the same 404 as an unknown id, so the
+            response cannot be used to enumerate employee ids.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Employee not found
+        '422':
+          description: Malformed employee id, or an invalid capacity date range
           content:
             application/json:
               schema:
@@ -969,25 +986,30 @@ components:
 
     Employee:
       type: object
-      required: [id, employeeCode, fullName, workEmail, departmentId, departmentName, jobRoleId, jobRoleTitle, status, availability, remainingCapacity, createdAt, updatedAt]
+      required: [id, employeeCode, fullName, workEmail, departmentId, departmentName, jobRoleId, jobRoleTitle, status, currentAllocation, currentRemainingCapacity, availability, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         employeeCode: { type: string }
         fullName: { type: string }
         workEmail: { type: string }
         status: { type: string, enum: [ACTIVE, INACTIVE] }
+        currentAllocation:
+          type: integer
+          description: >-
+            Sum of the allocation percentage that is effective today: not cancelled, and
+            today falls inside the inclusive start and end date. This is the figure behind
+            the current availability indicator required by US02.01 - AC01.03.
+        currentRemainingCapacity:
+          type: integer
+          description: 100 minus currentAllocation, floored at 0.
         availability:
           type: string
           enum: [AVAILABLE, PARTIAL, FULLY_ALLOCATED, NOT_ASSIGNABLE]
           description: >-
-            Current availability for US02.01 - AC01.03. NOT_ASSIGNABLE is reported for
-            INACTIVE employees per US05.01 - AC03.04. AVAILABLE, PARTIAL and
-            FULLY_ALLOCATED follow US05.01 - AC03.01 to AC03.03.
-        remainingCapacity:
-          type: integer
-          description: >-
-            100 minus peak concurrent allocation from today to the latest known
-            allocation end date, using the shared capacity engine.
+            Current availability for US02.01 - AC01.03, derived from
+            currentRemainingCapacity. NOT_ASSIGNABLE is reported for INACTIVE employees
+            per US05.01 - AC03.04. AVAILABLE, PARTIAL and FULLY_ALLOCATED follow
+            US05.01 - AC03.01 to AC03.03.
         departmentId: { type: string, format: uuid }
         departmentName: { type: string }
         jobRoleId: { type: string, format: uuid }
@@ -1018,6 +1040,18 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/EmployeeAllocation'
+            evaluatedPeriod:
+              type: object
+              description: >-
+                Top-level window result retained from the approved contract in dev.
+                capacitySummary carries the same window plus activeAllocation and
+                hasCapacityConflict.
+              required: [startDate, endDate, peakConcurrentAllocation, remainingCapacity]
+              properties:
+                startDate: { type: string, format: date }
+                endDate: { type: string, format: date }
+                peakConcurrentAllocation: { type: integer }
+                remainingCapacity: { type: integer }
             capacitySummary:
               $ref: '#/components/schemas/EmployeeCapacitySummary'
 

@@ -1,51 +1,75 @@
 import { evaluateCapacity, toDateString } from '../capacity/capacity.service.js'
 import type { AllocationInterval } from '../capacity/capacity.types.js'
-import type { EmployeeDetailRecord, EmployeeCapacitySummary, EmployeeSkillView } from './workforce.types.js'
-import type { EmployeeSummaryRecord } from './workforce.types.js'
+import type {
+  EmployeeDetailRecord,
+  EmployeeDetail,
+  EmployeeView,
+  EmployeeSummaryRecord,
+  EmployeeCapacitySummary,
+  EmployeeSkillView,
+  AvailabilityState,
+  CapacityWindow,
+} from './workforce.types.js'
 
-export interface EmployeeView {
+export type { AvailabilityState } from './workforce.types.js'
+
+interface AllocationLike {
   id: string
-  employeeCode: string
-  fullName: string
-  workEmail: string
-  status: string
-  availability: AvailabilityState
-  remainingCapacity: number
-  departmentId: string
-  departmentName: string
-  jobRoleId: string
-  jobRoleTitle: string
-  createdAt: string
-  updatedAt: string
+  allocationPercentage: number
+  startDate: Date
+  endDate: Date
+  cancelledAt: Date | null
 }
 
-export type AvailabilityState = 'AVAILABLE' | 'PARTIAL' | 'FULLY_ALLOCATED' | 'NOT_ASSIGNABLE'
+/**
+ * Allocation that is effective today: not cancelled, and today falls inside the
+ * inclusive start/end range.
+ *
+ * PRD US02.01 - AC01.03 asks for a *current* availability indicator, so this is
+ * the figure the list must show. The window peak computed by
+ * evaluateCapacityWindow is a separate, forward-looking figure used by the
+ * detail view (AC04.04) and must not drive the list indicator.
+ */
+export function computeCurrentAllocation(
+  allocations: ReadonlyArray<AllocationLike>,
+  referenceDate: string,
+): number {
+  return allocations
+    .filter(
+      (allocation) =>
+        allocation.cancelledAt === null &&
+        toDateString(allocation.startDate) <= referenceDate &&
+        toDateString(allocation.endDate) >= referenceDate,
+    )
+    .reduce((sum, allocation) => sum + allocation.allocationPercentage, 0)
+}
 
 /**
- * Maps remaining capacity onto the availability states required by PRD US05.01 - AC03.
- * Inactive employees are reported as NOT_ASSIGNABLE so the list can satisfy
- * US02.01 - AC01.03, which requires a current availability indicator, and
- * US05.01 - AC03.04, which requires inactive employees to be visibly distinguished.
+ * Maps capacity that is effective today onto the availability states of PRD
+ * US05.01 - AC03. Inactive employees are reported NOT_ASSIGNABLE so the list
+ * also satisfies US05.01 - AC03.04, which requires inactive employees to be
+ * visibly distinguished.
  */
-export function toAvailabilityState(status: string, remainingCapacity: number): AvailabilityState {
+export function toAvailabilityState(status: string, currentRemainingCapacity: number): AvailabilityState {
   if (status !== 'ACTIVE') return 'NOT_ASSIGNABLE'
-  if (remainingCapacity <= 0) return 'FULLY_ALLOCATED'
-  if (remainingCapacity >= 100) return 'AVAILABLE'
+  if (currentRemainingCapacity <= 0) return 'FULLY_ALLOCATED'
+  if (currentRemainingCapacity >= 100) return 'AVAILABLE'
   return 'PARTIAL'
 }
 
-export function toEmployeeView(
-  employee: EmployeeSummaryRecord,
-  remainingCapacity: number,
-): EmployeeView {
+export function toEmployeeView(employee: EmployeeSummaryRecord, referenceDate: string): EmployeeView {
+  const currentAllocation = computeCurrentAllocation(employee.allocations, referenceDate)
+  const currentRemainingCapacity = Math.max(0, 100 - currentAllocation)
+
   return {
     id: employee.id,
     employeeCode: employee.employeeCode,
     fullName: employee.fullName,
     workEmail: employee.workEmail,
     status: employee.status,
-    availability: toAvailabilityState(employee.status, remainingCapacity),
-    remainingCapacity,
+    currentAllocation,
+    currentRemainingCapacity,
+    availability: toAvailabilityState(employee.status, currentRemainingCapacity),
     departmentId: employee.departmentId,
     departmentName: employee.department.name,
     jobRoleId: employee.jobRoleId,
@@ -76,21 +100,13 @@ function resolveAllocationDisplayStatus(
 }
 
 /**
- * Sweep-line evaluation of remaining capacity from today until the latest known
- * allocation end date, using the shared capacity engine in
- * apps/api/src/modules/capacity (TSD Section 10).
- *
- * Accepts only the fields the engine needs, so the list endpoint can pass its
- * lighter allocation projection while the detail view passes its full records.
+ * Sweep-line evaluation of capacity over an explicit window, using the shared
+ * engine in apps/api/src/modules/capacity (TSD Section 10). This is the
+ * forward-looking figure required by PRD US02.01 - AC04.04.
  */
-export function evaluateRemainingCapacity(
-  allocations: ReadonlyArray<{
-    id: string
-    allocationPercentage: number
-    startDate: Date
-    endDate: Date
-    cancelledAt: Date | null
-  }>,
+export function evaluateCapacityWindow(
+  allocations: ReadonlyArray<AllocationLike>,
+  window: CapacityWindow,
 ): EmployeeCapacitySummary {
   const intervals: AllocationInterval[] = allocations.map((allocation) => ({
     id: allocation.id,
@@ -100,22 +116,22 @@ export function evaluateRemainingCapacity(
     cancelledAt: allocation.cancelledAt,
   }))
 
-  const referenceDate = toDateString(new Date())
-  const horizonEnd = intervals.map((interval) => interval.endDate).sort((a, b) => b.localeCompare(a))[0]
   const evaluation = evaluateCapacity(intervals, {
-    startDate: referenceDate,
-    endDate: horizonEnd && horizonEnd > referenceDate ? horizonEnd : referenceDate,
+    startDate: window.startDate,
+    endDate: window.endDate,
   })
 
   const activeAllocation = intervals
-    .filter((interval) => interval.cancelledAt === null && interval.startDate <= referenceDate && interval.endDate >= referenceDate)
+    .filter(
+      (interval) =>
+        interval.cancelledAt === null &&
+        interval.startDate <= window.endDate &&
+        interval.endDate >= window.startDate,
+    )
     .reduce((sum, interval) => sum + interval.allocationPercentage, 0)
 
   return {
-    evaluatedPeriod: {
-      startDate: referenceDate,
-      endDate: horizonEnd && horizonEnd > referenceDate ? horizonEnd : referenceDate,
-    },
+    evaluatedPeriod: { startDate: window.startDate, endDate: window.endDate },
     activeAllocation,
     peakConcurrentAllocation: evaluation.peakAllocation,
     remainingCapacity: evaluation.remainingCapacity,
@@ -123,19 +139,12 @@ export function evaluateRemainingCapacity(
   }
 }
 
-/** Employee detail capacity summary, PRD US02.01 - AC04.04. */
-export function summarizeCapacity(allocations: EmployeeDetailRecord['allocations']) {
-  return evaluateRemainingCapacity(allocations)
-}
-
-export function toDetailView(employee: EmployeeDetailRecord) {
+export function toDetailView(employee: EmployeeDetailRecord, window: CapacityWindow): EmployeeDetail {
   const referenceDate = toDateString(new Date())
+  const capacitySummary = evaluateCapacityWindow(employee.allocations, window)
 
   return {
-    // AC04.04: show allocation effective today, or peak concurrent allocation
-    // and remaining capacity for a selected date range. summarizeCapacity
-    // evaluates from today to the latest allocation end date.
-    ...toEmployeeView(employee, summarizeCapacity(employee.allocations).remainingCapacity),
+    ...toEmployeeView(employee, referenceDate),
     department: { id: employee.department.id, name: employee.department.name },
     jobRole: { id: employee.jobRole.id, name: employee.jobRole.name },
     skills: employee.skills.map(toSkillView),
@@ -152,6 +161,15 @@ export function toDetailView(employee: EmployeeDetailRecord) {
       displayStatus: resolveAllocationDisplayStatus(allocation, referenceDate),
       cancelledAt: allocation.cancelledAt ? allocation.cancelledAt.toISOString() : null,
     })),
-    capacitySummary: summarizeCapacity(employee.allocations),
+    // Retained from the approved contract in dev: the window result at the top
+    // level. capacitySummary carries the same window plus the extra
+    // activeAllocation and hasCapacityConflict fields.
+    evaluatedPeriod: {
+      startDate: capacitySummary.evaluatedPeriod.startDate,
+      endDate: capacitySummary.evaluatedPeriod.endDate,
+      peakConcurrentAllocation: capacitySummary.peakConcurrentAllocation,
+      remainingCapacity: capacitySummary.remainingCapacity,
+    },
+    capacitySummary,
   }
 }
