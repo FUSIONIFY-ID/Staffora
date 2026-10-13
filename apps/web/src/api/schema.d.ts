@@ -910,6 +910,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/staffing-requirements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update staffing requirement
+         * @description Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateStaffingRequirementInput"];
+                };
+            };
+            responses: {
+                /** @description Staffing requirement updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["StaffingRequirement"];
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/allocations": {
         parameters: {
             query?: never;
@@ -1510,6 +1557,21 @@ export interface components {
             startDate: string;
             /** Format: date */
             endDate: string;
+            skills?: {
+                /** Format: uuid */
+                skillId: string;
+                minimumProficiencyLevel: number;
+            }[];
+        };
+        UpdateStaffingRequirementInput: {
+            /** Format: uuid */
+            jobRoleId?: string;
+            headcount?: number;
+            allocationPercentage?: number;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            endDate?: string;
             skills?: {
                 /** Format: uuid */
                 skillId: string;

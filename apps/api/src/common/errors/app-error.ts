@@ -76,3 +76,10 @@ export class RateLimitError extends AppError {
     super(message, 429, 'RATE_LIMITED')
   }
 }
+
+export class NotImplementedError extends AppError {
+  constructor(message = 'Feature not implemented.') {
+    super(message, 501, 'NOT_IMPLEMENTED')
+  }
+}
+

@@ -81,6 +81,43 @@ export const staffingRepository = {
       updatedBy?: string
     },
   ) {
+    if (data.skills !== undefined) {
+      return prisma.$transaction(async (tx) => {
+        await tx.staffingRequirementSkill.deleteMany({
+          where: { staffingRequirementId: id },
+        })
+
+        return tx.staffingRequirement.update({
+          where: { id },
+          data: {
+            ...(data.jobRoleId ? { jobRoleId: data.jobRoleId } : {}),
+            ...(data.headcount !== undefined ? { headcount: data.headcount } : {}),
+            ...(data.allocationPercentage !== undefined ? { allocationPercentage: data.allocationPercentage } : {}),
+            ...(data.startDate ? { startDate: data.startDate } : {}),
+            ...(data.endDate ? { endDate: data.endDate } : {}),
+            ...(data.updatedBy ? { updatedBy: data.updatedBy } : {}),
+            ...(data.skills && data.skills.length > 0
+              ? {
+                  skills: {
+                    create: data.skills.map((s) => ({
+                      skillId: s.skillId,
+                      minimumProficiencyLevel: s.minimumProficiencyLevel,
+                    })),
+                  },
+                }
+              : {}),
+          },
+          include: {
+            skills: {
+              include: {
+                skill: true,
+              },
+            },
+          },
+        })
+      })
+    }
+
     return prisma.staffingRequirement.update({
       where: { id },
       data: {
@@ -98,12 +135,6 @@ export const staffingRepository = {
           },
         },
       },
-    })
-  },
-
-  async delete(id: string) {
-    return prisma.staffingRequirement.delete({
-      where: { id },
     })
   },
 }

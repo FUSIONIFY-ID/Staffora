@@ -1,7 +1,7 @@
 import type { AuthenticatedUser } from '../../common/auth/types.js'
 import { staffingRepository } from './staffing.repository.js'
 import { staffingPolicy } from './staffing.policy.js'
-import { NotFoundError } from '../../common/errors/app-error.js'
+import { NotFoundError, NotImplementedError } from '../../common/errors/app-error.js'
 import type {
   CreateStaffingRequirementInput,
   UpdateStaffingRequirementInput,
@@ -61,18 +61,8 @@ export const staffingService = {
     })
   },
 
-  async deleteRequirement(id: string, user: AuthenticatedUser) {
-    const requirement = await staffingRepository.findById(id)
-    if (!requirement) {
-      throw new NotFoundError('Staffing requirement not found.')
-    }
-    staffingPolicy.assertCanManage(
-      user,
-      requirement.project.projectManagerEmployeeId,
-      'Staffing requirement not found.',
-    )
-
-    await staffingRepository.delete(id)
+  async deleteRequirement(_id: string, _user: AuthenticatedUser) {
+    throw new NotImplementedError('Staffing requirement deletion is not implemented in Sprint 1.')
   },
 }
 

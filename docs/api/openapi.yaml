@@ -497,6 +497,32 @@ paths:
                   data:
                     $ref: '#/components/schemas/StaffingRequirement'
 
+  /staffing-requirements/{id}:
+    patch:
+      summary: Update staffing requirement
+      description: Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStaffingRequirementInput'
+      responses:
+        '200':
+          description: Staffing requirement updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StaffingRequirement'
+
   /allocations:
     get:
       summary: List allocations
@@ -957,6 +983,23 @@ components:
     CreateStaffingRequirementInput:
       type: object
       required: [jobRoleId, headcount, allocationPercentage, startDate, endDate]
+      properties:
+        jobRoleId: { type: string, format: uuid }
+        headcount: { type: integer, minimum: 1 }
+        allocationPercentage: { type: integer, minimum: 1, maximum: 100 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        skills:
+          type: array
+          items:
+            type: object
+            required: [skillId, minimumProficiencyLevel]
+            properties:
+              skillId: { type: string, format: uuid }
+              minimumProficiencyLevel: { type: integer, minimum: 1, maximum: 5 }
+
+    UpdateStaffingRequirementInput:
+      type: object
       properties:
         jobRoleId: { type: string, format: uuid }
         headcount: { type: integer, minimum: 1 }

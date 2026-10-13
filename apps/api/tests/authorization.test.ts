@@ -55,6 +55,7 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
   let otherPmStaffingRequirementId: string
   let rolePMId: string
   let deptId: string
+  let pmEmployeeId: string
 
   let createdEmployeeId: string | null = null
   let createdProjectId: string | null = null
@@ -96,7 +97,7 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
     otherEmployeeId = emp4.id
 
     const testSuffix = Date.now().toString()
-    const pmEmployeeId = pmRes.body.data.user.employeeId
+    pmEmployeeId = pmRes.body.data.user.employeeId
 
     // 3. Create dedicated PM test project (Safe fixture: prevents mutating seeded PRJ-STAFFORA-01)
     const ownProj = await prisma.project.create({
@@ -543,13 +544,13 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(res.body.code).toBe('NOT_FOUND')
     })
 
-    it('returns HTTP 404 when deleting non-existent staffing requirement', async () => {
+    it('returns HTTP 501 when attempting to delete staffing requirement', async () => {
       const res = await request(app)
         .delete('/api/v1/staffing-requirements/00000000-0000-0000-0000-000000000000')
         .set('Cookie', pmCookie)
         .set('X-CSRF-Token', pmCsrf)
-      expect(res.status).toBe(404)
-      expect(res.body.code).toBe('NOT_FOUND')
+      expect(res.status).toBe(501)
+      expect(res.body.code).toBe('NOT_IMPLEMENTED')
     })
 
     it('allows querying projects list and project detail', async () => {
@@ -607,15 +608,6 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       expect(res.body.code).toBe('NOT_FOUND')
     })
 
-    it('disallows PROJECT_MANAGER from deleting staffing requirement in another PM project (HTTP 404)', async () => {
-      const res = await request(app)
-        .delete(`/api/v1/staffing-requirements/${otherPmStaffingRequirementId}`)
-        .set('Cookie', pmCookie)
-        .set('X-CSRF-Token', pmCsrf)
-      expect(res.status).toBe(404)
-      expect(res.body.code).toBe('NOT_FOUND')
-    })
-
     it('allows PROJECT_MANAGER to create staffing requirement in their own project (HTTP 201)', async () => {
       const res = await request(app)
         .post(`/api/v1/projects/${pmOwnProjectId}/staffing-requirements`)
@@ -640,7 +632,11 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
     })
 
     it('allows PROJECT_MANAGER to update and delete staffing requirement in their own project', async () => {
-      // 1. Create requirement in own project
+      const skills = await prisma.skill.findMany({ take: 2 })
+      const skill1 = skills[0]
+      const skill2 = skills[1]
+
+      // 1. Create requirement in own project with initial skill
       const reqRes = await request(app)
         .post(`/api/v1/projects/${pmOwnProjectId}/staffing-requirements`)
         .set('Cookie', pmCookie)
@@ -651,30 +647,56 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
           allocationPercentage: 80,
           startDate: '2026-11-01',
           endDate: '2026-12-31',
+          skills: skill1 ? [{ skillId: skill1.id, minimumProficiencyLevel: 3 }] : undefined,
         })
       expect(reqRes.status).toBe(201)
+      expect(reqRes.body.meta).toBeUndefined()
       const reqId = reqRes.body.data.id
 
-      // 2. Update requirement and verify DB mutation
+      if (skill1) {
+        const initialSkills = await prisma.staffingRequirementSkill.findMany({
+          where: { staffingRequirementId: reqId },
+        })
+        expect(initialSkills).toHaveLength(1)
+        expect(initialSkills[0]?.skillId).toBe(skill1.id)
+        expect(initialSkills[0]?.minimumProficiencyLevel).toBe(3)
+      }
+
+      // 2. Update requirement including skills and verify DB mutation
       const updateRes = await request(app)
         .patch(`/api/v1/staffing-requirements/${reqId}`)
         .set('Cookie', pmCookie)
         .set('X-CSRF-Token', pmCsrf)
-        .send({ headcount: 5, startDate: '2026-11-05', endDate: '2026-12-25' })
+        .send({
+          headcount: 5,
+          startDate: '2026-11-05',
+          endDate: '2026-12-25',
+          skills: skill2 ? [{ skillId: skill2.id, minimumProficiencyLevel: 5 }] : undefined,
+        })
       expect(updateRes.status).toBe(200)
 
-      const updatedDb = await prisma.staffingRequirement.findUnique({ where: { id: reqId } })
+      const updatedDb = await prisma.staffingRequirement.findUnique({
+        where: { id: reqId },
+        include: { skills: true },
+      })
       expect(updatedDb?.headcount).toBe(5)
+      if (skill2) {
+        expect(updatedDb?.skills).toHaveLength(1)
+        expect(updatedDb?.skills?.[0]?.skillId).toBe(skill2.id)
+        expect(updatedDb?.skills?.[0]?.minimumProficiencyLevel).toBe(5)
+      }
 
-      // 3. Delete requirement and verify DB deletion
+      // 3. Delete requirement returns 501 Not Implemented and preserves DB record (BR-G15)
       const deleteRes = await request(app)
         .delete(`/api/v1/staffing-requirements/${reqId}`)
         .set('Cookie', pmCookie)
         .set('X-CSRF-Token', pmCsrf)
-      expect(deleteRes.status).toBe(204)
+      expect(deleteRes.status).toBe(501)
+      expect(deleteRes.body.code).toBe('NOT_IMPLEMENTED')
 
-      const deletedDb = await prisma.staffingRequirement.findUnique({ where: { id: reqId } })
-      expect(deletedDb).toBeNull()
+      const preservedDb = await prisma.staffingRequirement.findUnique({ where: { id: reqId } })
+      expect(preservedDb).not.toBeNull()
+      expect(preservedDb?.id).toBe(reqId)
     })
 
     it('allows ADMIN to create staffing requirement in any project (HTTP 201)', async () => {
@@ -1173,7 +1195,7 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
         email: 'pm@test',
         role: ROLES.PROJECT_MANAGER,
         isActive: true,
-        employeeId: 'emp-1',
+        employeeId: pmEmployeeId,
       }
       const list = await allocationsService.getAllocations({}, userPM)
       expect(list.data).toEqual([])
@@ -1181,8 +1203,32 @@ describe('RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)', () 
       const single = await allocationsService.getAllocationById('alloc-1', userPM)
       expect(single.id).toBe('alloc-1')
 
-      const noProjectResult = await allocationsService.createAllocation({}, userPM)
-      expect(noProjectResult).toBeNull()
+      const validResult = await allocationsService.createAllocation(
+        {
+          projectId: pmOwnProjectId,
+          employeeId: otherEmployeeId,
+          jobRoleId: rolePMId,
+          allocationPercentage: 50,
+          startDate: '2026-11-01',
+          endDate: '2026-12-01',
+        },
+        userPM,
+      )
+      expect(validResult).toBeNull()
+
+      await expect(
+        allocationsService.createAllocation(
+          {
+            projectId: '00000000-0000-0000-0000-000000000000',
+            employeeId: otherEmployeeId,
+            jobRoleId: rolePMId,
+            allocationPercentage: 50,
+            startDate: '2026-11-01',
+            endDate: '2026-12-01',
+          },
+          userPM,
+        ),
+      ).rejects.toThrow('Project not found')
     })
 
     it('covers projects and staffing service direct queries', async () => {

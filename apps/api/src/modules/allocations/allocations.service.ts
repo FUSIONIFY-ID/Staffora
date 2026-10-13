@@ -24,17 +24,14 @@ export const allocationsService = {
     return { id }
   },
 
-  async createAllocation(data: Partial<CreateAllocationInput>, user: AuthenticatedUser) {
+  async createAllocation(data: CreateAllocationInput, user: AuthenticatedUser) {
     // TODO: Implement allocation creation with SELECT ... FOR UPDATE capacity lock in Sprint (PIC: Saiful & Jundy)
-    const projectId = data.projectId
-    if (projectId) {
-      const project = await allocationsRepository.findProjectById(projectId)
-      if (!project) {
-        throw new NotFoundError('Project not found')
-      }
-
-      assertCanManageAllocation(user, project.projectManagerEmployeeId)
+    const project = await allocationsRepository.findProjectById(data.projectId)
+    if (!project) {
+      throw new NotFoundError('Project not found')
     }
+
+    assertCanManageAllocation(user, project.projectManagerEmployeeId)
 
     return null
   },
