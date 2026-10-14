@@ -1,9 +1,19 @@
 import session from 'express-session'
 import connectPgSimple from 'connect-pg-simple'
 import pg from 'pg'
-import type { RequestHandler } from 'express'
+import type { CookieOptions, Request, RequestHandler, Response } from 'express'
+import { loadEnv } from '../../config/env.js'
 
 const PgSession = connectPgSimple(session)
+
+export const SESSION_COOKIE_NAME = 'staffora.sid'
+const SESSION_INACTIVITY_TIMEOUT_MS = 8 * 60 * 60 * 1000
+// loadEnv() rejects a missing SESSION_SECRET in production, so this value can only apply locally.
+const NON_PRODUCTION_SESSION_SECRET = 'local-dev-session-secret-at-least-32-characters-long'
+
+function buildSessionCookieOptions(isProduction: boolean): CookieOptions {
+  return { httpOnly: true, sameSite: 'lax', path: '/', secure: isProduction }
+}
 
 export function createSessionMiddleware(options?: {
   connectionString?: string
@@ -11,17 +21,16 @@ export function createSessionMiddleware(options?: {
   isProduction?: boolean
   useMemoryStore?: boolean
 }): RequestHandler {
-  const secret = options?.sessionSecret || process.env.SESSION_SECRET || 'local-dev-session-secret-at-least-32-characters-long'
-  const isProduction = options?.isProduction ?? process.env.NODE_ENV === 'production'
+  const env = loadEnv()
+  const secret = options?.sessionSecret ?? env.SESSION_SECRET ?? NON_PRODUCTION_SESSION_SECRET
+  const isProduction = options?.isProduction ?? env.NODE_ENV === 'production'
+  const connectionString = options?.connectionString ?? env.DATABASE_URL
 
   let store: session.Store | undefined
 
-  if (!options?.useMemoryStore && (options?.connectionString || process.env.DATABASE_URL)) {
-    const pool = new pg.Pool({
-      connectionString: options?.connectionString || process.env.DATABASE_URL,
-    })
+  if (!options?.useMemoryStore && connectionString) {
     store = new PgSession({
-      pool,
+      pool: new pg.Pool({ connectionString }),
       tableName: 'user_sessions',
       createTableIfMissing: false,
     })
@@ -29,17 +38,27 @@ export function createSessionMiddleware(options?: {
 
   return session({
     store,
-    name: 'staffora.sid',
+    name: SESSION_COOKIE_NAME,
     secret,
     resave: false,
     saveUninitialized: false,
     rolling: true,
-    cookie: {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      secure: isProduction,
-      maxAge: 8 * 60 * 60 * 1000, // 8 hours
-    },
+    cookie: { ...buildSessionCookieOptions(isProduction), maxAge: SESSION_INACTIVITY_TIMEOUT_MS },
   })
+}
+
+export function regenerateSession(req: Request): Promise<void> {
+  return new Promise((resolve, reject) => {
+    req.session.regenerate((error: unknown) => (error ? reject(error) : resolve()))
+  })
+}
+
+export function destroySession(req: Request): Promise<void> {
+  return new Promise((resolve, reject) => {
+    req.session.destroy((error: unknown) => (error ? reject(error) : resolve()))
+  })
+}
+
+export function clearSessionCookie(res: Response): void {
+  res.clearCookie(SESSION_COOKIE_NAME, buildSessionCookieOptions(loadEnv().NODE_ENV === 'production'))
 }

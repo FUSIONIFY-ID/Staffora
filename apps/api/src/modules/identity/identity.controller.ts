@@ -1,6 +1,8 @@
 import type { RequestHandler } from 'express'
 import { identityService } from './identity.service.js'
+import type { LoginInput } from './identity.schema.js'
 import { generateCsrfToken } from '../../common/auth/csrf.js'
+import { clearSessionCookie, destroySession, regenerateSession } from '../../common/auth/session.js'
 import { sendSuccess, sendCreated, sendNoContent } from '../../common/http/response.js'
 import { UnauthorizedError } from '../../common/errors/app-error.js'
 import { getParam } from '../../common/http/params.js'
@@ -8,32 +10,30 @@ import { getParam } from '../../common/http/params.js'
 export const identityController = {
   login: (async (req, res, next) => {
     try {
-      const { email, password } = req.body
+      const { email, password }: LoginInput = req.body
       const user = await identityService.authenticate(email, password)
 
       // Regenerate session to prevent session fixation (TSD 8.1)
-      req.session.regenerate((err) => {
-        if (err) return next(err)
+      await regenerateSession(req)
+      const csrfToken = generateCsrfToken()
+      req.session.userId = user.id
+      req.session.csrfToken = csrfToken
 
-        req.session.userId = user.id
-        req.session.csrfToken = generateCsrfToken()
-
-        return sendSuccess(res, {
-          user,
-          csrfToken: req.session.csrfToken,
-        })
-      })
+      return sendSuccess(res, { user, csrfToken })
     } catch (error) {
       next(error)
     }
   }) as RequestHandler,
 
-  logout: ((req, res, next) => {
-    req.session.destroy((err) => {
-      if (err) return next(err)
-      res.clearCookie('staffora.sid')
+  logout: (async (req, res, next) => {
+    try {
+      // Destroying the session deletes its user_sessions row, revoking the cookie server-side
+      await destroySession(req)
+      clearSessionCookie(res)
       return sendNoContent(res)
-    })
+    } catch (error) {
+      next(error)
+    }
   }) as RequestHandler,
 
   getMe: ((req, res, next) => {
