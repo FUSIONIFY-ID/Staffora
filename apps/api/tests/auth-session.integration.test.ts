@@ -133,6 +133,22 @@ describe('session authentication API with PostgreSQL store (US01.01)', () => {
     expect(sessionCookie(relogin.headers)).toBe('')
   })
 
+  it('lets another account sign in from a browser still holding a revoked session cookie (AC02.01)', async () => {
+    const deactivated = await createTestUser('stale')
+    const active = await createTestUser('fresh')
+    const staleCookie = sessionCookie((await login(deactivated.email)).headers)
+    await prisma.user.update({ where: { id: deactivated.id }, data: { isActive: false } })
+
+    const response = await login(active.email, staleCookie)
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.user.id).toBe(active.id)
+    const freshCookie = sessionCookie(response.headers)
+    expect(sessionIdFromCookie(freshCookie)).not.toBe(sessionIdFromCookie(staleCookie))
+    const staleRow = await prisma.userSession.findUnique({ where: { sid: sessionIdFromCookie(staleCookie) } })
+    expect(staleRow).toBeNull()
+  })
+
   it('rate limits repeated login attempts per IP and email (TSD 8.5)', async () => {
     const email = `us0101-ratelimit-${randomUUID()}@staffora.test`
     const attempt = (): request.Test => request(app).post('/api/v1/auth/login').send({ email, password: 'WrongPassword2026!' })
