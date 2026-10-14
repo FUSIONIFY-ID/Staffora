@@ -1,39 +1,77 @@
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&display=swap');
 @import 'tailwindcss';
 
+/**
+ * Design tokens, from docs/ui-specs/design-system/design-system.md.
+ *
+ * Declared through Tailwind's `@theme` so each one becomes a real utility
+ * (`bg-surface-white`, `text-ink`, `border-line`, `text-primary`, …). Components
+ * use those utilities rather than writing hex literals, so a token change lands
+ * in one place.
+ */
+@theme {
+  --font-sans: 'Exo 2', system-ui, -apple-system, sans-serif;
+
+  /* Surfaces */
+  --color-surface-page: #f7f8fa;
+  --color-surface-white: #ffffff;
+  --color-surface-table-header: #fafafa;
+  --color-surface-chip: #f5f5f5;
+  --color-surface-divider: #f0f0f0;
+  --color-surface-brand-panel: #111827;
+
+  /* Lines */
+  --color-line: #e5e7eb;
+  --color-line-input: #d4d4d4;
+
+  /* Text */
+  --color-ink: #171717;
+  --color-ink-strong: #262626;
+  --color-ink-soft: #404040;
+  --color-ink-muted: #525252;
+  --color-ink-dim: #737373;
+  --color-ink-placeholder: #a3a3a3;
+
+  /* Primary */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+
+  /* Informational, also used for the active navigation fill */
+  --color-info-surface: #eff6ff;
+  --color-info-text: #1d4ed8;
+  --color-info-border: #bfdbfe;
+
+  /* Violet, used for the Admin role chip so it is distinguishable from the
+     Project Manager chip, which shares the informational blue. */
+  --color-violet-surface: #f5f3ff;
+  --color-violet-text: #6d28d9;
+  --color-violet-border: #ddd6fe;
+
+  /* Neutral panel, used for the role-context block on the 403 screen */
+  --color-neutral-surface: #f8fafc;
+  --color-neutral-border: #e2e8f0;
+
+  /* Status */
+  --color-success: #16a34a;
+  --color-success-surface: #dcfce7;
+  --color-success-border: #bbf7d0;
+  --color-success-text: #166534;
+  --color-warning: #d97706;
+  --color-warning-surface: #fef3c7;
+  --color-warning-border: #fde68a;
+  --color-warning-text: #b45309;
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-surface: #fee2e2;
+  --color-danger-border: #fecaca;
+  --color-danger-text: #991b1b;
+
+  /* Modal scrim */
+  --color-scrim: rgb(0 0 0 / 0.3);
+}
+
 :root {
-  font-family: 'Exo 2', system-ui, -apple-system, sans-serif;
   color-scheme: light;
-  --bg-primary: #F7F8FA;
-  --bg-surface: #FFFFFF;
-  --bg-card: #FFFFFF;
-  --border-subtle: #E5E7EB;
-  --border-focus: #2563EB;
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
-  --primary-glow: rgba(37, 99, 235, 0.15);
-  --text-main: #171717;
-  --text-muted: #525252;
-  --text-dim: #737373;
-  --success: #16A34A;
-  --warning: #D97706;
-  --danger: #DC2626;
-  --surface-page: #F7F8FA;
-  --surface-white: #FFFFFF;
-  --surface-table-header: #FAFAFA;
-  --surface-chip: #F5F5F5;
-  --surface-divider: #F0F0F0;
-  --border-input: #D4D4D4;
-  --text-placeholder: #A3A3A3;
-  --success-surface: #DCFCE7;
-  --success-text: #166534;
-  --warning-surface: #FEF3C7;
-  --danger-surface: #FEE2E2;
-  --danger-text: #991B1B;
-  --info-surface: #EFF6FF;
-  --info-text: #1D4ED8;
-  --info-border: #BFDBFE;
-  --brand-panel: #111827;
 }
 
 * {
@@ -43,32 +81,18 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: var(--bg-primary);
-  color: var(--text-main);
+  background-color: var(--color-surface-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
 }
 
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
   font: inherit;
-}
-
-/* Flat Card Utility */
-.glass-panel {
-  background: var(--surface-white);
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-}
-
-.glass-card {
-  background: var(--surface-white);
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  transition: all 0.2s ease-in-out;
-}
-
-.glass-card:hover {
-  border-color: var(--info-border);
 }
 
 /* Custom scrollbars */
@@ -77,12 +101,12 @@ button, input, select, textarea {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--surface-chip);
+  background: var(--color-surface-chip);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-input);
+  background: var(--color-line-input);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-placeholder);
+  background: var(--color-ink-placeholder);
 }

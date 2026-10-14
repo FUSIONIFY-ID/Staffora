@@ -26,15 +26,15 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 active:scale-[0.98]',
+      'bg-primary hover:bg-primary-hover text-white focus:ring-primary active:scale-[0.98]',
     secondary:
-      'bg-white hover:bg-[#F5F5F5] text-[#171717] border border-[#E5E7EB] focus:ring-blue-500',
+      'bg-surface-white hover:bg-surface-chip text-ink border border-line focus:ring-primary',
     outline:
-      'bg-transparent hover:bg-[#F5F5F5] text-[#171717] border border-[#D4D4D4] hover:border-[#A3A3A3] focus:ring-blue-500',
+      'bg-transparent hover:bg-surface-chip text-ink border border-line-input hover:border-ink-placeholder focus:ring-primary',
     danger:
-      'bg-[#DC2626] hover:bg-[#B91C1C] text-white focus:ring-red-500',
+      'bg-danger hover:bg-danger-hover text-white focus:ring-danger',
     ghost:
-      'bg-transparent hover:bg-[#F5F5F5] text-[#525252] hover:text-[#171717] focus:ring-blue-500',
+      'bg-transparent hover:bg-surface-chip text-ink-muted hover:text-ink focus:ring-primary',
   }[variant]
 
   return (

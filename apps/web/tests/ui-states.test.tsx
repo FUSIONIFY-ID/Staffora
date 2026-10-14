@@ -81,10 +81,8 @@ describe('PermissionDenied', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Access denied' })).toBeInTheDocument()
     expect(screen.getByText('Employee')).toBeInTheDocument()
     expect(screen.getByText('Required: Admin / Resource Manager')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Back to Dashboard' })).toHaveAttribute(
-      'href',
-      '/my-profile',
-    )
+    // The label follows the destination: an Employee's home route is My Profile.
+    expect(screen.getByRole('button', { name: 'Back to My Profile' })).toBeInTheDocument()
   })
 
   it('omits the required-role line when the caller does not know the allowed roles', () => {

@@ -32,6 +32,6 @@ describe('App root integration', () => {
       </QueryClientProvider>,
     )
 
-    expect(screen.getByRole('heading', { name: /Sign in to Staffora/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Welcome back/i })).toBeInTheDocument()
   })
 })

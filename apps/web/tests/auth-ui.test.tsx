@@ -33,7 +33,7 @@ describe('LoginPage (AC01 - Login Form)', () => {
     expect(submitButton).toBeInTheDocument()
   })
 
-  it('allows filling credentials and shows quick test hints', () => {
+  it('accepts typed credentials and renders no seeded-account shortcut', () => {
     render(
       <MemoryRouter>
         <LoginPage />
@@ -44,7 +44,10 @@ describe('LoginPage (AC01 - Login Form)', () => {
     fireEvent.change(emailInput, { target: { value: 'admin@staffora.internal' } })
     expect(emailInput.value).toBe('admin@staffora.internal')
 
-    expect(screen.getByText(/Quick Sign-in/i)).toBeInTheDocument()
+    // No quick sign-in control, and therefore no seeded password in the source
+    // that the production bundle could ship.
+    expect(screen.queryByText(/Quick Sign-in/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/StafforaAdmin2026/)).not.toBeInTheDocument()
   })
 })
 
@@ -79,14 +82,16 @@ describe('AppLayout (AC02 - Role-based navigation)', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Overview' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Resources' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Skills' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Projects' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Capacity' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Allocations' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Users' })).toBeInTheDocument() // Admin only
-    expect(screen.queryByRole('link', { name: 'My Profile' })).not.toBeInTheDocument() // Employee only
+    // Design frame 02 shows My Profile in the full menu, so it is not
+    // Employee-only, and the route guard has always allowed every role.
+    expect(screen.getByRole('link', { name: 'My Profile' })).toBeInTheDocument()
   })
 
   it('renders Employee navigation with My Profile and assigned Projects only', () => {

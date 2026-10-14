@@ -14,10 +14,10 @@ export const Alert: React.FC<AlertProps> = ({
   className = '',
 }) => {
   const styles = {
-    info: 'bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]',
-    success: 'bg-[#DCFCE7] border-[#BBF7D0] text-[#166534]',
-    warning: 'bg-[#FEF3C7] border-[#FDE68A] text-[#B45309]',
-    error: 'bg-[#FEE2E2] border-[#FECACA] text-[#991B1B]',
+    info: 'bg-info-surface border-info-border text-info-text',
+    success: 'bg-success-surface border-success-border text-success-text',
+    warning: 'bg-warning-surface border-warning-border text-warning-text',
+    error: 'bg-danger-surface border-danger-border text-danger-text',
   }[type]
 
   return (

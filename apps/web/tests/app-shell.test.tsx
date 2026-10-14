@@ -53,8 +53,9 @@ describe('AppLayout shell structure', () => {
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
     expect(screen.getByRole('main')).toBeInTheDocument()
 
-    // Card-specified grouping
-    expect(screen.getByRole('group', { name: 'Overview' })).toBeInTheDocument()
+    // Card-specified grouping. Overview is a top-level item, not a group, per
+    // design frame 02.
+    expect(screen.getByRole('link', { name: 'Overview' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Workforce' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Projects' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Administration' })).toBeInTheDocument()
@@ -149,10 +150,7 @@ describe('Shell fallbacks', () => {
     )
 
     expect(screen.getByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Go to Dashboard' })).toHaveAttribute(
-      'href',
-      '/dashboard',
-    )
+    expect(screen.getByRole('button', { name: 'Go to Home' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Go Back' })).toBeInTheDocument()
     // The shell chrome still wraps the fallback.
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
