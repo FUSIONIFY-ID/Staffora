@@ -10,12 +10,37 @@ describe('environment validation (Zod)', () => {
     expect(env.PORT).toBe(3000)
   })
 
-  it('coerces and parses PORT number', () => {
+  it('coerces and parses PORT number without unsafe casting', () => {
     const env = loadEnv({
       NODE_ENV: 'development',
-      PORT: '8080' as unknown as string,
+      PORT: '8080',
     })
     expect(env.PORT).toBe(8080)
+  })
+
+  it('rejects invalid DATABASE_URL schemes and malformed URLs', () => {
+    expect(() => {
+      loadEnv({
+        NODE_ENV: 'development',
+        DATABASE_URL: 'mysql://localhost:3306/staffora',
+      })
+    }).toThrow()
+
+    expect(() => {
+      loadEnv({
+        NODE_ENV: 'development',
+        DATABASE_URL: 'not-a-valid-url',
+      })
+    }).toThrow()
+  })
+
+  it('rejects SESSION_SECRET shorter than 32 characters', () => {
+    expect(() => {
+      loadEnv({
+        NODE_ENV: 'development',
+        SESSION_SECRET: 'short-secret-under-32-chars',
+      })
+    }).toThrow()
   })
 
   it('fails if production environment lacks DATABASE_URL or SESSION_SECRET', () => {

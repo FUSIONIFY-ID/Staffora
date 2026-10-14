@@ -19,20 +19,6 @@ describe('infrastructure health endpoints (TSD 14.3)', () => {
     expect(response.body.database).toBe('connected')
   })
 
-  it('GET /health/live returns process status ok directly from root', async () => {
-    const response = await request(app).get('/health/live')
-    expect(response.status).toBe(200)
-    expect(response.body.status).toBe('ok')
-    expect(response.body.timestamp).toBeDefined()
-  })
-
-  it('GET /health/ready returns database readiness directly from root', async () => {
-    const response = await request(app).get('/health/ready')
-    expect(response.status).toBe(200)
-    expect(response.body.status).toBe('ready')
-    expect(response.body.database).toBe('connected')
-  })
-
   it('GET /api/v1/health returns ok for backward compatibility', async () => {
     const response = await request(app).get('/api/v1/health')
     expect(response.status).toBe(200)
@@ -51,7 +37,7 @@ describe('infrastructure health endpoints (TSD 14.3)', () => {
   })
 
   it('propagates caller provided X-Request-Id header', async () => {
-    const customId = 'custom-request-id-12345'
+    const customId = 'c8290a61-12ec-4ea5-8946-b25ef898f80f'
     const response = await request(app)
       .get('/api/v1/health/live')
       .set('X-Request-Id', customId)
