@@ -411,6 +411,33 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Insufficient role. Only ADMIN may create master data. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description A department with this name already exists. The name is compared on a normalised, case-insensitive basis, so "IT" and "it" collide. Code is DUPLICATE_DEPARTMENT_NAME. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed body */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -475,6 +502,33 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Insufficient role. Only ADMIN may create master data. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description A job role with this title already exists, compared on a normalised, case-insensitive basis. Code is DUPLICATE_JOB_ROLE_NAME. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed body */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -516,6 +570,24 @@ export interface paths {
                         "application/json": components["schemas"]["EmployeeListResponse"];
                     };
                 };
+                /** @description Insufficient role. The directory is readable by ADMIN, PROJECT_MANAGER and RESOURCE_MANAGER; an EMPLOYEE receives 403 here. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed query parameters, for example an unknown status value */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -544,6 +616,33 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Insufficient role. Only ADMIN and RESOURCE_MANAGER may create. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The employee code or work email already exists. Code is DUPLICATE_EMPLOYEE_CODE or DUPLICATE_WORK_EMAIL. The check is not atomic, so two concurrent creates with the same code resolve to one 201 and one 409 carrying the same specific code. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed body, or a departmentId / jobRoleId that does not exist */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -561,14 +660,14 @@ export interface paths {
         };
         /**
          * Get employee detail
-         * @description Returns the employee profile with department, job role, skills, allocations, and a capacity summary. An EMPLOYEE may only read their own record.
+         * @description Returns the employee profile with department, job role, skills, allocations, and the capacity evaluation for the requested window. An EMPLOYEE may only read their own record.
          */
         get: {
             parameters: {
                 query?: {
-                    /** @description First day of the capacity evaluation window (US02.01 - AC04.04). Defaults to today. When only startDate is given the window is that single day. */
+                    /** @description First day of the capacity evaluation window (US02.01 - AC04.04). Defaults to today, taken as the current UTC calendar date; the window is a range of calendar days, not instants. When only startDate is given the window is that single day. */
                     startDate?: string;
-                    /** @description Last day of the capacity evaluation window, inclusive. Defaults to startDate, or to today when startDate is also absent. Must not be before startDate. */
+                    /** @description Last day of the capacity evaluation window, inclusive. Defaults to startDate, or to today (UTC) when startDate is also absent. Must not be before the effective startDate: a past endDate with no startDate is rejected with 422 on `endDate`, because the default startDate of today would otherwise sit after it. */
                     endDate?: string;
                 };
                 header?: never;
@@ -653,6 +752,24 @@ export interface paths {
                 };
                 /** @description Employee not found */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The update collides with an existing unique value. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed employee id or body, an empty body, or a departmentId / jobRoleId that does not exist */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1493,21 +1610,6 @@ export interface components {
             skillIsActive: boolean;
             proficiencyLevel: number;
         };
-        EmployeeCapacitySummary: {
-            evaluatedPeriod: {
-                /** Format: date */
-                startDate: string;
-                /** Format: date */
-                endDate: string;
-            };
-            /** @example 50 */
-            activeAllocation: number;
-            /** @example 50 */
-            peakConcurrentAllocation: number;
-            /** @example 50 */
-            remainingCapacity: number;
-            hasCapacityConflict: boolean;
-        };
         CreateEmployeeInput: {
             employeeCode: string;
             fullName: string;
@@ -1540,7 +1642,7 @@ export interface components {
             workEmail: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
-            /** @description Sum of the allocation percentage that is effective today: not cancelled, and today falls inside the inclusive start and end date. This is the figure behind the current availability indicator required by US02.01 - AC01.03. */
+            /** @description Peak concurrent allocation effective today, computed by the shared sweep-line capacity engine over the single-day window [today, today]: allocations that are not cancelled and whose inclusive start and end dates contain today. Because it is a peak and not a sum, sequential allocations that do not overlap are never added together (TSD 10.3 / BR-G17). This is the figure behind the current availability indicator required by US02.01 - AC01.03. */
             currentAllocation: number;
             /** @description 100 minus currentAllocation, floored at 0. */
             currentRemainingCapacity: number;
@@ -1572,8 +1674,8 @@ export interface components {
                 name?: string;
             };
             skills?: components["schemas"]["EmployeeSkill"][];
-            allocations?: components["schemas"]["EmployeeAllocation"][];
-            /** @description Top-level window result retained from the approved contract in dev. capacitySummary carries the same window plus activeAllocation and hasCapacityConflict. */
+            allocations?: components["schemas"]["Allocation"][];
+            /** @description Capacity window result (US02.01 - AC04.04). peakConcurrentAllocation is the highest simultaneous allocation inside the window, computed by the shared sweep-line engine, and remainingCapacity is 100 minus that peak. Allocations that overlap the window without overlapping each other are never summed (TSD 10.3 / BR-G17). */
             evaluatedPeriod?: {
                 /** Format: date */
                 startDate: string;
@@ -1582,7 +1684,6 @@ export interface components {
                 peakConcurrentAllocation: number;
                 remainingCapacity: number;
             };
-            capacitySummary?: components["schemas"]["EmployeeCapacitySummary"];
         };
         EmployeeListResponse: {
             data?: components["schemas"]["Employee"][];
@@ -1732,26 +1833,6 @@ export interface components {
         AllocationListResponse: {
             data?: components["schemas"]["Allocation"][];
         };
-        EmployeeAllocation: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            projectId: string;
-            projectCode: string;
-            projectName: string;
-            /** Format: uuid */
-            jobRoleId: string;
-            jobRoleTitle: string;
-            allocationPercentage: number;
-            /** Format: date */
-            startDate: string;
-            /** Format: date */
-            endDate: string;
-            /** @enum {string} */
-            displayStatus: "PLANNED" | "ACTIVE" | "ENDED" | "CANCELLED";
-            /** Format: date-time */
-            cancelledAt: string | null;
-        };
         ResourceFinderItem: {
             /** Format: uuid */
             employeeId: string;
@@ -1784,7 +1865,10 @@ export interface components {
                 departmentName?: string;
                 peakConcurrentAllocation?: number;
                 remainingCapacity?: number;
-                /** @enum {string} */
+                /**
+                 * @description Availability as used by the capacity and resource-finder views. It is a different vocabulary from `Employee.availability`, which reports AVAILABLE / PARTIAL / FULLY_ALLOCATED / NOT_ASSIGNABLE: this enum has no inactive case, and names the free states differently. Both describe the same underlying figure, `remainingCapacity`, so a future revision should collapse them into one shared enum. It is left as is here because no card has implemented the resource-finder or capacity response yet, and the workforce module does not own those contracts.
+                 * @enum {string}
+                 */
                 availabilityStatus?: "FULLY_AVAILABLE" | "PARTIALLY_AVAILABLE" | "FULLY_ALLOCATED";
             }[];
         };

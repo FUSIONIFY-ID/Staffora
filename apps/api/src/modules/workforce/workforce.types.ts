@@ -1,5 +1,5 @@
-import type { Prisma } from '../../generated/prisma/client.js'
-import { employeeDetailInclude, employeeSummaryInclude } from './workforce.repository.js'
+import type { EmployeeStatus, Prisma } from '../../generated/prisma/client.js'
+import type { employeeDetailInclude, employeeSummaryInclude } from './workforce.repository.js'
 
 export type EmployeeSummaryRecord = Prisma.EmployeeGetPayload<{
   include: typeof employeeSummaryInclude
@@ -19,15 +19,15 @@ export type AvailabilityState = 'AVAILABLE' | 'PARTIAL' | 'FULLY_ALLOCATED' | 'N
 
 /**
  * Employee row in a list response. Mirrors the `Employee` schema in
- * docs/api/openapi.yaml.
+ * docs/api/openapi.yaml, whose `status` is the `ACTIVE`/`INACTIVE` enum.
  */
 export interface EmployeeView {
   id: string
   employeeCode: string
   fullName: string
   workEmail: string
-  status: string
-  /** Allocation effective today, per PRD US02.01 - AC01.03. */
+  status: EmployeeStatus
+  /** Peak concurrent allocation effective today, per PRD US02.01 - AC01.03. */
   currentAllocation: number
   /** 100 minus currentAllocation, floored at 0. */
   currentRemainingCapacity: number
@@ -48,8 +48,15 @@ export interface EmployeeSkillView {
   proficiencyLevel: number
 }
 
-export interface EmployeeAllocationView {
+/**
+ * Allocation row inside an employee detail response. This is the subset of the
+ * `Allocation` schema in docs/api/openapi.yaml that an employee profile can
+ * fill in, and it keeps the fields that schema requires, `employeeId` among
+ * them, so a consumer of the contract on `dev` keeps working.
+ */
+interface EmployeeAllocationView {
   id: string
+  employeeId: string
   projectId: string
   projectCode: string
   projectName: string
@@ -62,14 +69,6 @@ export interface EmployeeAllocationView {
   cancelledAt: string | null
 }
 
-export interface EmployeeCapacitySummary {
-  evaluatedPeriod: CapacityWindow
-  activeAllocation: number
-  peakConcurrentAllocation: number
-  remainingCapacity: number
-  hasCapacityConflict: boolean
-}
-
 /** Detail response. Mirrors `EmployeeDetail` in docs/api/openapi.yaml. */
 export interface EmployeeDetail extends EmployeeView {
   department: { id: string; name: string }
@@ -80,5 +79,4 @@ export interface EmployeeDetail extends EmployeeView {
     peakConcurrentAllocation: number
     remainingCapacity: number
   }
-  capacitySummary: EmployeeCapacitySummary
 }

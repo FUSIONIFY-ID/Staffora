@@ -1,24 +1,23 @@
-import { Prisma } from '../../generated/prisma/client.js'
+import type { Prisma } from '../../generated/prisma/client.js'
 import { prisma } from '../../common/database/prisma.js'
-
 /**
  * Projection for list rows.
  *
- * The list only needs capacity that is effective today (PRD US02.01 -
- * AC01.03), so cancelled and already-ended allocations are excluded in the
- * query rather than fetched and discarded in memory. Detail responses use
- * employeeDetailInclude, which keeps the full history for AC04.04.
+ * Only cancelled allocations are dropped in the query. The date filter that
+ * used to live here compared against `new Date()` evaluated once at module
+ * load, which both froze "now" for the lifetime of the process and excluded an
+ * allocation whose end date is today. Whether an allocation is effective today
+ * is decided by the capacity engine from the reference date passed to the view,
+ * so it is computed in one place (PRD US02.01 - AC01.03).
  */
 export const employeeSummaryInclude = {
   department: { select: { id: true, name: true } },
   jobRole: { select: { id: true, name: true } },
   allocations: {
-    where: {
-      cancelledAt: null,
-      endDate: { gte: new Date() },
-    },
+    where: { cancelledAt: null },
     select: {
       id: true,
+      employeeId: true,
       allocationPercentage: true,
       startDate: true,
       endDate: true,
@@ -43,7 +42,9 @@ export const employeeDetailInclude = {
 } satisfies Prisma.EmployeeInclude
 
 export const workforceRepository = {
-  findEmployeeById(id: string): Promise<Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }> | null> {
+  findEmployeeById(
+    id: string,
+  ): Promise<Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }> | null> {
     return prisma.employee.findUnique({ where: { id }, include: employeeSummaryInclude })
   },
 
@@ -60,8 +61,9 @@ export const workforceRepository = {
   },
 
   /**
-   * Case-insensitive lookup used to enforce the normalised uniqueness rule for
-   * department names (docs/database/erd.md 2.3).
+   * Case-insensitive lookup for a friendly pre-flight message. The database
+   * unique index is what actually enforces the rule; this only turns the common
+   * sequential case into a specific 409 without touching the constraint.
    */
   findDepartmentByName(name: string): Promise<{ id: string } | null> {
     return prisma.department.findFirst({
@@ -97,14 +99,20 @@ export const workforceRepository = {
     })
   },
 
-  createDepartment(name: string, actorId?: string): Promise<{ id: string; name: string; isActive: boolean }> {
+  createDepartment(
+    name: string,
+    actorId?: string,
+  ): Promise<{ id: string; name: string; isActive: boolean }> {
     return prisma.department.create({
       data: { name, createdBy: actorId },
       select: { id: true, name: true, isActive: true },
     })
   },
 
-  createJobRole(name: string, actorId?: string): Promise<{ id: string; name: string; isActive: boolean }> {
+  createJobRole(
+    name: string,
+    actorId?: string,
+  ): Promise<{ id: string; name: string; isActive: boolean }> {
     return prisma.jobRole.create({
       data: { name, createdBy: actorId },
       select: { id: true, name: true, isActive: true },
@@ -129,7 +137,9 @@ export const workforceRepository = {
     })
   },
 
-  findEmployeeDetail(id: string): Promise<Prisma.EmployeeGetPayload<{ include: typeof employeeDetailInclude }> | null> {
+  findEmployeeDetail(
+    id: string,
+  ): Promise<Prisma.EmployeeGetPayload<{ include: typeof employeeDetailInclude }> | null> {
     return prisma.employee.findUnique({ where: { id }, include: employeeDetailInclude })
   },
 

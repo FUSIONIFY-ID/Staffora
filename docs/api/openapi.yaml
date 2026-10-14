@@ -218,6 +218,27 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Department'
+        '403':
+          description: Insufficient role. Only ADMIN may create master data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: >-
+            A department with this name already exists. The name is compared on a
+            normalised, case-insensitive basis, so "IT" and "it" collide. Code is
+            DUPLICATE_DEPARTMENT_NAME.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Malformed body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /job-roles:
     get:
@@ -250,6 +271,26 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/JobRole'
+        '403':
+          description: Insufficient role. Only ADMIN may create master data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: >-
+            A job role with this title already exists, compared on a normalised,
+            case-insensitive basis. Code is DUPLICATE_JOB_ROLE_NAME.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Malformed body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /employees:
     get:
@@ -280,6 +321,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EmployeeListResponse'
+        '403':
+          description: >-
+            Insufficient role. The directory is readable by ADMIN, PROJECT_MANAGER
+            and RESOURCE_MANAGER; an EMPLOYEE receives 403 here.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Malformed query parameters, for example an unknown status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: Create employee profile
       requestBody:
@@ -298,11 +353,34 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Employee'
+        '403':
+          description: Insufficient role. Only ADMIN and RESOURCE_MANAGER may create.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: >-
+            The employee code or work email already exists. Code is
+            DUPLICATE_EMPLOYEE_CODE or DUPLICATE_WORK_EMAIL. The check is not
+            atomic, so two concurrent creates with the same code resolve to one 201
+            and one 409 carrying the same specific code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: >-
+            Malformed body, or a departmentId / jobRoleId that does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /employees/{id}:
     get:
       summary: Get employee detail
-      description: Returns the employee profile with department, job role, skills, allocations, and a capacity summary. An EMPLOYEE may only read their own record.
+      description: Returns the employee profile with department, job role, skills, allocations, and the capacity evaluation for the requested window. An EMPLOYEE may only read their own record.
       parameters:
         - name: id
           in: path
@@ -314,14 +392,17 @@ paths:
           schema: { type: string, format: date }
           description: >-
             First day of the capacity evaluation window (US02.01 - AC04.04). Defaults to
-            today. When only startDate is given the window is that single day.
+            today, taken as the current UTC calendar date; the window is a range of calendar
+            days, not instants. When only startDate is given the window is that single day.
         - name: endDate
           in: query
           required: false
           schema: { type: string, format: date }
           description: >-
-            Last day of the capacity evaluation window, inclusive. Defaults to startDate,
-            or to today when startDate is also absent. Must not be before startDate.
+            Last day of the capacity evaluation window, inclusive. Defaults to startDate, or
+            to today (UTC) when startDate is also absent. Must not be before the effective
+            startDate: a past endDate with no startDate is rejected with 422 on `endDate`,
+            because the default startDate of today would otherwise sit after it.
       responses:
         '200':
           description: Employee detail with skills, allocations, and capacity
@@ -378,6 +459,20 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The update collides with an existing unique value.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: >-
+            Malformed employee id or body, an empty body, or a departmentId /
+            jobRoleId that does not exist
           content:
             application/json:
               schema:
@@ -950,21 +1045,6 @@ components:
         skillIsActive: { type: boolean }
         proficiencyLevel: { type: integer, minimum: 1, maximum: 5 }
 
-    EmployeeCapacitySummary:
-      type: object
-      required: [evaluatedPeriod, activeAllocation, peakConcurrentAllocation, remainingCapacity, hasCapacityConflict]
-      properties:
-        evaluatedPeriod:
-          type: object
-          required: [startDate, endDate]
-          properties:
-            startDate: { type: string, format: date }
-            endDate: { type: string, format: date }
-        activeAllocation: { type: integer, example: 50 }
-        peakConcurrentAllocation: { type: integer, example: 50 }
-        remainingCapacity: { type: integer, example: 50 }
-        hasCapacityConflict: { type: boolean }
-
     CreateEmployeeInput:
       type: object
       required: [employeeCode, fullName, workEmail, departmentId, jobRoleId, status]
@@ -996,9 +1076,12 @@ components:
         currentAllocation:
           type: integer
           description: >-
-            Sum of the allocation percentage that is effective today: not cancelled, and
-            today falls inside the inclusive start and end date. This is the figure behind
-            the current availability indicator required by US02.01 - AC01.03.
+            Peak concurrent allocation effective today, computed by the shared sweep-line
+            capacity engine over the single-day window [today, today]: allocations that are
+            not cancelled and whose inclusive start and end dates contain today. Because it
+            is a peak and not a sum, sequential allocations that do not overlap are never
+            added together (TSD 10.3 / BR-G17). This is the figure behind the current
+            availability indicator required by US02.01 - AC01.03.
         currentRemainingCapacity:
           type: integer
           description: 100 minus currentAllocation, floored at 0.
@@ -1039,21 +1122,21 @@ components:
             allocations:
               type: array
               items:
-                $ref: '#/components/schemas/EmployeeAllocation'
+                $ref: '#/components/schemas/Allocation'
             evaluatedPeriod:
               type: object
               description: >-
-                Top-level window result retained from the approved contract in dev.
-                capacitySummary carries the same window plus activeAllocation and
-                hasCapacityConflict.
+                Capacity window result (US02.01 - AC04.04). peakConcurrentAllocation is the
+                highest simultaneous allocation inside the window, computed by the shared
+                sweep-line engine, and remainingCapacity is 100 minus that peak. Allocations
+                that overlap the window without overlapping each other are never summed
+                (TSD 10.3 / BR-G17).
               required: [startDate, endDate, peakConcurrentAllocation, remainingCapacity]
               properties:
                 startDate: { type: string, format: date }
                 endDate: { type: string, format: date }
                 peakConcurrentAllocation: { type: integer }
                 remainingCapacity: { type: integer }
-            capacitySummary:
-              $ref: '#/components/schemas/EmployeeCapacitySummary'
 
     EmployeeListResponse:
       type: object
@@ -1212,22 +1295,6 @@ components:
           items:
             $ref: '#/components/schemas/Allocation'
 
-    EmployeeAllocation:
-      type: object
-      required: [id, projectId, projectCode, projectName, jobRoleId, jobRoleTitle, allocationPercentage, startDate, endDate, displayStatus, cancelledAt]
-      properties:
-        id: { type: string, format: uuid }
-        projectId: { type: string, format: uuid }
-        projectCode: { type: string }
-        projectName: { type: string }
-        jobRoleId: { type: string, format: uuid }
-        jobRoleTitle: { type: string }
-        allocationPercentage: { type: integer }
-        startDate: { type: string, format: date }
-        endDate: { type: string, format: date }
-        displayStatus: { type: string, enum: [PLANNED, ACTIVE, ENDED, CANCELLED] }
-        cancelledAt: { type: string, format: date-time, nullable: true }
-
     ResourceFinderItem:
       type: object
       required: [employeeId, employeeCode, fullName, workEmail, jobRoleTitle, departmentName, peakConcurrentAllocation, remainingCapacity, isAssignable]
@@ -1274,7 +1341,18 @@ components:
               departmentName: { type: string }
               peakConcurrentAllocation: { type: integer }
               remainingCapacity: { type: integer }
-              availabilityStatus: { type: string, enum: [FULLY_AVAILABLE, PARTIALLY_AVAILABLE, FULLY_ALLOCATED] }
+              availabilityStatus:
+                type: string
+                enum: [FULLY_AVAILABLE, PARTIALLY_AVAILABLE, FULLY_ALLOCATED]
+                description: >-
+                  Availability as used by the capacity and resource-finder views. It is a
+                  different vocabulary from `Employee.availability`, which reports
+                  AVAILABLE / PARTIAL / FULLY_ALLOCATED / NOT_ASSIGNABLE: this enum has no
+                  inactive case, and names the free states differently. Both describe the
+                  same underlying figure, `remainingCapacity`, so a future revision should
+                  collapse them into one shared enum. It is left as is here because no card
+                  has implemented the resource-finder or capacity response yet, and the
+                  workforce module does not own those contracts.
 
     DashboardData:
       type: object

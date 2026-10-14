@@ -10,8 +10,13 @@ import type { AuthenticatedUser } from '../../common/auth/types.js'
  * The failure mode is deliberate non-disclosure: an employee requesting a
  * colleague's record gets the same 404 as a record that does not exist. A
  * distinct 403 would confirm that the ID is a real employee, which lets a
- * caller enumerate the workforce. This matches the pattern introduced for the
- * RBAC foundation (PR #6, common/auth/policy.ts).
+ * caller enumerate the workforce.
+ *
+ * The RBAC foundation in PR #6 introduces a shared `assertPolicyOrNotFound`
+ * helper in common/auth. This module keeps its own until that PR merges into
+ * dev, at which point the two collapse into the shared helper; see the PR #10
+ * review thread for the recorded decision. Nothing in this file is a second
+ * convention by accident.
  */
 function canViewEmployee(user: AuthenticatedUser, targetEmployeeId: string): boolean {
   if (user.role === 'ADMIN' || user.role === 'RESOURCE_MANAGER' || user.role === 'PROJECT_MANAGER') {

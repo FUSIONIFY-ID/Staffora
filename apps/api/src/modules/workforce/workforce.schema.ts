@@ -1,10 +1,14 @@
 import { z } from 'zod'
+import { toDateString } from '../capacity/capacity.service.js'
 
 /**
  * Master-data names are normalised before storage: trimmed and with internal
  * whitespace collapsed. The ERD (docs/database/erd.md 2.3) requires the
  * department and job role `name` to be unique on a normalised, case-insensitive
- * basis, so uniqueness is checked separately with a case-insensitive lookup.
+ * basis. The case-insensitive half of that rule is enforced by the database
+ * itself through the unique indexes `departments_name_lower_key` and
+ * `job_roles_name_lower_key` (migration
+ * 20261014160000_workforce_normalized_name_uniqueness).
  */
 const normalizedName = (label: string) =>
   z
@@ -68,15 +72,30 @@ export const employeeIdParamsSchema = z.object({
  * AC04.04 ("allocation effective today, or peak concurrent allocation and
  * remaining capacity for a selected date range"). Defaults to a single day,
  * today, when omitted.
+ *
+ * The range is validated *after* the defaults are applied, so `endDate` alone
+ * cannot describe a window that ends before it starts. "Today" is the UTC
+ * calendar date, matching the capacity engine's date handling.
  */
 export const employeeDetailQuerySchema = z
   .object({
     startDate: z.iso.date('startDate must be an ISO date (YYYY-MM-DD).').optional(),
     endDate: z.iso.date('endDate must be an ISO date (YYYY-MM-DD).').optional(),
   })
-  .refine((value) => !value.startDate || !value.endDate || value.endDate >= value.startDate, {
-    message: 'endDate must be on or after startDate.',
-    path: ['endDate'],
+  .transform((value, ctx) => {
+    const startDate = value.startDate ?? toDateString(new Date())
+    const endDate = value.endDate ?? startDate
+
+    if (endDate < startDate) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endDate'],
+        message: 'endDate must be on or after startDate.',
+      })
+      return z.NEVER
+    }
+
+    return { startDate, endDate }
   })
 
 export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>

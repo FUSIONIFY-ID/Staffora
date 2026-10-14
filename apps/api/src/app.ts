@@ -1,7 +1,7 @@
 import express from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
-import { pinoHttp } from 'pino-http'
+import { pinoHttp, stdSerializers } from 'pino-http'
 import { logger } from './common/logging/logger.js'
 import { requestIdMiddleware } from './common/http/request-id.js'
 import { createSessionMiddleware } from './common/auth/session.js'
@@ -47,7 +47,23 @@ export function createApp(options?: {
   app.use(requestIdMiddleware)
 
   // 2. Pino HTTP logger with sensitive field redaction
-  app.use(pinoHttp({ logger }))
+  //
+  // The logged URL keeps the path but drops the query string: `GET
+  // /api/v1/employees?search=<person name>` would otherwise write a colleague's
+  // name into the log, and redaction alone cannot reach inside a URL. The
+  // `search` field of the parsed query object is redacted as well, so the
+  // parameter is not recoverable from either field.
+  app.use(
+    pinoHttp({
+      logger,
+      serializers: {
+        req: (req) => {
+          const serialized = stdSerializers.req(req)
+          return { ...serialized, url: serialized.url?.split('?')[0] }
+        },
+      },
+    }),
+  )
 
   // 3. Helmet security headers
   app.use(

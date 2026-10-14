@@ -1,8 +1,10 @@
 import type { Request, Response, NextFunction } from 'express'
 import { sendCreated, sendList, sendSuccess } from '../../common/http/response.js'
 import { UnauthorizedError } from '../../common/errors/app-error.js'
+import { getParam } from '../../common/http/params.js'
 import type { AuthenticatedUser } from '../../common/auth/types.js'
 import { workforceService } from './workforce.service.js'
+import { parseEmployeeDetailQuery, parseEmployeeListQuery } from './workforce.query.js'
 
 /**
  * `requireAuth()` on every workforce route guarantees an authenticated user.
@@ -16,6 +18,11 @@ function requireUser(req: Request): AuthenticatedUser {
   return req.user
 }
 
+/**
+ * Body and path parameters arrive already parsed by the `validateBody` and
+ * `validateParams` middleware on the route. Query strings are the exception
+ * while `validateQuery` is unusable (see workforce.query.ts).
+ */
 export const workforceController = {
   async getDepartments(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -53,7 +60,8 @@ export const workforceController = {
 
   async getEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await workforceService.getEmployees(req.query)
+      const query = parseEmployeeListQuery(req.query)
+      const result = await workforceService.getEmployees(query)
       sendList(res, result.data, {
         page: result.page,
         pageSize: result.pageSize,
@@ -75,7 +83,12 @@ export const workforceController = {
 
   async getEmployeeDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.getEmployeeDetail(req.params, req.query, requireUser(req))
+      const query = parseEmployeeDetailQuery(req.query)
+      const item = await workforceService.getEmployeeDetail(
+        getParam(req.params.id),
+        query,
+        requireUser(req),
+      )
       sendSuccess(res, item)
     } catch (err) {
       next(err)
@@ -84,7 +97,11 @@ export const workforceController = {
 
   async updateEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await workforceService.updateEmployee(req.params, req.body, requireUser(req).id)
+      const item = await workforceService.updateEmployee(
+        getParam(req.params.id),
+        req.body,
+        requireUser(req).id,
+      )
       sendSuccess(res, item)
     } catch (err) {
       next(err)
