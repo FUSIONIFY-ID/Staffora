@@ -24,4 +24,25 @@ describe('infrastructure health endpoints (TSD 14.3)', () => {
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ status: 'ok' })
   })
+
+  it('returns standard error shape with requestId for non-existent route (global 404)', async () => {
+    const response = await request(app).get('/api/v1/non-existent-route')
+    expect(response.status).toBe(404)
+    expect(response.body).toHaveProperty('message')
+    expect(response.body).toHaveProperty('code', 'NOT_FOUND')
+    expect(response.body).toHaveProperty('errors')
+    expect(response.body).toHaveProperty('meta')
+    expect(response.body).toHaveProperty('requestId')
+    expect(response.headers['x-request-id']).toBeDefined()
+  })
+
+  it('propagates caller provided X-Request-Id header', async () => {
+    const customId = 'c8290a61-12ec-4ea5-8946-b25ef898f80f'
+    const response = await request(app)
+      .get('/api/v1/health/live')
+      .set('X-Request-Id', customId)
+    expect(response.status).toBe(200)
+    expect(response.headers['x-request-id']).toBe(customId)
+  })
 })
+

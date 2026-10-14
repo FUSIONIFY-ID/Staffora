@@ -10,4 +10,8 @@ const schema = z.object({
   if (value.NODE_ENV === 'production' && !value.SESSION_SECRET) context.addIssue({ code: 'custom', path: ['SESSION_SECRET'], message: 'Required in production' })
 })
 
-export function loadEnv(source: NodeJS.ProcessEnv = process.env) { return schema.parse(source) }
+export type Env = z.infer<typeof schema>
+
+export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
+  return schema.parse(source)
+}
