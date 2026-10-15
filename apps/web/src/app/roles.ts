@@ -17,11 +17,18 @@ export const ROLE_LABELS: Record<Role, string> = {
 /**
  * Initials for an avatar, one letter per word: "Arya Isnaidi" becomes "AI", as
  * in design frame 02. Two letters are taken from the first word only when the
- * name is a single word.
+ * name is a single word, and "?" is returned when there is no letter to take.
+ *
+ * `charAt` is used rather than indexing, because indexing a string returns
+ * `string | undefined` under `noUncheckedIndexedAccess` and would need a
+ * non-null assertion, which CODING_STANDARD 2.2 forbids.
  */
 export function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/).filter((word) => word.length > 0)
-  if (words.length === 0) return '?'
-  if (words.length === 1) return words[0]!.slice(0, 2).toUpperCase()
-  return `${words[0]![0] ?? ''}${words[words.length - 1]![0] ?? ''}`.toUpperCase()
+  const first = words[0]
+  const last = words.at(-1)
+
+  if (first === undefined || last === undefined) return '?'
+  if (words.length === 1) return first.slice(0, 2).toUpperCase()
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
 }

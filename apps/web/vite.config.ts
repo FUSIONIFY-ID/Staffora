@@ -19,5 +19,12 @@ export default defineConfig({
     proxy: { '/api': apiProxyTarget },
     watch: { usePolling, interval: 300 },
   },
-  test: { environment: 'jsdom', setupFiles: ['./tests/setup.ts'], include: ['tests/**/*.test.tsx'] },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.ts'],
+    // Both extensions: component tests need .tsx, and a pure-logic test such as
+    // tests/roles.test.ts needs no JSX at all. The Playwright suite lives in
+    // tests/e2e as .spec.ts and is not matched here.
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+  },
 })

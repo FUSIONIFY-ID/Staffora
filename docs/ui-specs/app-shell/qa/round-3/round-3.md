@@ -4,7 +4,7 @@
 | --- | --- |
 | Mode | `review-response` |
 | Trigger | `aryanibos` `CHANGES_REQUESTED` on PR #11 at 2026-10-14T18:04:35Z, 24 findings (F1–F24) |
-| Reviewed revision | `bac6dfa` |
+| Reviewed revision | `e0526f1` |
 | Reference | Figma — Staffora — Product Design & Prototype (MVP v1.0), frames `01 — Login`, `02 — Main App Shell`, `18 — 403 Access Denied`, `19 — 404 Not Found` |
 | Implementation | `FE-S1-US02-main-app-shell` |
 | Environment | Local dev, Vite dev server on 5295, Express API on 3144, migrated and seeded PostgreSQL |
