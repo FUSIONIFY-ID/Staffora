@@ -30,7 +30,7 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(
             'focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500',
             error
               ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
-              : 'border-slate-300 focus:border-[#2563eb] focus:ring-[#2563eb]/20',
+              : 'border-slate-300 focus:border-brand-primary focus:ring-brand-primary/20',
             className,
           )}
           {...props}

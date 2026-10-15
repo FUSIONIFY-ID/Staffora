@@ -67,7 +67,7 @@ export const LoginForm: React.FC = () => {
         type="submit"
         id="login-submit-button"
         disabled={isSubmitting}
-        className="mt-3 inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#2563eb] text-sm font-semibold text-white transition-colors hover:bg-[#1d4ed8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+        className="mt-3 inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand-primary text-sm font-semibold text-white transition-colors hover:bg-brand-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isSubmitting && (
           <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />

@@ -9,7 +9,7 @@ export const LoginPage: React.FC = () => {
   const wasRedirected = readRedirectFrom(location.state) !== null
 
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-[#f5f6f8] font-brand lg:grid-cols-[minmax(0,680px)_1fr]">
+    <div className="grid min-h-screen grid-cols-1 bg-auth-surface font-brand lg:grid-cols-[minmax(0,680px)_1fr]">
       <LoginBrandPanel />
 
       <main className="flex items-start justify-center px-4 py-10 sm:px-6 lg:items-center lg:py-12">

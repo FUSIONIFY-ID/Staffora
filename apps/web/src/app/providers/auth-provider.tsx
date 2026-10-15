@@ -1,5 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { onUnauthorized, setCachedCsrfToken } from '../../api/client.js'
 import {
@@ -33,7 +41,7 @@ function clearSession(queryClient: QueryClient): void {
   queryClient.setQueryData(AUTH_ME_QUERY_KEY, null)
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }): ReactElement {
   const queryClient = useQueryClient()
   const meQuery = useQuery({
     queryKey: AUTH_ME_QUERY_KEY,

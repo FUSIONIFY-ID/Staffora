@@ -2,9 +2,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
-/* Brand typeface for the auth screens (Staffora login design). */
+/* Brand tokens. Auth screens (Staffora login design) use these instead of hex literals. */
 @theme {
   --font-brand: 'Exo 2', system-ui, -apple-system, sans-serif;
+
+  --color-brand-primary: #2563eb;
+  --color-brand-primary-hover: #1d4ed8;
+  --color-brand-ink: #131a29;
+  --color-brand-accent: #bcd6f7;
+  --color-auth-surface: #f5f6f8;
 }
 
 :root {
