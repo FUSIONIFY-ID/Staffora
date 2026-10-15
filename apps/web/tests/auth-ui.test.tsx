@@ -40,14 +40,17 @@ describe('LoginPage (AC01 - Login Form)', () => {
       </MemoryRouter>,
     )
 
-    const emailInput = screen.getByLabelText(/Work Email/i) as HTMLInputElement
-    fireEvent.change(emailInput, { target: { value: 'admin@staffora.internal' } })
-    expect(emailInput.value).toBe('admin@staffora.internal')
+    const emailInput = screen.getByLabelText(/Work Email/i)
+    fireEvent.change(emailInput, { target: { value: 'someone@staffora.internal' } })
+    expect(emailInput).toHaveValue('someone@staffora.internal')
 
     // No quick sign-in control, and therefore no seeded password in the source
-    // that the production bundle could ship.
+    // that the production bundle could ship. Asserted from behaviour — the form
+    // offers exactly one control that submits — rather than by naming a
+    // credential in the test file.
     expect(screen.queryByText(/Quick Sign-in/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/StafforaAdmin2026/)).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument()
   })
 })
 

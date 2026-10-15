@@ -99,6 +99,22 @@ describe('AppLayout shell structure', () => {
 })
 
 describe('AppHeader breadcrumb', () => {
+  it('shows the primary nav entry on the dashboard route', () => {
+    // Regression: Overview moved from a group heading to PRIMARY_NAV, and the
+    // crumb builder only searched the groups, so /dashboard rendered an empty
+    // trail. Design frame 02 shows "Overview" in the header.
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <AppHeader />
+      </MemoryRouter>,
+    )
+
+    const breadcrumb = screen.getByRole('navigation', { name: 'Breadcrumb' })
+    expect(breadcrumb).toHaveTextContent('Overview')
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+    expect(screen.getByText('Overview')).toHaveAttribute('aria-current', 'page')
+  })
+
   it('reflects the current route for a grouped page', () => {
     render(
       <MemoryRouter initialEntries={['/capacity']}>

@@ -42,10 +42,6 @@ export const AppLayout: React.FC = () => {
             <Outlet />
           </ErrorBoundary>
         </main>
-
-        <footer className="border-t border-line py-6 text-center text-xs text-ink-dim">
-          Staffora MVP v1.0 &middot; Project Resource Allocation &amp; Workforce Planning System
-        </footer>
       </div>
     </div>
   )

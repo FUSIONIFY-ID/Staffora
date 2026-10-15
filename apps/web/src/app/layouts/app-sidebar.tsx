@@ -2,6 +2,7 @@ import React from 'react'
 import { NavLink } from 'react-router'
 import type { UserProfile } from '../providers/auth-provider.js'
 import { visibleNavGroups, visiblePrimaryNav } from '../navigation/nav-config.js'
+import { ROLE_LABELS, initialsOf } from '../roles.js'
 
 export interface AppSidebarProps {
   user: UserProfile
@@ -65,13 +66,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ user }) => {
             aria-hidden="true"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-info-surface text-xs font-semibold text-info-text"
           >
-            {displayName.slice(0, 2).toUpperCase()}
+            {initialsOf(displayName)}
           </span>
           <span className="min-w-0">
             <span className="block truncate text-[13px] font-semibold leading-[19px] text-ink-soft">
               {displayName}
             </span>
-            <span className="block truncate text-[11px] leading-4 text-ink-dim">{user.email}</span>
+            <span className="block truncate text-[11px] leading-4 text-ink-dim">
+              {ROLE_LABELS[user.role]}
+            </span>
           </span>
         </div>
       </div>

@@ -4,7 +4,7 @@
 | --- | --- |
 | Mode | `review-response` |
 | Trigger | `aryanibos` `CHANGES_REQUESTED` on PR #11 at 2026-10-13T16:50:30Z, 16 findings (F1–F16) |
-| Reviewed revision | `3c3bbba` |
+| Reviewed revision | `bac6dfa` |
 | Reference | Figma — Staffora — Product Design & Prototype (MVP v1.0), frames `01 — Login`, `02 — Main App Shell`, `18 — 403 Access Denied`, `19 — 404 Not Found` |
 | Implementation | `FE-S1-US02-main-app-shell` |
 | Environment | Local dev, Vite dev server on 5295, Express API on 3144, migrated and seeded PostgreSQL |
@@ -61,8 +61,14 @@ re-verifies the result on the running application. `round-1/` is unchanged and s
 
 ## Console
 
-No console error is emitted on any page in this round. The `/favicon.ico` 404 from round 1 is gone
-because `index.html` now declares `/favicon.svg`.
+No console error is emitted on any page in this round, with one deliberate
+exception: while the visitor has no session, the app probes `GET /api/v1/auth/me`
+and `GET /api/v1/auth/csrf-token` and the API answers `401`. The browser records
+those as failed requests. They are the session check working as designed, not a
+fault in a page, and they stop once a session exists.
+
+The `/favicon.ico` 404 from round 1 is gone because `index.html` now declares
+`/favicon.svg`.
 
 ## Open items for the Tech Lead
 

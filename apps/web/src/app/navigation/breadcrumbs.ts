@@ -1,14 +1,20 @@
-import { NAV_GROUPS, type NavGroup, type NavItem } from './nav-config.js'
+import { NAV_GROUPS, PRIMARY_NAV, type NavItem } from './nav-config.js'
 
 export interface Crumb {
   label: string
   to?: string
 }
 
-function crumbsFor(group: NavGroup, item: NavItem, pathname: string): Crumb[] {
+/**
+ * Builds the crumb trail for a nav entry.
+ *
+ * `groupLabel` is absent for an entry that sits directly under the brand block
+ * in the sidebar (PRIMARY_NAV), which is rendered as a single crumb.
+ */
+function crumbsFor(groupLabel: string | undefined, item: NavItem, pathname: string): Crumb[] {
   const crumbs: Crumb[] = []
-  if (group.label !== item.label) {
-    crumbs.push({ label: group.label })
+  if (groupLabel !== undefined && groupLabel !== item.label) {
+    crumbs.push({ label: groupLabel })
   }
   crumbs.push({ label: item.label, to: item.path })
 
@@ -28,11 +34,24 @@ function crumbsFor(group: NavGroup, item: NavItem, pathname: string): Crumb[] {
   return crumbs.map((crumb, index) => (index === last ? { label: crumb.label } : crumb))
 }
 
+function matches(item: NavItem, pathname: string): boolean {
+  return pathname === item.path || pathname.startsWith(`${item.path}/`)
+}
+
 export function buildBreadcrumbs(pathname: string): Crumb[] {
+  // PRIMARY_NAV is searched first: Overview renders above the groups in the
+  // sidebar, so a pathname that matches it would otherwise fall through to the
+  // groups and come back empty, leaving the header without a crumb trail.
+  for (const item of PRIMARY_NAV) {
+    if (matches(item, pathname)) {
+      return crumbsFor(undefined, item, pathname)
+    }
+  }
+
   for (const group of NAV_GROUPS) {
     for (const item of group.items) {
-      if (pathname === item.path || pathname.startsWith(`${item.path}/`)) {
-        return crumbsFor(group, item, pathname)
+      if (matches(item, pathname)) {
+        return crumbsFor(group.label, item, pathname)
       }
     }
   }

@@ -1,14 +1,8 @@
 import React from 'react'
 import { useNavigate } from 'react-router'
 import type { Role } from '../app/providers/auth-provider.js'
+import { ROLE_LABELS } from '../app/roles.js'
 import { Button } from './ui/button.js'
-
-const ROLE_LABELS: Record<Role, string> = {
-  ADMIN: 'Admin',
-  PROJECT_MANAGER: 'Project Manager',
-  RESOURCE_MANAGER: 'Resource Manager',
-  EMPLOYEE: 'Employee',
-}
 
 export interface PermissionDeniedProps {
   role: Role
