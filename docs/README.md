@@ -20,6 +20,7 @@ Dokumentasi teknis resmi dan executable contract untuk implementasi Staffora MVP
 
 ### 3. [API Specification (`docs/api/`)](api/openapi.yaml)
 - [`openapi.yaml`](api/openapi.yaml): OpenAPI 3.1 specification untuk seluruh endpoint `/api/v1` (Auth, Workforce, Skills, Projects, Staffing, Allocations, Capacity, Dashboard, Health).
+- [`contract-changelog.md`](api/contract-changelog.md): Catatan setiap perubahan bentuk response terhadap kontrak di `dev`, beserta AC yang menuntutnya dan status persetujuannya.
 
 ### 4. [Development Guides (`docs/development/`)](development/local-setup.md)
 - [`local-setup.md`](development/local-setup.md): Panduan penyiapan local development environment menggunakan Docker Compose & npm workspaces.

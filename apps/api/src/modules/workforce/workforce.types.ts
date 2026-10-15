@@ -19,7 +19,13 @@ export type AvailabilityState = 'AVAILABLE' | 'PARTIAL' | 'FULLY_ALLOCATED' | 'N
 
 /**
  * Employee row in a list response. Mirrors the `Employee` schema in
- * docs/api/openapi.yaml, whose `status` is the `ACTIVE`/`INACTIVE` enum.
+ * docs/api/openapi.yaml.
+ *
+ * The field set stays as close to the contract on `dev` as the acceptance
+ * criteria allow. `availability` is the one addition, because US02.01 - AC01.03
+ * requires a current availability indicator on every row. See
+ * docs/api/contract-changelog.md for the delta against `dev` and the AC behind
+ * each entry.
  */
 export interface EmployeeView {
   id: string
@@ -36,8 +42,6 @@ export interface EmployeeView {
   departmentName: string
   jobRoleId: string
   jobRoleTitle: string
-  createdAt: string
-  updatedAt: string
 }
 
 export interface EmployeeSkillView {
@@ -69,10 +73,15 @@ interface EmployeeAllocationView {
   cancelledAt: string | null
 }
 
-/** Detail response. Mirrors `EmployeeDetail` in docs/api/openapi.yaml. */
+/**
+ * Detail response. Mirrors `EmployeeDetail` in docs/api/openapi.yaml.
+ *
+ * `department` and `jobRole` objects were dropped: the ids and the names are
+ * already on the row as `departmentId` / `departmentName` and `jobRoleId` /
+ * `jobRoleTitle`, so the nested objects repeated the same two values and were
+ * not part of the contract on `dev`.
+ */
 export interface EmployeeDetail extends EmployeeView {
-  department: { id: string; name: string }
-  jobRole: { id: string; name: string }
   skills: EmployeeSkillView[]
   allocations: EmployeeAllocationView[]
   evaluatedPeriod: CapacityWindow & {

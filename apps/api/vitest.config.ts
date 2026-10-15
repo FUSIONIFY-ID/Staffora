@@ -26,5 +26,14 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    /**
+     * The fixture hashes four passwords with bcrypt cost 12, and CLAUDE.md fixes
+     * that cost, so a hook cannot be made fast by lowering it. On a loaded
+     * machine one hash took about a second during review and the default 10s
+     * beforeAll timeout expired, which failed the suite for an environment
+     * reason rather than an assertion. These budgets cover the cold start.
+     */
+    hookTimeout: 60_000,
+    testTimeout: 30_000,
   },
 })

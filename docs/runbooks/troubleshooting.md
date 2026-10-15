@@ -46,3 +46,78 @@ Panduan diagnosa dan penanganan insiden operasional Staffora.
   docker compose logs db
   ```
   Pastikan database PostgreSQL aktif dan port 5432 dapat diakses dari container API.
+
+---
+
+## 5. Migrasi Gagal Karena Duplikat Case-Insensitive (P3018)
+
+- **Gejala**: `prisma migrate deploy` berhenti dengan `P3018` dan pesan
+  `Cannot add the case-insensitive unique index on departments.name. Merge or rename these duplicates first: it ops (2 rows)`.
+  Deploy berikutnya ditolak dengan `P3009` karena migrasi sebelumnya tercatat gagal
+  (`finished_at` kosong di `_prisma_migrations`).
+- **Penyebab**: Migrasi `20261014160000_workforce_normalized_name_uniqueness` menambahkan unique index
+  pada `lower(name)` untuk `departments` dan `job_roles`. PostgreSQL menolaknya bila sudah ada dua baris
+  yang namanya sama setelah di-lowercase. Ini kondisi data, bukan bug kode, dan hanya muncul di
+  lingkungan yang sempat menerima duplikat sebelum constraint ada.
+- **Diagnosa**: cari duplikatnya lebih dulu, read-only.
+  ```sql
+  SELECT lower(name) AS normalized, count(*) AS rows, array_agg(name ORDER BY name) AS names
+  FROM departments GROUP BY lower(name) HAVING count(*) > 1;
+
+  SELECT lower(name) AS normalized, count(*) AS rows, array_agg(name ORDER BY name) AS names
+  FROM job_roles GROUP BY lower(name) HAVING count(*) > 1;
+  ```
+- **Solusi**: gabungkan tiap grup menjadi satu baris, pindahkan referensinya lebih dulu, baru jalankan
+  ulang migrasi. Referensi foreign key yang menunjuk kedua tabel: `employees.department_id`,
+  `employees.job_role_id`, `allocations.job_role_id`, `staffing_requirements.job_role_id`.
+
+  Tentukan dulu baris mana yang dipertahankan dan mana yang dibuang, satu pasang per grup. Contoh di
+  bawah mempertahankan baris terlama (`created_at` paling awal, lalu `id` sebagai tie-break):
+
+  ```sql
+  WITH ranked AS (
+    SELECT id, row_number() OVER (PARTITION BY lower(name) ORDER BY created_at, id) AS rn
+    FROM departments
+  )
+  SELECT (array_agg(id ORDER BY rn))[1] AS keep_id, (array_agg(id ORDER BY rn))[2] AS drop_id
+  FROM ranked WHERE rn <= 2 GROUP BY lower(name) HAVING count(*) > 1;
+  ```
+
+  Ulangi dengan `FROM job_roles` untuk tabel kedua. Jalankan blok berikut satu kali per pasangan,
+  dengan `:keep_id` dan `:drop_id` diganti hasil query di atas:
+
+  ```sql
+  BEGIN;
+
+  -- Pindahkan referensi dari baris yang dibuang ke baris yang dipertahankan.
+  UPDATE employees SET department_id = :keep_id WHERE department_id = :drop_id;
+  UPDATE employees SET job_role_id   = :keep_id WHERE job_role_id   = :drop_id;
+  UPDATE allocations SET job_role_id = :keep_id WHERE job_role_id  = :drop_id;
+  UPDATE staffing_requirements SET job_role_id = :keep_id WHERE job_role_id = :drop_id;
+
+  -- Baru hapus baris yang dibuang.
+  DELETE FROM departments WHERE id = :drop_id;
+  DELETE FROM job_roles   WHERE id = :drop_id;
+
+  COMMIT;
+  ```
+
+  Pastikan grup duplikatnya sudah kosong sebelum lanjut:
+
+  ```sql
+  SELECT lower(name), count(*) FROM departments GROUP BY lower(name) HAVING count(*) > 1;
+  SELECT lower(name), count(*) FROM job_roles   GROUP BY lower(name) HAVING count(*) > 1;
+  ```
+
+  Setelah semua grup bersih, tandai migrasi yang gagal sebagai belum dijalankan lalu deploy lagi:
+
+  ```bash
+  npx prisma migrate resolve --rolled-back 20261014160000_workforce_normalized_name_uniqueness
+  npm run db:migrate:deploy -w @staffora/api
+  ```
+
+  `migrate resolve --rolled-back` hanya membersihkan catatan kegagalan; ia tidak mengubah data.
+  Jalankan perintah SQL penggabungan di atas sebelum langkah ini, karena deploy berikutnya akan
+  mencoba index yang sama dan gagal lagi bila duplikatnya masih ada.
+- **Pencegahan**: periksa duplikat sebelum menerapkan migrasi ke lingkungan yang sudah berisi data.
+  Query diagnosa di atas bersifat read-only dan aman dijalankan lebih dulu.

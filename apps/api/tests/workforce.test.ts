@@ -296,51 +296,67 @@ describe('Workforce Employee Resource API (US02.01)', () => {
       const session = await login('admin')
       const name = unique('WF Race Dept')
 
-      // The pre-flight lookup cannot see a row that is still being inserted, so
-      // these two requests can both pass it. The unique index on lower(name) is
-      // what has to stop the second one (ERD 2.3).
-      const results = await Promise.all([
-        writeReq(session, 'post', '/api/v1/departments').send({ name }),
-        writeReq(session, 'post', '/api/v1/departments').send({ name: name.toUpperCase() }),
-      ])
+      try {
+        // The pre-flight lookup cannot see a row that is still being inserted, so
+        // these two requests can both pass it. The unique index on lower(name) is
+        // what has to stop the second one (ERD 2.3).
+        const results = await Promise.all([
+          writeReq(session, 'post', '/api/v1/departments').send({ name }),
+          writeReq(session, 'post', '/api/v1/departments').send({ name: name.toUpperCase() }),
+        ])
 
-      const statuses = results.map((res) => res.status).sort((a, b) => a - b)
-      expect(statuses).toEqual([201, 409])
+        const statuses = results.map((res) => res.status).sort((a, b) => a - b)
+        expect(statuses).toEqual([201, 409])
 
-      const loser = results.find((res) => res.status === 409)
-      expect(loser?.body.code).toBe('DUPLICATE_DEPARTMENT_NAME')
+        const loser = results.find((res) => res.status === 409)
+        expect(loser?.body.code).toBe('DUPLICATE_DEPARTMENT_NAME')
 
-      const stored = await prisma.department.findMany({
-        where: { name: { equals: name, mode: 'insensitive' } },
-        select: { id: true },
-      })
-      expect(stored).toHaveLength(1)
-
-      await prisma.department.deleteMany({ where: { id: { in: stored.map((row) => row.id) } } })
+        const stored = await prisma.department.findMany({
+          where: { name: { equals: name, mode: 'insensitive' } },
+          select: { id: true },
+        })
+        expect(stored).toHaveLength(1)
+      } finally {
+        // In a finally block so a failed assertion cannot leave a row behind.
+        // A leftover duplicate makes the unique index impossible to recreate,
+        // which is exactly what happened during the round 3 review: the mutation
+        // check failed before reaching the old cleanup and the rows had to be
+        // removed by hand. `name` is unique per run, so this cannot touch rows
+        // the suite did not create.
+        await prisma.department.deleteMany({
+          where: { name: { equals: name, mode: 'insensitive' } },
+        })
+      }
     })
 
     it('rejects concurrent case-variant job role names at the database level', async () => {
       const session = await login('admin')
       const name = unique('WF Race Role')
 
-      const results = await Promise.all([
-        writeReq(session, 'post', '/api/v1/job-roles').send({ name }),
-        writeReq(session, 'post', '/api/v1/job-roles').send({ name: name.toUpperCase() }),
-      ])
+      try {
+        const results = await Promise.all([
+          writeReq(session, 'post', '/api/v1/job-roles').send({ name }),
+          writeReq(session, 'post', '/api/v1/job-roles').send({ name: name.toUpperCase() }),
+        ])
 
-      const statuses = results.map((res) => res.status).sort((a, b) => a - b)
-      expect(statuses).toEqual([201, 409])
+        const statuses = results.map((res) => res.status).sort((a, b) => a - b)
+        expect(statuses).toEqual([201, 409])
 
-      const loser = results.find((res) => res.status === 409)
-      expect(loser?.body.code).toBe('DUPLICATE_JOB_ROLE_NAME')
+        const loser = results.find((res) => res.status === 409)
+        expect(loser?.body.code).toBe('DUPLICATE_JOB_ROLE_NAME')
 
-      const stored = await prisma.jobRole.findMany({
-        where: { name: { equals: name, mode: 'insensitive' } },
-        select: { id: true },
-      })
-      expect(stored).toHaveLength(1)
-
-      await prisma.jobRole.deleteMany({ where: { id: { in: stored.map((row) => row.id) } } })
+        const stored = await prisma.jobRole.findMany({
+          where: { name: { equals: name, mode: 'insensitive' } },
+          select: { id: true },
+        })
+        expect(stored).toHaveLength(1)
+      } finally {
+        // See the department counterpart: cleanup runs even when an assertion
+        // fails, so a leftover duplicate cannot block the unique index.
+        await prisma.jobRole.deleteMany({
+          where: { name: { equals: name, mode: 'insensitive' } },
+        })
+      }
     })
 
     it('rejects creation referencing a department or job role that does not exist', async () => {
@@ -613,12 +629,23 @@ describe('Workforce Employee Resource API (US02.01)', () => {
       expect(colleague.body.errors).toEqual(unknown.body.errors)
     })
 
-    it('rejects unauthenticated access to the employee endpoints', async () => {
+    it('rejects an unauthenticated request with 401', async () => {
       const list = await request(app).get('/api/v1/employees')
       expect(list.status).toBe(401)
+      expect(list.body.code).toBe('UNAUTHORIZED')
 
+      const detail = await request(app).get(`/api/v1/employees/${MISSING_ID}`)
+      expect(detail.status).toBe(401)
+      expect(detail.body.code).toBe('UNAUTHORIZED')
+    })
+
+    it('rejects a state-changing request without a CSRF token before it reaches authentication', async () => {
+      // The CSRF middleware runs before the route's requireAuth, so a POST with
+      // no session and no token answers 403, not 401. Kept separate from the
+      // test above so the name matches what is actually being asserted.
       const create = await request(app).post('/api/v1/employees').send({})
       expect(create.status).toBe(403)
+      expect(create.body.code).toBe('FORBIDDEN')
     })
   })
 })

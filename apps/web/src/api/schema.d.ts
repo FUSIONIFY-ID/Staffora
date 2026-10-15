@@ -1607,7 +1607,7 @@ export interface components {
             /** Format: uuid */
             skillId: string;
             skillName: string;
-            skillIsActive: boolean;
+            skillIsActive?: boolean;
             proficiencyLevel: number;
         };
         CreateEmployeeInput: {
@@ -1643,9 +1643,9 @@ export interface components {
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
             /** @description Peak concurrent allocation effective today, computed by the shared sweep-line capacity engine over the single-day window [today, today]: allocations that are not cancelled and whose inclusive start and end dates contain today. Because it is a peak and not a sum, sequential allocations that do not overlap are never added together (TSD 10.3 / BR-G17). This is the figure behind the current availability indicator required by US02.01 - AC01.03. */
-            currentAllocation: number;
+            currentAllocation?: number;
             /** @description 100 minus currentAllocation, floored at 0. */
-            currentRemainingCapacity: number;
+            currentRemainingCapacity?: number;
             /**
              * @description Current availability for US02.01 - AC01.03, derived from currentRemainingCapacity. NOT_ASSIGNABLE is reported for INACTIVE employees per US05.01 - AC03.04. AVAILABLE, PARTIAL and FULLY_ALLOCATED follow US05.01 - AC03.01 to AC03.03.
              * @enum {string}
@@ -1653,26 +1653,12 @@ export interface components {
             availability: "AVAILABLE" | "PARTIAL" | "FULLY_ALLOCATED" | "NOT_ASSIGNABLE";
             /** Format: uuid */
             departmentId: string;
-            departmentName: string;
+            departmentName?: string;
             /** Format: uuid */
             jobRoleId: string;
-            jobRoleTitle: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
+            jobRoleTitle?: string;
         };
         EmployeeDetail: components["schemas"]["Employee"] & {
-            department?: {
-                /** Format: uuid */
-                id?: string;
-                name?: string;
-            };
-            jobRole?: {
-                /** Format: uuid */
-                id?: string;
-                name?: string;
-            };
             skills?: components["schemas"]["EmployeeSkill"][];
             allocations?: components["schemas"]["Allocation"][];
             /** @description Capacity window result (US02.01 - AC04.04). peakConcurrentAllocation is the highest simultaneous allocation inside the window, computed by the shared sweep-line engine, and remainingCapacity is 100 minus that peak. Allocations that overlap the window without overlapping each other are never summed (TSD 10.3 / BR-G17). */

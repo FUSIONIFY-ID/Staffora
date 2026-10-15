@@ -3,7 +3,9 @@ node_modules/
 **/coverage/
 **/.env
 **/.env.local
+**/.env.test
 !**/.env.example
+!**/.env.test.example
 *.tsbuildinfo
 apps/api/src/generated/
 playwright-report/

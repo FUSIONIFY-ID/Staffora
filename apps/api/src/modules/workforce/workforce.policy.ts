@@ -13,10 +13,12 @@ import type { AuthenticatedUser } from '../../common/auth/types.js'
  * caller enumerate the workforce.
  *
  * The RBAC foundation in PR #6 introduces a shared `assertPolicyOrNotFound`
- * helper in common/auth. This module keeps its own until that PR merges into
- * dev, at which point the two collapse into the shared helper; see the PR #10
- * review thread for the recorded decision. Nothing in this file is a second
- * convention by accident.
+ * helper in common/auth/policy.ts. PR #6 is not merged into dev yet, so this
+ * module keeps its own two helpers in the meantime.
+ *
+ * The decision between collapsing into the shared helper after PR #6 merges and
+ * accepting the duplication temporarily is still with the Tech Lead and is not
+ * recorded anywhere yet. PR #10 review round 3, finding F5, tracks it.
  */
 function canViewEmployee(user: AuthenticatedUser, targetEmployeeId: string): boolean {
   if (user.role === 'ADMIN' || user.role === 'RESOURCE_MANAGER' || user.role === 'PROJECT_MANAGER') {

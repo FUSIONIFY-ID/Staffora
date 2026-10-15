@@ -177,6 +177,7 @@ erDiagram
 - **Purpose**: Master tables providing standardized taxonomy for resources, staffing requirements, and allocations.
 - **Constraints**:
   - `name`: Unique constraint (case-insensitive/normalized).
+  - Enforcement is two-layer. `schema.prisma` declares `name @unique`, which PostgreSQL implements case-sensitively as `departments_name_key` / `job_roles_name_key`. The case-insensitive half is a unique index over `lower(name)`, named `departments_name_lower_key` and `job_roles_name_lower_key`, added by migration `20261014160000_workforce_normalized_name_uniqueness` because Prisma cannot model an expression index. The application normalises whitespace and trims before writing, and the pre-flight block in that migration refuses to apply while case-insensitive duplicates exist.
 
 ### 2.4 `employees`
 - **Purpose**: Resource profiles representing the internal workforce.

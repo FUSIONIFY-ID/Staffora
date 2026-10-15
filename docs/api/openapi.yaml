@@ -1037,7 +1037,7 @@ components:
 
     EmployeeSkill:
       type: object
-      required: [id, skillId, skillName, skillIsActive, proficiencyLevel]
+      required: [id, skillId, skillName, proficiencyLevel]
       properties:
         id: { type: string, format: uuid }
         skillId: { type: string, format: uuid }
@@ -1066,7 +1066,7 @@ components:
 
     Employee:
       type: object
-      required: [id, employeeCode, fullName, workEmail, departmentId, departmentName, jobRoleId, jobRoleTitle, status, currentAllocation, currentRemainingCapacity, availability, createdAt, updatedAt]
+      required: [id, employeeCode, fullName, workEmail, departmentId, jobRoleId, status, availability]
       properties:
         id: { type: string, format: uuid }
         employeeCode: { type: string }
@@ -1097,24 +1097,12 @@ components:
         departmentName: { type: string }
         jobRoleId: { type: string, format: uuid }
         jobRoleTitle: { type: string }
-        createdAt: { type: string, format: date-time }
-        updatedAt: { type: string, format: date-time }
 
     EmployeeDetail:
       allOf:
         - $ref: '#/components/schemas/Employee'
         - type: object
           properties:
-            department:
-              type: object
-              properties:
-                id: { type: string, format: uuid }
-                name: { type: string }
-            jobRole:
-              type: object
-              properties:
-                id: { type: string, format: uuid }
-                name: { type: string }
             skills:
               type: array
               items:

@@ -81,8 +81,6 @@ export function toEmployeeView(
     departmentName: employee.department.name,
     jobRoleId: employee.jobRoleId,
     jobRoleTitle: employee.jobRole.name,
-    createdAt: employee.createdAt.toISOString(),
-    updatedAt: employee.updatedAt.toISOString(),
   }
 }
 
@@ -125,8 +123,6 @@ export function toDetailView(
 
   return {
     ...toEmployeeView(employee, referenceDate),
-    department: { id: employee.department.id, name: employee.department.name },
-    jobRole: { id: employee.jobRole.id, name: employee.jobRole.name },
     skills: employee.skills.map(toSkillView),
     allocations: employee.allocations.map((allocation) => ({
       id: allocation.id,
