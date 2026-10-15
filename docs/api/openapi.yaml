@@ -12,7 +12,7 @@ paths:
       summary: Liveness probe
       description: Returns 200 if the process is running.
       responses:
-        '200':
+        "200":
           description: Process alive
           content:
             application/json:
@@ -27,7 +27,7 @@ paths:
       summary: Readiness probe
       description: Returns 200 if the database and critical runtime dependencies are ready.
       responses:
-        '200':
+        "200":
           description: Service ready
           content:
             application/json:
@@ -36,12 +36,12 @@ paths:
                 properties:
                   status: { type: string, example: "ready" }
                   database: { type: string, example: "connected" }
-        '503':
+        "503":
           description: Service unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/login:
     post:
@@ -55,10 +55,16 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email: { type: string, format: email, example: "admin@staffora.internal" }
-                password: { type: string, minLength: 12, example: "SuperSecret123!" }
+                email:
+                  {
+                    type: string,
+                    format: email,
+                    example: "admin@staffora.internal",
+                  }
+                password:
+                  { type: string, minLength: 12, example: "SuperSecret123!" }
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
@@ -66,26 +72,26 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/UserIdentity'
-        '401':
+                    $ref: "#/components/schemas/UserIdentity"
+        "401":
           description: Invalid credentials
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
           description: Rate limit exceeded
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/logout:
     post:
       summary: Sign out user
       description: Destroys current session and clears the session cookie.
       responses:
-        '204':
+        "204":
           description: Logged out successfully
 
   /auth/me:
@@ -93,7 +99,7 @@ paths:
       summary: Current authenticated identity
       description: Retrieves the currently logged-in user profile, role, and linked employee details.
       responses:
-        '200':
+        "200":
           description: Authenticated user details
           content:
             application/json:
@@ -101,20 +107,20 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/UserIdentity'
-        '401':
+                    $ref: "#/components/schemas/UserIdentity"
+        "401":
           description: Unauthenticated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/csrf-token:
     get:
       summary: Retrieve CSRF token
       description: Returns the active synchronizer CSRF token stored in the current session.
       responses:
-        '200':
+        "200":
           description: CSRF token value
           content:
             application/json:
@@ -130,12 +136,12 @@ paths:
     get:
       summary: List departments
       responses:
-        '200':
+        "200":
           description: List of active departments
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DepartmentListResponse'
+                $ref: "#/components/schemas/DepartmentListResponse"
     post:
       summary: Create department (Admin only)
       requestBody:
@@ -148,7 +154,7 @@ paths:
               properties:
                 name: { type: string }
       responses:
-        '201':
+        "201":
           description: Department created
           content:
             application/json:
@@ -156,18 +162,18 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Department'
+                    $ref: "#/components/schemas/Department"
 
   /job-roles:
     get:
       summary: List job roles
       responses:
-        '200':
+        "200":
           description: List of active job roles
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobRoleListResponse'
+                $ref: "#/components/schemas/JobRoleListResponse"
     post:
       summary: Create job role (Admin only)
       requestBody:
@@ -180,7 +186,7 @@ paths:
               properties:
                 name: { type: string }
       responses:
-        '201':
+        "201":
           description: Job role created
           content:
             application/json:
@@ -188,7 +194,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/JobRole'
+                    $ref: "#/components/schemas/JobRole"
 
   /employees:
     get:
@@ -213,12 +219,12 @@ paths:
           in: query
           schema: { type: integer, default: 20 }
       responses:
-        '200':
+        "200":
           description: Paginated employees
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EmployeeListResponse'
+                $ref: "#/components/schemas/EmployeeListResponse"
     post:
       summary: Create employee profile
       requestBody:
@@ -226,9 +232,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateEmployeeInput'
+              $ref: "#/components/schemas/CreateEmployeeInput"
       responses:
-        '201':
+        "201":
           description: Employee created
           content:
             application/json:
@@ -236,7 +242,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Employee'
+                    $ref: "#/components/schemas/Employee"
 
   /employees/{id}:
     get:
@@ -253,7 +259,7 @@ paths:
           in: query
           schema: { type: string, format: date }
       responses:
-        '200':
+        "200":
           description: Employee detail with skills, allocations, and capacity
           content:
             application/json:
@@ -261,7 +267,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/EmployeeDetail'
+                    $ref: "#/components/schemas/EmployeeDetail"
     patch:
       summary: Update employee profile
       parameters:
@@ -274,9 +280,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateEmployeeInput'
+              $ref: "#/components/schemas/UpdateEmployeeInput"
       responses:
-        '200':
+        "200":
           description: Employee updated
           content:
             application/json:
@@ -284,18 +290,18 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Employee'
+                    $ref: "#/components/schemas/Employee"
 
   /skills:
     get:
       summary: List skill catalog
       responses:
-        '200':
+        "200":
           description: List of skills
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SkillListResponse'
+                $ref: "#/components/schemas/SkillListResponse"
     post:
       summary: Create skill (Admin/Resource Manager)
       requestBody:
@@ -308,7 +314,7 @@ paths:
               properties:
                 name: { type: string }
       responses:
-        '201':
+        "201":
           description: Skill created
           content:
             application/json:
@@ -316,7 +322,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Skill'
+                    $ref: "#/components/schemas/Skill"
 
   /employees/{id}/skills:
     get:
@@ -327,7 +333,7 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: List of employee skills with proficiency
           content:
             application/json:
@@ -337,7 +343,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/EmployeeSkill'
+                      $ref: "#/components/schemas/EmployeeSkill"
     post:
       summary: Assign skill to employee
       parameters:
@@ -356,7 +362,7 @@ paths:
                 skillId: { type: string, format: uuid }
                 proficiencyLevel: { type: integer, minimum: 1, maximum: 5 }
       responses:
-        '201':
+        "201":
           description: Skill assigned
           content:
             application/json:
@@ -364,7 +370,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/EmployeeSkill'
+                    $ref: "#/components/schemas/EmployeeSkill"
 
   /projects:
     get:
@@ -375,7 +381,11 @@ paths:
           schema: { type: string }
         - name: status
           in: query
-          schema: { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
+          schema:
+            {
+              type: string,
+              enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED],
+            }
         - name: projectManagerEmployeeId
           in: query
           schema: { type: string, format: uuid }
@@ -386,12 +396,12 @@ paths:
           in: query
           schema: { type: integer, default: 20 }
       responses:
-        '200':
+        "200":
           description: Paginated projects
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectListResponse'
+                $ref: "#/components/schemas/ProjectListResponse"
     post:
       summary: Create project
       requestBody:
@@ -399,9 +409,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateProjectInput'
+              $ref: "#/components/schemas/CreateProjectInput"
       responses:
-        '201':
+        "201":
           description: Project created
           content:
             application/json:
@@ -409,7 +419,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Project'
+                    $ref: "#/components/schemas/Project"
 
   /projects/{id}:
     get:
@@ -420,7 +430,7 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: Project detail with staffing requirements and allocations
           content:
             application/json:
@@ -428,7 +438,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/ProjectDetail'
+                    $ref: "#/components/schemas/ProjectDetail"
     patch:
       summary: Update project
       parameters:
@@ -441,9 +451,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateProjectInput'
+              $ref: "#/components/schemas/UpdateProjectInput"
       responses:
-        '200':
+        "200":
           description: Project updated
           content:
             application/json:
@@ -451,7 +461,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Project'
+                    $ref: "#/components/schemas/Project"
 
   /projects/{id}/staffing-requirements:
     get:
@@ -462,7 +472,7 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: Staffing requirements
           content:
             application/json:
@@ -472,7 +482,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/StaffingRequirement'
+                      $ref: "#/components/schemas/StaffingRequirement"
     post:
       summary: Create staffing requirement for project
       parameters:
@@ -485,9 +495,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateStaffingRequirementInput'
+              $ref: "#/components/schemas/CreateStaffingRequirementInput"
       responses:
-        '201':
+        "201":
           description: Staffing requirement created
           content:
             application/json:
@@ -495,7 +505,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/StaffingRequirement'
+                    $ref: "#/components/schemas/StaffingRequirement"
 
   /staffing-requirements/{id}:
     patch:
@@ -511,9 +521,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateStaffingRequirementInput'
+              $ref: "#/components/schemas/UpdateStaffingRequirementInput"
       responses:
-        '200':
+        "200":
           description: Staffing requirement updated
           content:
             application/json:
@@ -521,7 +531,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/StaffingRequirement'
+                    $ref: "#/components/schemas/StaffingRequirement"
     delete:
       summary: Delete staffing requirement (Not Implemented)
       description: Staffing requirement physical deletion is disabled per BR-G15. Soft-delete / archival will be designed in Sprint 2 (US03).
@@ -531,12 +541,12 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '501':
+        "501":
           description: Not Implemented (pending soft-delete design in US03)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /allocations:
     get:
@@ -555,12 +565,18 @@ paths:
           in: query
           schema: { type: string, format: date }
       responses:
-        '200':
+        "200":
           description: List of allocations
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AllocationListResponse'
+                $ref: "#/components/schemas/AllocationListResponse"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       summary: Create resource allocation
       description: Validates employee capacity under row lock before saving. Rejects if total concurrent allocation exceeds 100%.
@@ -569,9 +585,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAllocationInput'
+              $ref: "#/components/schemas/CreateAllocationInput"
       responses:
-        '201':
+        "201":
           description: Allocation created
           content:
             application/json:
@@ -579,13 +595,19 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Allocation'
-        '409':
+                    $ref: "#/components/schemas/Allocation"
+        "409":
           description: Capacity conflict or validation conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CapacityConflictResponse'
+                $ref: "#/components/schemas/CapacityConflictResponse"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /allocations/{id}:
     patch:
@@ -600,9 +622,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAllocationInput'
+              $ref: "#/components/schemas/UpdateAllocationInput"
       responses:
-        '200':
+        "200":
           description: Allocation updated
           content:
             application/json:
@@ -610,13 +632,19 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Allocation'
-        '409':
+                    $ref: "#/components/schemas/Allocation"
+        "409":
           description: Capacity conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CapacityConflictResponse'
+                $ref: "#/components/schemas/CapacityConflictResponse"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /allocations/{id}/end:
     post:
@@ -636,7 +664,7 @@ paths:
               properties:
                 endDate: { type: string, format: date }
       responses:
-        '200':
+        "200":
           description: Allocation ended
           content:
             application/json:
@@ -644,7 +672,13 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Allocation'
+                    $ref: "#/components/schemas/Allocation"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /allocations/{id}/cancel:
     post:
@@ -655,7 +689,7 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: Allocation cancelled
           content:
             application/json:
@@ -663,7 +697,13 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Allocation'
+                    $ref: "#/components/schemas/Allocation"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /resource-finder:
     get:
@@ -693,12 +733,12 @@ paths:
           in: query
           schema: { type: integer, minimum: 0, maximum: 100 }
       responses:
-        '200':
+        "200":
           description: Search results with peak concurrent allocation and remaining capacity
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResourceFinderResponse'
+                $ref: "#/components/schemas/ResourceFinderResponse"
 
   /capacity:
     get:
@@ -716,12 +756,12 @@ paths:
           in: query
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: Capacity summaries across employees
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrganizationCapacityResponse'
+                $ref: "#/components/schemas/OrganizationCapacityResponse"
 
   /dashboard:
     get:
@@ -734,7 +774,7 @@ paths:
           in: query
           schema: { type: string, format: date }
       responses:
-        '200':
+        "200":
           description: Dashboard metrics
           content:
             application/json:
@@ -742,14 +782,14 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/DashboardData'
+                    $ref: "#/components/schemas/DashboardData"
 
   /me:
     get:
       summary: Employee self-view
       description: Returns self profile, skills, current and upcoming allocations, and capacity.
       responses:
-        '200':
+        "200":
           description: Employee personal summary
           content:
             application/json:
@@ -757,7 +797,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/EmployeeSelfView'
+                    $ref: "#/components/schemas/EmployeeSelfView"
 
 components:
   schemas:
@@ -779,18 +819,28 @@ components:
       type: object
       required: [message, code, errors, meta, requestId]
       properties:
-        message: { type: string, example: "Allocation exceeds employee capacity." }
+        message:
+          { type: string, example: "Allocation exceeds employee capacity." }
         code: { type: string, example: "CAPACITY_CONFLICT" }
         errors: { type: object }
         meta:
           type: object
-          required: [peakAllocation, requestedAllocation, remainingCapacity, conflictStartDate, conflictEndDate]
+          required:
+            [
+              peakAllocation,
+              requestedAllocation,
+              remainingCapacity,
+              conflictStartDate,
+              conflictEndDate,
+            ]
           properties:
             peakAllocation: { type: integer, example: 80 }
             requestedAllocation: { type: integer, example: 30 }
             remainingCapacity: { type: integer, example: 20 }
-            conflictStartDate: { type: string, format: date, example: "2026-11-01" }
-            conflictEndDate: { type: string, format: date, example: "2026-11-15" }
+            conflictStartDate:
+              { type: string, format: date, example: "2026-11-01" }
+            conflictEndDate:
+              { type: string, format: date, example: "2026-11-15" }
         requestId: { type: string }
 
     UserIdentity:
@@ -799,7 +849,11 @@ components:
       properties:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
-        role: { type: string, enum: [ADMIN, PROJECT_MANAGER, RESOURCE_MANAGER, EMPLOYEE] }
+        role:
+          {
+            type: string,
+            enum: [ADMIN, PROJECT_MANAGER, RESOURCE_MANAGER, EMPLOYEE],
+          }
         isActive: { type: boolean }
         employeeId: { type: string, format: uuid, nullable: true }
         employee:
@@ -827,7 +881,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Department'
+            $ref: "#/components/schemas/Department"
 
     JobRole:
       type: object
@@ -843,7 +897,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/JobRole'
+            $ref: "#/components/schemas/JobRole"
 
     Skill:
       type: object
@@ -859,7 +913,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Skill'
+            $ref: "#/components/schemas/Skill"
 
     EmployeeSkill:
       type: object
@@ -872,7 +926,8 @@ components:
 
     CreateEmployeeInput:
       type: object
-      required: [employeeCode, fullName, workEmail, departmentId, jobRoleId, status]
+      required:
+        [employeeCode, fullName, workEmail, departmentId, jobRoleId, status]
       properties:
         employeeCode: { type: string }
         fullName: { type: string }
@@ -891,7 +946,8 @@ components:
 
     Employee:
       type: object
-      required: [id, employeeCode, fullName, workEmail, departmentId, jobRoleId, status]
+      required:
+        [id, employeeCode, fullName, workEmail, departmentId, jobRoleId, status]
       properties:
         id: { type: string, format: uuid }
         employeeCode: { type: string }
@@ -907,17 +963,17 @@ components:
 
     EmployeeDetail:
       allOf:
-        - $ref: '#/components/schemas/Employee'
+        - $ref: "#/components/schemas/Employee"
         - type: object
           properties:
             skills:
               type: array
               items:
-                $ref: '#/components/schemas/EmployeeSkill'
+                $ref: "#/components/schemas/EmployeeSkill"
             allocations:
               type: array
               items:
-                $ref: '#/components/schemas/Allocation'
+                $ref: "#/components/schemas/Allocation"
             evaluatedPeriod:
               type: object
               properties:
@@ -932,20 +988,33 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Employee'
+            $ref: "#/components/schemas/Employee"
         meta:
-          $ref: '#/components/schemas/PaginationMeta'
+          $ref: "#/components/schemas/PaginationMeta"
 
     CreateProjectInput:
       type: object
-      required: [projectCode, name, projectManagerEmployeeId, startDate, endDate, status]
+      required:
+        [
+          projectCode,
+          name,
+          projectManagerEmployeeId,
+          startDate,
+          endDate,
+          status,
+        ]
       properties:
         projectCode: { type: string }
         name: { type: string }
         projectManagerEmployeeId: { type: string, format: uuid }
         startDate: { type: string, format: date }
         endDate: { type: string, format: date }
-        status: { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED], default: DRAFT }
+        status:
+          {
+            type: string,
+            enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED],
+            default: DRAFT,
+          }
 
     UpdateProjectInput:
       type: object
@@ -954,11 +1023,21 @@ components:
         projectManagerEmployeeId: { type: string, format: uuid }
         startDate: { type: string, format: date }
         endDate: { type: string, format: date }
-        status: { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
+        status:
+          { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
 
     Project:
       type: object
-      required: [id, projectCode, name, projectManagerEmployeeId, startDate, endDate, status]
+      required:
+        [
+          id,
+          projectCode,
+          name,
+          projectManagerEmployeeId,
+          startDate,
+          endDate,
+          status,
+        ]
       properties:
         id: { type: string, format: uuid }
         projectCode: { type: string }
@@ -967,23 +1046,24 @@ components:
         projectManagerName: { type: string }
         startDate: { type: string, format: date }
         endDate: { type: string, format: date }
-        status: { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
+        status:
+          { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
         staffingRequirementCount: { type: integer, default: 0 }
         allocatedResourceCount: { type: integer, default: 0 }
 
     ProjectDetail:
       allOf:
-        - $ref: '#/components/schemas/Project'
+        - $ref: "#/components/schemas/Project"
         - type: object
           properties:
             staffingRequirements:
               type: array
               items:
-                $ref: '#/components/schemas/StaffingRequirement'
+                $ref: "#/components/schemas/StaffingRequirement"
             allocations:
               type: array
               items:
-                $ref: '#/components/schemas/Allocation'
+                $ref: "#/components/schemas/Allocation"
 
     ProjectListResponse:
       type: object
@@ -991,9 +1071,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Project'
+            $ref: "#/components/schemas/Project"
         meta:
-          $ref: '#/components/schemas/PaginationMeta'
+          $ref: "#/components/schemas/PaginationMeta"
 
     CreateStaffingRequirementInput:
       type: object
@@ -1032,7 +1112,19 @@ components:
 
     StaffingRequirement:
       type: object
-      required: [id, projectId, jobRoleId, jobRoleTitle, headcount, filledHeadcount, allocationPercentage, startDate, endDate, status]
+      required:
+        [
+          id,
+          projectId,
+          jobRoleId,
+          jobRoleTitle,
+          headcount,
+          filledHeadcount,
+          allocationPercentage,
+          startDate,
+          endDate,
+          status,
+        ]
       properties:
         id: { type: string, format: uuid }
         projectId: { type: string, format: uuid }
@@ -1055,7 +1147,15 @@ components:
 
     CreateAllocationInput:
       type: object
-      required: [employeeId, projectId, jobRoleId, allocationPercentage, startDate, endDate]
+      required:
+        [
+          employeeId,
+          projectId,
+          jobRoleId,
+          allocationPercentage,
+          startDate,
+          endDate,
+        ]
       properties:
         employeeId: { type: string, format: uuid }
         projectId: { type: string, format: uuid }
@@ -1075,7 +1175,17 @@ components:
 
     Allocation:
       type: object
-      required: [id, employeeId, projectId, jobRoleId, allocationPercentage, startDate, endDate, displayStatus]
+      required:
+        [
+          id,
+          employeeId,
+          projectId,
+          jobRoleId,
+          allocationPercentage,
+          startDate,
+          endDate,
+          displayStatus,
+        ]
       properties:
         id: { type: string, format: uuid }
         employeeId: { type: string, format: uuid }
@@ -1089,7 +1199,8 @@ components:
         allocationPercentage: { type: integer }
         startDate: { type: string, format: date }
         endDate: { type: string, format: date }
-        displayStatus: { type: string, enum: [PLANNED, ACTIVE, ENDED, CANCELLED] }
+        displayStatus:
+          { type: string, enum: [PLANNED, ACTIVE, ENDED, CANCELLED] }
         cancelledAt: { type: string, format: date-time, nullable: true }
 
     AllocationListResponse:
@@ -1098,11 +1209,22 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Allocation'
+            $ref: "#/components/schemas/Allocation"
 
     ResourceFinderItem:
       type: object
-      required: [employeeId, employeeCode, fullName, workEmail, jobRoleTitle, departmentName, peakConcurrentAllocation, remainingCapacity, isAssignable]
+      required:
+        [
+          employeeId,
+          employeeCode,
+          fullName,
+          workEmail,
+          jobRoleTitle,
+          departmentName,
+          peakConcurrentAllocation,
+          remainingCapacity,
+          isAssignable,
+        ]
       properties:
         employeeId: { type: string, format: uuid }
         employeeCode: { type: string }
@@ -1116,7 +1238,7 @@ components:
         skills:
           type: array
           items:
-            $ref: '#/components/schemas/EmployeeSkill'
+            $ref: "#/components/schemas/EmployeeSkill"
 
     ResourceFinderResponse:
       type: object
@@ -1124,7 +1246,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/ResourceFinderItem'
+            $ref: "#/components/schemas/ResourceFinderItem"
         meta:
           type: object
           properties:
@@ -1146,11 +1268,23 @@ components:
               departmentName: { type: string }
               peakConcurrentAllocation: { type: integer }
               remainingCapacity: { type: integer }
-              availabilityStatus: { type: string, enum: [FULLY_AVAILABLE, PARTIALLY_AVAILABLE, FULLY_ALLOCATED] }
+              availabilityStatus:
+                {
+                  type: string,
+                  enum: [FULLY_AVAILABLE, PARTIALLY_AVAILABLE, FULLY_ALLOCATED],
+                }
 
     DashboardData:
       type: object
-      required: [totalActiveResources, totalActiveProjects, fullyAvailableResources, fullyAllocatedResources, openStaffingRequirements, capacityDistribution]
+      required:
+        [
+          totalActiveResources,
+          totalActiveProjects,
+          fullyAvailableResources,
+          fullyAllocatedResources,
+          openStaffingRequirements,
+          capacityDistribution,
+        ]
       properties:
         totalActiveResources: { type: integer }
         totalActiveProjects: { type: integer }
@@ -1166,26 +1300,34 @@ components:
         accessibleProjects:
           type: array
           items:
-            $ref: '#/components/schemas/Project'
+            $ref: "#/components/schemas/Project"
 
     EmployeeSelfView:
       type: object
-      required: [profile, skills, currentAllocations, plannedAllocations, currentTotalAllocation, remainingCapacity]
+      required:
+        [
+          profile,
+          skills,
+          currentAllocations,
+          plannedAllocations,
+          currentTotalAllocation,
+          remainingCapacity,
+        ]
       properties:
         profile:
-          $ref: '#/components/schemas/Employee'
+          $ref: "#/components/schemas/Employee"
         skills:
           type: array
           items:
-            $ref: '#/components/schemas/EmployeeSkill'
+            $ref: "#/components/schemas/EmployeeSkill"
         currentAllocations:
           type: array
           items:
-            $ref: '#/components/schemas/Allocation'
+            $ref: "#/components/schemas/Allocation"
         plannedAllocations:
           type: array
           items:
-            $ref: '#/components/schemas/Allocation'
+            $ref: "#/components/schemas/Allocation"
         currentTotalAllocation: { type: integer }
         remainingCapacity: { type: integer }
 

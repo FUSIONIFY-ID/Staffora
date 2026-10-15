@@ -1,5 +1,6 @@
-import { prisma } from '../../common/database/prisma.js'
-import type { Role } from '../../common/auth/types.js'
+import type { User, Employee } from "../../generated/prisma/client.js";
+import { prisma } from "../../common/database/prisma.js";
+import type { Role } from "../../common/auth/types.js";
 
 export const identityRepository = {
   findByNormalizedEmail(email: string) {
@@ -13,7 +14,7 @@ export const identityRepository = {
           },
         },
       },
-    })
+    });
   },
 
   findById(id: string) {
@@ -27,7 +28,7 @@ export const identityRepository = {
           },
         },
       },
-    })
+    });
   },
 
   findAll() {
@@ -40,16 +41,16 @@ export const identityRepository = {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
-    })
+      orderBy: { createdAt: "desc" },
+    });
   },
 
   createUser(data: {
-    normalizedEmail: string
-    passwordHash: string
-    role: Role
-    employeeId?: string
-    createdBy?: string
+    normalizedEmail: string;
+    passwordHash: string;
+    role: Role;
+    employeeId?: string;
+    createdBy?: string;
   }) {
     return prisma.user.create({
       data: {
@@ -67,16 +68,16 @@ export const identityRepository = {
           },
         },
       },
-    })
+    });
   },
 
   updateUser(
     id: string,
     data: {
-      role?: Role
-      isActive?: boolean
-      employeeId?: string | null
-      updatedBy?: string
+      role?: Role;
+      isActive?: boolean;
+      employeeId?: string | null;
+      updatedBy?: string;
     },
   ) {
     return prisma.user.update({
@@ -95,18 +96,18 @@ export const identityRepository = {
           },
         },
       },
-    })
+    });
   },
 
-  findEmployeeById(employeeId: string) {
+  findEmployeeById(employeeId: string): Promise<Employee | null> {
     return prisma.employee.findUnique({
       where: { id: employeeId },
-    })
+    });
   },
 
-  findByEmployeeId(employeeId: string) {
+  findByEmployeeId(employeeId: string): Promise<User | null> {
     return prisma.user.findUnique({
       where: { employeeId },
-    })
+    });
   },
-}
+};

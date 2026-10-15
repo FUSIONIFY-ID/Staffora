@@ -1,4 +1,17 @@
-import { prisma } from '../../common/database/prisma.js'
+import type { Prisma, Project } from "../../generated/prisma/client.js";
+import { prisma } from "../../common/database/prisma.js";
+
+export type StaffingRequirementWithDetails =
+  Prisma.StaffingRequirementGetPayload<{
+    include: {
+      jobRole: true;
+      skills: {
+        include: {
+          skill: true;
+        };
+      };
+    };
+  }>;
 
 export const staffingRepository = {
   async findById(id: string) {
@@ -7,16 +20,18 @@ export const staffingRepository = {
       include: {
         project: true,
       },
-    })
+    });
   },
 
-  async findProjectById(projectId: string) {
+  async findProjectById(projectId: string): Promise<Project | null> {
     return prisma.project.findUnique({
       where: { id: projectId },
-    })
+    });
   },
 
-  async findByProjectId(projectId: string) {
+  async findByProjectId(
+    projectId: string,
+  ): Promise<StaffingRequirementWithDetails[]> {
     return prisma.staffingRequirement.findMany({
       where: { projectId },
       include: {
@@ -27,18 +42,18 @@ export const staffingRepository = {
           },
         },
       },
-    })
+    });
   },
 
   async create(data: {
-    projectId: string
-    jobRoleId: string
-    headcount: number
-    allocationPercentage: number
-    startDate: Date
-    endDate: Date
-    skills?: { skillId: string; minimumProficiencyLevel: number }[]
-    createdBy?: string
+    projectId: string;
+    jobRoleId: string;
+    headcount: number;
+    allocationPercentage: number;
+    startDate: Date;
+    endDate: Date;
+    skills?: { skillId: string; minimumProficiencyLevel: number }[];
+    createdBy?: string;
   }) {
     return prisma.staffingRequirement.create({
       data: {
@@ -66,33 +81,37 @@ export const staffingRepository = {
           },
         },
       },
-    })
+    });
   },
 
   async update(
     id: string,
     data: {
-      jobRoleId?: string
-      headcount?: number
-      allocationPercentage?: number
-      startDate?: Date
-      endDate?: Date
-      skills?: { skillId: string; minimumProficiencyLevel: number }[]
-      updatedBy?: string
+      jobRoleId?: string;
+      headcount?: number;
+      allocationPercentage?: number;
+      startDate?: Date;
+      endDate?: Date;
+      skills?: { skillId: string; minimumProficiencyLevel: number }[];
+      updatedBy?: string;
     },
   ) {
     if (data.skills !== undefined) {
       return prisma.$transaction(async (tx) => {
         await tx.staffingRequirementSkill.deleteMany({
           where: { staffingRequirementId: id },
-        })
+        });
 
         return tx.staffingRequirement.update({
           where: { id },
           data: {
             ...(data.jobRoleId ? { jobRoleId: data.jobRoleId } : {}),
-            ...(data.headcount !== undefined ? { headcount: data.headcount } : {}),
-            ...(data.allocationPercentage !== undefined ? { allocationPercentage: data.allocationPercentage } : {}),
+            ...(data.headcount !== undefined
+              ? { headcount: data.headcount }
+              : {}),
+            ...(data.allocationPercentage !== undefined
+              ? { allocationPercentage: data.allocationPercentage }
+              : {}),
             ...(data.startDate ? { startDate: data.startDate } : {}),
             ...(data.endDate ? { endDate: data.endDate } : {}),
             ...(data.updatedBy ? { updatedBy: data.updatedBy } : {}),
@@ -114,8 +133,8 @@ export const staffingRepository = {
               },
             },
           },
-        })
-      })
+        });
+      });
     }
 
     return prisma.staffingRequirement.update({
@@ -123,7 +142,9 @@ export const staffingRepository = {
       data: {
         ...(data.jobRoleId ? { jobRoleId: data.jobRoleId } : {}),
         ...(data.headcount !== undefined ? { headcount: data.headcount } : {}),
-        ...(data.allocationPercentage !== undefined ? { allocationPercentage: data.allocationPercentage } : {}),
+        ...(data.allocationPercentage !== undefined
+          ? { allocationPercentage: data.allocationPercentage }
+          : {}),
         ...(data.startDate ? { startDate: data.startDate } : {}),
         ...(data.endDate ? { endDate: data.endDate } : {}),
         ...(data.updatedBy ? { updatedBy: data.updatedBy } : {}),
@@ -135,7 +156,6 @@ export const staffingRepository = {
           },
         },
       },
-    })
+    });
   },
-}
-
+};

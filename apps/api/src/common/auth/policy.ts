@@ -1,9 +1,13 @@
-import { UnauthorizedError, ForbiddenError, NotFoundError } from '../errors/app-error.js'
-import { ROLES, type Role, type AuthenticatedUser } from './types.js'
+import {
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+} from "../errors/app-error.js";
+import { ROLES, type Role, type AuthenticatedUser } from "./types.js";
 
 export interface LinkageValidationResult {
-  valid: boolean
-  reason?: string
+  valid: boolean;
+  reason?: string;
 }
 
 /**
@@ -12,13 +16,13 @@ export interface LinkageValidationResult {
  */
 export function assertAuth(
   user: AuthenticatedUser | undefined,
-  message = 'Authentication required to access this resource.',
+  message = "Authentication required to access this resource.",
 ): asserts user is AuthenticatedUser {
   if (!user) {
-    throw new UnauthorizedError(message)
+    throw new UnauthorizedError(message);
   }
   if (!user.isActive) {
-    throw new UnauthorizedError('User account is inactive.')
+    throw new UnauthorizedError("User account is inactive.");
   }
 }
 
@@ -29,10 +33,10 @@ export function assertAuth(
 export function assertRole(
   user: AuthenticatedUser,
   allowedRoles: readonly Role[],
-  message = 'You do not have permission to perform this action.',
+  message = "You do not have permission to perform this action.",
 ): void {
   if (!allowedRoles.includes(user.role)) {
-    throw new ForbiddenError(message)
+    throw new ForbiddenError(message);
   }
 }
 
@@ -42,10 +46,10 @@ export function assertRole(
  */
 export function assertPolicy(
   allowed: boolean,
-  message = 'You do not have permission to perform this action.',
+  message = "You do not have permission to perform this action.",
 ): void {
   if (!allowed) {
-    throw new ForbiddenError(message)
+    throw new ForbiddenError(message);
   }
 }
 
@@ -57,10 +61,10 @@ export function assertPolicy(
 export function assertPolicyOrNotFound(
   allowed: boolean,
   resourceFound = true,
-  notFoundMessage = 'Resource not found.',
+  notFoundMessage = "Resource not found.",
 ): void {
   if (!resourceFound || !allowed) {
-    throw new NotFoundError(notFoundMessage)
+    throw new NotFoundError(notFoundMessage);
   }
 }
 
@@ -69,33 +73,35 @@ export function assertPolicyOrNotFound(
  * Employees and Project Managers require linkage to an employee profile.
  */
 export function validateUserEmployeeLinkage(user: {
-  role: Role
-  employeeId?: string | null
+  role: Role;
+  employeeId?: string | null;
 }): LinkageValidationResult {
   if (
     user.role === ROLES.EMPLOYEE ||
     user.role === ROLES.PROJECT_MANAGER ||
     user.role === ROLES.RESOURCE_MANAGER
   ) {
-    if (!user.employeeId || user.employeeId.trim() === '') {
+    if (!user.employeeId || user.employeeId.trim() === "") {
       return {
         valid: false,
         reason: `Role ${user.role} requires linkage to an active employee record.`,
-      }
+      };
     }
   }
-  return { valid: true }
+  return { valid: true };
 }
 
 /**
  * Asserts that the authenticated user has a linked employee ID.
  * Returns the non-null employee ID or throws 403 ForbiddenError.
  */
-export function requireLinkedEmployee(user: AuthenticatedUser): string {
+export function assertLinkedEmployee(user: AuthenticatedUser): string {
   if (!user.employeeId) {
-    throw new ForbiddenError('User account is not linked to an employee profile.')
+    throw new ForbiddenError(
+      "User account is not linked to an employee profile.",
+    );
   }
-  return user.employeeId
+  return user.employeeId;
 }
 
 /**
@@ -112,12 +118,12 @@ export function canAccessEmployeeProfile(
     user.role === ROLES.RESOURCE_MANAGER ||
     user.role === ROLES.PROJECT_MANAGER
   ) {
-    return true
+    return true;
   }
   if (user.role === ROLES.EMPLOYEE) {
-    return Boolean(user.employeeId && user.employeeId === targetEmployeeId)
+    return Boolean(user.employeeId && user.employeeId === targetEmployeeId);
   }
-  return false
+  return false;
 }
 
 /**
@@ -126,10 +132,10 @@ export function canAccessEmployeeProfile(
 export function assertCanAccessEmployeeProfile(
   user: AuthenticatedUser,
   targetEmployeeId: string,
-  message = 'Employee not found.',
+  message = "Employee not found.",
 ): void {
   if (!canAccessEmployeeProfile(user, targetEmployeeId)) {
-    throw new NotFoundError(message)
+    throw new NotFoundError(message);
   }
 }
 
@@ -140,10 +146,14 @@ export function isProjectManagerOwner(
   user: AuthenticatedUser,
   projectManagerEmployeeId: string | null | undefined,
 ): boolean {
-  if (user.role !== ROLES.PROJECT_MANAGER || !user.employeeId || !projectManagerEmployeeId) {
-    return false
+  if (
+    user.role !== ROLES.PROJECT_MANAGER ||
+    !user.employeeId ||
+    !projectManagerEmployeeId
+  ) {
+    return false;
   }
-  return user.employeeId === projectManagerEmployeeId
+  return user.employeeId === projectManagerEmployeeId;
 }
 
 /**
@@ -155,8 +165,8 @@ export function canManageProject(
   user: AuthenticatedUser,
   projectManagerEmployeeId: string | null | undefined,
 ): boolean {
-  if (user.role === ROLES.ADMIN) return true
-  return isProjectManagerOwner(user, projectManagerEmployeeId)
+  if (user.role === ROLES.ADMIN) return true;
+  return isProjectManagerOwner(user, projectManagerEmployeeId);
 }
 
 /**
@@ -165,10 +175,10 @@ export function canManageProject(
 export function assertCanManageProject(
   user: AuthenticatedUser,
   projectManagerEmployeeId: string | null | undefined,
-  message = 'Project not found.',
+  message = "Project not found.",
 ): void {
   if (!canManageProject(user, projectManagerEmployeeId)) {
-    throw new NotFoundError(message)
+    throw new NotFoundError(message);
   }
 }
 
@@ -180,7 +190,7 @@ export function canViewProject(
   _user: AuthenticatedUser,
   _projectManagerEmployeeId?: string | null,
 ): boolean {
-  return true
+  return true;
 }
 
 /**
@@ -192,8 +202,9 @@ export function canManageAllocation(
   user: AuthenticatedUser,
   projectManagerEmployeeId: string | null | undefined,
 ): boolean {
-  if (user.role === ROLES.ADMIN || user.role === ROLES.RESOURCE_MANAGER) return true
-  return isProjectManagerOwner(user, projectManagerEmployeeId)
+  if (user.role === ROLES.ADMIN || user.role === ROLES.RESOURCE_MANAGER)
+    return true;
+  return isProjectManagerOwner(user, projectManagerEmployeeId);
 }
 
 /**
@@ -202,9 +213,9 @@ export function canManageAllocation(
 export function assertCanManageAllocation(
   user: AuthenticatedUser,
   projectManagerEmployeeId: string | null | undefined,
-  message = 'You do not have permission to manage allocations for this project.',
+  message = "Allocation not found.",
 ): void {
   if (!canManageAllocation(user, projectManagerEmployeeId)) {
-    throw new ForbiddenError(message)
+    throw new NotFoundError(message);
   }
 }
