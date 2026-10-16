@@ -10,6 +10,7 @@ import { csrfProtectionMiddleware } from './common/auth/csrf.js'
 import { generalRateLimitMiddleware } from './common/auth/rate-limiter.js'
 import { errorHandler } from './common/errors/error-handler.js'
 import { NotFoundError } from './common/errors/app-error.js'
+import { loadEnv } from './config/env.js'
 
 // Domain routes
 import { healthRouter } from './modules/health/health.routes.js'
@@ -27,11 +28,20 @@ import { resourceFinderRouter } from './modules/resource-finder/resource-finder.
 import { capacityRouter } from './modules/capacity/capacity.routes.js'
 import { dashboardRouter, meRouter } from './modules/dashboard/dashboard.routes.js'
 
+const TRUSTED_PROXY_HOPS = 1
+
 export function createApp(options?: {
   useMemorySession?: boolean
 }) {
   const app = express()
+  const isProduction = loadEnv().NODE_ENV === 'production'
   app.disable('x-powered-by')
+
+  // Nginx terminates TLS in staging/production (ADR-007); trusting that single hop lets
+  // express-session see HTTPS and issue the Secure session cookie.
+  if (isProduction) {
+    app.set('trust proxy', TRUSTED_PROXY_HOPS)
+  }
 
   // 1. Request ID
   app.use(requestIdMiddleware)
@@ -42,7 +52,7 @@ export function createApp(options?: {
   // 3. Helmet security headers
   app.use(
     helmet({
-      contentSecurityPolicy: process.env.NODE_ENV === 'production',
+      contentSecurityPolicy: isProduction,
       crossOriginEmbedderPolicy: false,
     }),
   )

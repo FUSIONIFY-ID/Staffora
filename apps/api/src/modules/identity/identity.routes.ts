@@ -11,7 +11,9 @@ export const authRouter = Router()
 authRouter.post('/login', loginRateLimitMiddleware, validateBody(loginSchema), identityController.login)
 authRouter.post('/logout', requireAuth(), identityController.logout)
 authRouter.get('/me', requireAuth(), identityController.getMe)
-authRouter.get('/csrf-token', requireAuth(), identityController.getCsrfToken)
+// Public on purpose: sign-in is CSRF-protected too, so a browser without a login session needs a
+// token issued on its anonymous session first. Login then rotates the session and the token.
+authRouter.get('/csrf-token', identityController.getCsrfToken)
 
 export const usersRouter = Router()
 

@@ -9,6 +9,7 @@ export const logger = pino({
       'req.headers.cookie',
       'req.headers.authorization',
       'req.headers["x-csrf-token"]',
+      'res.headers["set-cookie"]',
       'session',
       'csrfToken',
       '*.password',

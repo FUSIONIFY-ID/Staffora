@@ -7,40 +7,28 @@ export const identityService = {
   async authenticate(email: string, plainTextPassword: string): Promise<AuthenticatedUser> {
     const user = await identityRepository.findByNormalizedEmail(email)
 
-    // BR02 - Authentication errors must not expose credential validation details
-    if (!user) {
+    // BR02 - Authentication errors must not expose credential validation details.
+    // Unknown emails still pay the bcrypt cost so timing does not reveal registered accounts.
+    const isMatch = await verifyPassword(plainTextPassword, user?.passwordHash ?? null)
+    if (!user || !isMatch) {
       throw new UnauthorizedError('Invalid email or password.')
     }
 
-    const isMatch = await verifyPassword(plainTextPassword, user.passwordHash)
-    if (!isMatch) {
-      throw new UnauthorizedError('Invalid email or password.')
-    }
-
-    // AC02.05 - An inactive user account must not be allowed to sign in
+    // AC02.05 / BR01 - Inactive accounts cannot sign in. The message stays generic (BR02) because a
+    // distinct message would confirm the password was correct.
     if (!user.isActive) {
-      throw new UnauthorizedError('User account is inactive.')
+      throw new UnauthorizedError('Invalid email or password.')
     }
 
-    return {
-      id: user.id,
-      email: user.normalizedEmail,
-      role: user.role,
-      isActive: user.isActive,
-      employeeId: user.employeeId,
-      employee: user.employee
-        ? {
-            id: user.employee.id,
-            employeeCode: user.employee.employeeCode,
-            fullName: user.employee.fullName,
-            workEmail: user.employee.workEmail,
-            departmentId: user.employee.departmentId,
-            departmentName: user.employee.department.name,
-            jobRoleId: user.employee.jobRoleId,
-            jobRoleTitle: user.employee.jobRole.name,
-          }
-        : null,
+    return toAuthenticatedUser(user)
+  },
+
+  async resolveSessionUser(userId: string): Promise<AuthenticatedUser | null> {
+    const user = await identityRepository.findById(userId)
+    if (!user || !user.isActive) {
+      return null
     }
+    return toAuthenticatedUser(user)
   },
 
   async createUser(input: {
@@ -125,4 +113,28 @@ export const identityService = {
       createdAt: u.createdAt,
     }))
   },
+}
+
+type UserWithEmployeeProfile = NonNullable<Awaited<ReturnType<typeof identityRepository.findById>>>
+
+function toAuthenticatedUser(user: UserWithEmployeeProfile): AuthenticatedUser {
+  return {
+    id: user.id,
+    email: user.normalizedEmail,
+    role: user.role,
+    isActive: user.isActive,
+    employeeId: user.employeeId,
+    employee: user.employee
+      ? {
+          id: user.employee.id,
+          employeeCode: user.employee.employeeCode,
+          fullName: user.employee.fullName,
+          workEmail: user.employee.workEmail,
+          departmentId: user.employee.departmentId,
+          departmentName: user.employee.department.name,
+          jobRoleId: user.employee.jobRoleId,
+          jobRoleTitle: user.employee.jobRole.name,
+        }
+      : null,
+  }
 }

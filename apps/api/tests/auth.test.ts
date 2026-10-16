@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../src/app.js'
+import { postLogin } from './support/auth-login.js'
 
 describe('Authentication & Session Baseline (EP01 & TSD Section 8)', () => {
   const app = createApp({ useMemorySession: true })
 
   it('rejects invalid login credentials with a generic error (AC02.03, AC02.04)', async () => {
-    const response = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: 'admin@staffora.internal', password: 'WrongPassword123!' })
+    const response = await postLogin(app, { email: 'admin@staffora.internal', password: 'WrongPassword123!' })
 
     expect(response.status).toBe(401)
     expect(response.body.code).toBe('UNAUTHORIZED')
@@ -16,15 +15,13 @@ describe('Authentication & Session Baseline (EP01 & TSD Section 8)', () => {
   })
 
   it('rejects missing fields with 422 validation error (AC01.05)', async () => {
-    const response = await request(app).post('/api/v1/auth/login').send({})
+    const response = await postLogin(app, {})
     expect(response.status).toBe(422)
     expect(response.body.code).toBe('UNPROCESSABLE_ENTITY')
   })
 
   it('authenticates valid credentials, sets session cookie, and returns user identity (AC02.01, TSD 8.1)', async () => {
-    const loginRes = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: 'admin@staffora.internal', password: 'StafforaAdmin2026!' })
+    const loginRes = await postLogin(app, { email: 'admin@staffora.internal', password: 'StafforaAdmin2026!' })
 
     expect(loginRes.status).toBe(200)
     expect(loginRes.body.data.user.email).toBe('admin@staffora.internal')
