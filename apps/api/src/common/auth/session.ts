@@ -4,6 +4,7 @@ import pg from 'pg'
 import type { CookieOptions, Request, RequestHandler, Response } from 'express'
 import { loadEnv } from '../../config/env.js'
 import { generateCsrfToken } from './csrf.js'
+import { logger } from '../logging/logger.js'
 
 const PgSession = connectPgSimple(session)
 
@@ -11,12 +12,17 @@ const PgSession = connectPgSimple(session)
 // (as the test suites do) does not leave a new, never-closed pool behind each time.
 const sessionPools = new Map<string, pg.Pool>()
 
-function getSessionPool(connectionString: string): pg.Pool {
+export function getSessionPool(connectionString: string): pg.Pool {
   const existing = sessionPools.get(connectionString)
   if (existing) {
     return existing
   }
   const pool = new pg.Pool({ connectionString })
+  // pg emits 'error' when an idle client loses its connection. Without a listener Node treats it
+  // as an unhandled error and the API process exits; logging it lets the pool replace the client.
+  pool.on('error', (error) => {
+    logger.error({ err: error }, 'Idle connection in the session store pool failed')
+  })
   sessionPools.set(connectionString, pool)
   return pool
 }

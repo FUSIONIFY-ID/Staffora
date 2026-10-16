@@ -2,7 +2,7 @@ import express from 'express'
 import bcrypt from 'bcryptjs'
 import request from 'supertest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSessionMiddleware } from '../src/common/auth/session.js'
+import { closeSessionStore, createSessionMiddleware, getSessionPool } from '../src/common/auth/session.js'
 import { csrfProtectionMiddleware } from '../src/common/auth/csrf.js'
 import { hashPassword, verifyPassword } from '../src/common/auth/password.js'
 import { errorHandler } from '../src/common/errors/error-handler.js'
@@ -68,6 +68,33 @@ describe('session cookie security (US01.01, ADR-006)', () => {
 
   it('does not trust proxy headers outside production', () => {
     expect(createApp({ useMemorySession: true }).get('trust proxy')).toBe(false)
+  })
+})
+
+describe('session store pool (US01.01, ADR-006)', () => {
+  // Port 1 is never listened on, so the pool is created but no connection is ever opened.
+  const unreachable = 'postgresql://staffora:secret@127.0.0.1:1/staffora'
+
+  afterEach(async () => {
+    await closeSessionStore()
+  })
+
+  it('reuses one pool per connection string', () => {
+    expect(getSessionPool(unreachable)).toBe(getSessionPool(unreachable))
+  })
+
+  it('logs an idle-client error instead of letting it crash the process', () => {
+    const pool = getSessionPool(unreachable)
+
+    expect(pool.listenerCount('error')).toBe(1)
+    expect(() => pool.emit('error', new Error('connection terminated unexpectedly'))).not.toThrow()
+  })
+
+  it('creates a fresh pool after the store has been closed', async () => {
+    const before = getSessionPool(unreachable)
+    await closeSessionStore()
+
+    expect(getSessionPool(unreachable)).not.toBe(before)
   })
 })
 
