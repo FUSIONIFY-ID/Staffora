@@ -75,11 +75,25 @@ describe('session authentication API with PostgreSQL store (US01.01)', () => {
     }
   })
 
-  it('rejects a forged session cookie that has no matching server-side session (AC03.02)', async () => {
+  it('rejects a session cookie whose signature does not verify (AC03.02)', async () => {
+    // express-session drops this cookie at signature verification, before the store is read.
     const forgedCookie = `staffora.sid=${encodeURIComponent(`s:${randomUUID()}.forged-signature`)}`
 
     const response = await request(app).get('/api/v1/auth/me').set('Cookie', forgedCookie)
 
+    expect(response.status).toBe(401)
+    expect(response.body.code).toBe('UNAUTHORIZED')
+  })
+
+  it('rejects a validly signed cookie whose session row no longer exists (AC03.02)', async () => {
+    const user = await createTestUser('missing-row')
+    const cookie = sessionCookie((await login(user.email)).headers)
+    expect(await isAuthenticated(cookie)).toBe(true)
+
+    // The signature stays valid; only the server-side session is gone, so the store lookup decides.
+    await prisma.userSession.delete({ where: { sid: sessionIdFromCookie(cookie) } })
+
+    const response = await request(app).get('/api/v1/auth/me').set('Cookie', cookie)
     expect(response.status).toBe(401)
     expect(response.body.code).toBe('UNAUTHORIZED')
   })
