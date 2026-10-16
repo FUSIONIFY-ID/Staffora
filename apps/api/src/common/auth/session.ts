@@ -39,6 +39,8 @@ const SESSION_INACTIVITY_TIMEOUT_MS = 8 * 60 * 60 * 1000
 // loadEnv() rejects a missing SESSION_SECRET in production, so this value can only apply locally.
 const NON_PRODUCTION_SESSION_SECRET = 'local-dev-session-secret-at-least-32-characters-long'
 
+// Secure follows NODE_ENV alone. Staging runs with NODE_ENV=production (docs/runbooks/deployment.md,
+// section 1.1), so staging and production both issue Secure cookies and need HTTPS in front.
 function buildSessionCookieOptions(isProduction: boolean): CookieOptions {
   return { httpOnly: true, sameSite: 'lax', path: '/', secure: isProduction }
 }
