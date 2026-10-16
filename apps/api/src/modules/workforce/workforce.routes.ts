@@ -1,60 +1,67 @@
-import { Router } from 'express'
-import { workforceController } from './workforce.controller.js'
-import { validateBody, validateQuery } from '../../common/validation/validate.js'
+import { Router } from "express";
+import { workforceController } from "./workforce.controller.js";
+import {
+  validateBody,
+  validateQuery,
+  validateParams,
+  uuidParamSchema,
+} from "../../common/validation/validate.js";
 import {
   createDepartmentSchema,
   createJobRoleSchema,
   createEmployeeSchema,
   updateEmployeeSchema,
   queryEmployeesSchema,
-} from './workforce.schema.js'
-import { requireAuth, requireRole } from '../../common/auth/rbac.js'
+} from "./workforce.schema.js";
+import { requireAuth, requireRole } from "../../common/auth/rbac.js";
 
 // Departments Router
-export const departmentsRouter = Router()
-departmentsRouter.use(requireAuth())
-departmentsRouter.get('/', workforceController.getDepartments)
+export const departmentsRouter = Router();
+departmentsRouter.use(requireAuth());
+departmentsRouter.get("/", workforceController.getDepartments);
 departmentsRouter.post(
-  '/',
-  requireRole('ADMIN'),
+  "/",
+  requireRole("ADMIN"),
   validateBody(createDepartmentSchema),
   workforceController.createDepartment,
-)
+);
 
 // Job Roles Router
-export const jobRolesRouter = Router()
-jobRolesRouter.use(requireAuth())
-jobRolesRouter.get('/', workforceController.getJobRoles)
+export const jobRolesRouter = Router();
+jobRolesRouter.use(requireAuth());
+jobRolesRouter.get("/", workforceController.getJobRoles);
 jobRolesRouter.post(
-  '/',
-  requireRole('ADMIN'),
+  "/",
+  requireRole("ADMIN"),
   validateBody(createJobRoleSchema),
   workforceController.createJobRole,
-)
+);
 
 // Employees Router
-export const employeesRouter = Router()
-employeesRouter.use(requireAuth())
+export const employeesRouter = Router();
+employeesRouter.use(requireAuth());
 employeesRouter.get(
-  '/',
-  requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'),
+  "/",
+  requireRole("ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"),
   validateQuery(queryEmployeesSchema),
   workforceController.getEmployees,
-)
+);
 employeesRouter.post(
-  '/',
-  requireRole('ADMIN', 'RESOURCE_MANAGER'),
+  "/",
+  requireRole("ADMIN", "RESOURCE_MANAGER"),
   validateBody(createEmployeeSchema),
   workforceController.createEmployee,
-)
+);
 employeesRouter.get(
-  '/:id',
-  requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE'),
+  "/:id",
+  requireRole("ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER", "EMPLOYEE"),
+  validateParams(uuidParamSchema),
   workforceController.getEmployeeDetail,
-)
+);
 employeesRouter.patch(
-  '/:id',
-  requireRole('ADMIN', 'RESOURCE_MANAGER'),
+  "/:id",
+  requireRole("ADMIN", "RESOURCE_MANAGER"),
+  validateParams(uuidParamSchema),
   validateBody(updateEmployeeSchema),
   workforceController.updateEmployee,
-)
+);

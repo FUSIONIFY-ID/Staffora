@@ -1,12 +1,18 @@
 import type { Request, Response, NextFunction } from "express";
 import { getParam } from "../../common/http/params.js";
+import { assertAuth } from "../../common/auth/policy.js";
 import { sendSuccess, sendList } from "../../common/http/response.js";
 import { projectsService } from "./projects.service.js";
 
 export const projectsController = {
-  async getProjects(req: Request, res: Response, next: NextFunction) {
+  async getProjects(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
-      const result = await projectsService.getProjects(req.query, req.user!);
+      assertAuth(req.user);
+      const result = await projectsService.getProjects(req.query, req.user);
       return sendList(res, result.data, {
         page: result.page,
         pageSize: result.pageSize,
@@ -17,9 +23,14 @@ export const projectsController = {
     }
   },
 
-  async createProject(req: Request, res: Response, next: NextFunction) {
+  async createProject(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
-      const project = await projectsService.createProject(req.body, req.user!);
+      assertAuth(req.user);
+      const project = await projectsService.createProject(req.body, req.user);
       return res.status(201).json({
         data: project,
         meta: {
@@ -31,12 +42,17 @@ export const projectsController = {
     }
   },
 
-  async getProjectDetail(req: Request, res: Response, next: NextFunction) {
+  async getProjectDetail(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const projectId = getParam(req.params.id);
+      assertAuth(req.user);
       const project = await projectsService.getProjectDetail(
         projectId,
-        req.user!,
+        req.user,
       );
       return sendSuccess(res, project);
     } catch (err) {
@@ -44,13 +60,18 @@ export const projectsController = {
     }
   },
 
-  async updateProject(req: Request, res: Response, next: NextFunction) {
+  async updateProject(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const projectId = getParam(req.params.id);
+      assertAuth(req.user);
       const updated = await projectsService.updateProject(
         projectId,
         req.body,
-        req.user!,
+        req.user,
       );
       return sendSuccess(res, updated);
     } catch (err) {

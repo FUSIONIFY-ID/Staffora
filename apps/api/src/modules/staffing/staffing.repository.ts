@@ -13,8 +13,26 @@ export type StaffingRequirementWithDetails =
     };
   }>;
 
+export type StaffingRequirementWithSkills =
+  Prisma.StaffingRequirementGetPayload<{
+    include: {
+      skills: {
+        include: {
+          skill: true;
+        };
+      };
+    };
+  }>;
+
+export type StaffingRequirementWithProject =
+  Prisma.StaffingRequirementGetPayload<{
+    include: {
+      project: true;
+    };
+  }>;
+
 export const staffingRepository = {
-  async findById(id: string) {
+  async findById(id: string): Promise<StaffingRequirementWithProject | null> {
     return prisma.staffingRequirement.findUnique({
       where: { id },
       include: {
@@ -54,7 +72,7 @@ export const staffingRepository = {
     endDate: Date;
     skills?: { skillId: string; minimumProficiencyLevel: number }[];
     createdBy?: string;
-  }) {
+  }): Promise<StaffingRequirementWithSkills> {
     return prisma.staffingRequirement.create({
       data: {
         projectId: data.projectId,
@@ -95,7 +113,7 @@ export const staffingRepository = {
       skills?: { skillId: string; minimumProficiencyLevel: number }[];
       updatedBy?: string;
     },
-  ) {
+  ): Promise<StaffingRequirementWithSkills> {
     if (data.skills !== undefined) {
       return prisma.$transaction(async (tx) => {
         await tx.staffingRequirementSkill.deleteMany({

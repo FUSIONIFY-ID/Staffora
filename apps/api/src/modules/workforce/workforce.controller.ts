@@ -6,7 +6,11 @@ import { workforceService } from "./workforce.service.js";
 import { workforcePolicy } from "./workforce.policy.js";
 
 export const workforceController = {
-  async getDepartments(_req: Request, res: Response, next: NextFunction) {
+  async getDepartments(
+    _req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const items = await workforceService.getDepartments();
       return sendSuccess(res, items);
@@ -15,7 +19,11 @@ export const workforceController = {
     }
   },
 
-  async createDepartment(req: Request, res: Response, next: NextFunction) {
+  async createDepartment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const item = await workforceService.createDepartment(req.body);
       return res.status(201).json({ data: item });
@@ -24,7 +32,11 @@ export const workforceController = {
     }
   },
 
-  async getJobRoles(req: Request, res: Response, next: NextFunction) {
+  async getJobRoles(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const departmentId =
         typeof req.query.departmentId === "string"
@@ -37,7 +49,11 @@ export const workforceController = {
     }
   },
 
-  async createJobRole(req: Request, res: Response, next: NextFunction) {
+  async createJobRole(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const item = await workforceService.createJobRole(req.body);
       return res.status(201).json({ data: item });
@@ -46,7 +62,11 @@ export const workforceController = {
     }
   },
 
-  async getEmployees(req: Request, res: Response, next: NextFunction) {
+  async getEmployees(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const result = await workforceService.getEmployees(req.query);
       return sendList(res, result.data, {
@@ -59,7 +79,11 @@ export const workforceController = {
     }
   },
 
-  async createEmployee(req: Request, res: Response, next: NextFunction) {
+  async createEmployee(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const item = await workforceService.createEmployee(req.body);
       return res.status(201).json({ data: item });
@@ -68,7 +92,11 @@ export const workforceController = {
     }
   },
 
-  async getEmployeeDetail(req: Request, res: Response, next: NextFunction) {
+  async getEmployeeDetail(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const employeeId = getParam(req.params.id);
       assertAuth(req.user);
@@ -80,7 +108,11 @@ export const workforceController = {
     }
   },
 
-  async updateEmployee(req: Request, res: Response, next: NextFunction) {
+  async updateEmployee(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
       const employeeId = getParam(req.params.id);
       const item = await workforceService.updateEmployee(employeeId, req.body);

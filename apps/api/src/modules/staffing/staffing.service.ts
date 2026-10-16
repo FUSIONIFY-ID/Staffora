@@ -2,6 +2,7 @@ import type { AuthenticatedUser } from "../../common/auth/types.js";
 import {
   staffingRepository,
   type StaffingRequirementWithDetails,
+  type StaffingRequirementWithSkills,
 } from "./staffing.repository.js";
 import { staffingPolicy } from "./staffing.policy.js";
 import {
@@ -28,7 +29,7 @@ export const staffingService = {
     projectId: string,
     data: CreateStaffingRequirementInput,
     user: AuthenticatedUser,
-  ) {
+  ): Promise<StaffingRequirementWithSkills> {
     const project = await staffingRepository.findProjectById(projectId);
     if (!project) {
       throw new NotFoundError("Project not found.");
@@ -55,7 +56,7 @@ export const staffingService = {
     id: string,
     data: UpdateStaffingRequirementInput,
     user: AuthenticatedUser,
-  ) {
+  ): Promise<StaffingRequirementWithSkills> {
     const requirement = await staffingRepository.findById(id);
     if (!requirement) {
       throw new NotFoundError("Staffing requirement not found.");
@@ -77,7 +78,10 @@ export const staffingService = {
     });
   },
 
-  async deleteRequirement(_id: string, _user: AuthenticatedUser) {
+  async deleteRequirement(
+    _id: string,
+    _user: AuthenticatedUser,
+  ): Promise<never> {
     throw new NotImplementedError(
       "Staffing requirement deletion is not implemented in Sprint 1.",
     );

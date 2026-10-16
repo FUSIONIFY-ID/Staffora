@@ -3,8 +3,9 @@ import { AppError, HTTP_STATUS } from "./app-error.js";
 import { logger } from "../logging/logger.js";
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+  const reqIdHeader = req.headers["x-request-id"];
   const requestId =
-    (req.headers["x-request-id"] as string) ||
+    (typeof reqIdHeader === "string" ? reqIdHeader : undefined) ||
     (req as unknown as { id?: string }).id ||
     "req-unknown";
 

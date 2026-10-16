@@ -1,10 +1,11 @@
-import { randomUUID } from 'node:crypto'
-import type { RequestHandler } from 'express'
+import { randomUUID } from "node:crypto";
+import type { RequestHandler } from "express";
 
 export const requestIdMiddleware: RequestHandler = (req, res, next) => {
-  const existingId = req.headers['x-request-id'] as string | undefined
-  const id = existingId || randomUUID()
-  ;(req as unknown as { id: string }).id = id
-  res.setHeader('X-Request-Id', id)
-  next()
-}
+  const headerVal = req.headers["x-request-id"];
+  const existingId = typeof headerVal === "string" ? headerVal : undefined;
+  const id = existingId || randomUUID();
+  (req as unknown as { id: string }).id = id;
+  res.setHeader("X-Request-Id", id);
+  next();
+};

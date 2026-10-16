@@ -1,3 +1,18 @@
+export const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  UNPROCESSABLE_ENTITY: 422,
+  RATE_LIMITED: 429,
+  INTERNAL_SERVER_ERROR: 500,
+  NOT_IMPLEMENTED: 501,
+} as const;
+
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly code: string;
@@ -6,7 +21,7 @@ export class AppError extends Error {
 
   constructor(
     message: string,
-    statusCode = 500,
+    statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR,
     code = "INTERNAL_SERVER_ERROR",
     errors: Record<string, string[]> = {},
     meta: Record<string, unknown> = {},
@@ -25,7 +40,12 @@ export class ValidationError extends AppError {
     message = "Validation failed.",
     errors: Record<string, string[]> = {},
   ) {
-    super(message, 422, "UNPROCESSABLE_ENTITY", errors);
+    super(
+      message,
+      HTTP_STATUS.UNPROCESSABLE_ENTITY,
+      "UNPROCESSABLE_ENTITY",
+      errors,
+    );
   }
 }
 
@@ -35,25 +55,25 @@ export class BadRequestError extends AppError {
     code = "BAD_REQUEST",
     errors: Record<string, string[]> = {},
   ) {
-    super(message, 400, code, errors);
+    super(message, HTTP_STATUS.BAD_REQUEST, code, errors);
   }
 }
 
 export class UnauthorizedError extends AppError {
   constructor(message = "Authentication required.") {
-    super(message, 401, "UNAUTHORIZED");
+    super(message, HTTP_STATUS.UNAUTHORIZED, "UNAUTHORIZED");
   }
 }
 
 export class ForbiddenError extends AppError {
   constructor(message = "Access forbidden.") {
-    super(message, 403, "FORBIDDEN");
+    super(message, HTTP_STATUS.FORBIDDEN, "FORBIDDEN");
   }
 }
 
 export class NotFoundError extends AppError {
   constructor(message = "Resource not found.") {
-    super(message, 404, "NOT_FOUND");
+    super(message, HTTP_STATUS.NOT_FOUND, "NOT_FOUND");
   }
 }
 
@@ -63,7 +83,7 @@ export class ConflictError extends AppError {
     code = "CONFLICT",
     meta: Record<string, unknown> = {},
   ) {
-    super(message, 409, code, {}, meta);
+    super(message, HTTP_STATUS.CONFLICT, code, {}, meta);
   }
 }
 
@@ -78,33 +98,18 @@ export class CapacityConflictError extends AppError {
     },
     message = "Allocation exceeds employee capacity.",
   ) {
-    super(message, 409, "CAPACITY_CONFLICT", {}, meta);
+    super(message, HTTP_STATUS.CONFLICT, "CAPACITY_CONFLICT", {}, meta);
   }
 }
 
 export class RateLimitError extends AppError {
   constructor(message = "Rate limit exceeded.") {
-    super(message, 429, "RATE_LIMITED");
+    super(message, HTTP_STATUS.RATE_LIMITED, "RATE_LIMITED");
   }
 }
 
 export class NotImplementedError extends AppError {
   constructor(message = "Feature not implemented.") {
-    super(message, 501, "NOT_IMPLEMENTED");
+    super(message, HTTP_STATUS.NOT_IMPLEMENTED, "NOT_IMPLEMENTED");
   }
 }
-
-export const HTTP_STATUS = {
-  OK: 200,
-  CREATED: 201,
-  NO_CONTENT: 204,
-  BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  UNPROCESSABLE_ENTITY: 422,
-  RATE_LIMITED: 429,
-  INTERNAL_SERVER_ERROR: 500,
-  NOT_IMPLEMENTED: 501,
-} as const;

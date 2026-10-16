@@ -1,29 +1,30 @@
-import { randomBytes } from 'node:crypto'
-import type { RequestHandler } from 'express'
-import { ForbiddenError } from '../errors/app-error.js'
+import { randomBytes } from "node:crypto";
+import type { RequestHandler } from "express";
+import { ForbiddenError } from "../errors/app-error.js";
 
 export function generateCsrfToken(): string {
-  return randomBytes(32).toString('hex')
+  return randomBytes(32).toString("hex");
 }
 
 export const csrfProtectionMiddleware: RequestHandler = (req, _res, next) => {
   // Safe HTTP methods do not require CSRF token
-  const safeMethods = ['GET', 'HEAD', 'OPTIONS']
+  const safeMethods = ["GET", "HEAD", "OPTIONS"];
   if (safeMethods.includes(req.method)) {
-    return next()
+    return next();
   }
 
   // Exempt unauthenticated login endpoint from CSRF check
-  if (req.path === '/api/v1/auth/login') {
-    return next()
+  if (req.path === "/api/v1/auth/login") {
+    return next();
   }
 
-  const tokenFromHeader = req.headers['x-csrf-token'] as string | undefined
-  const sessionToken = req.session?.csrfToken
+  const rawHeader = req.headers["x-csrf-token"];
+  const tokenFromHeader = typeof rawHeader === "string" ? rawHeader : undefined;
+  const sessionToken = req.session?.csrfToken;
 
   if (!sessionToken || !tokenFromHeader || tokenFromHeader !== sessionToken) {
-    return next(new ForbiddenError('Invalid or missing CSRF token.'))
+    return next(new ForbiddenError("Invalid or missing CSRF token."));
   }
 
-  next()
-}
+  next();
+};
