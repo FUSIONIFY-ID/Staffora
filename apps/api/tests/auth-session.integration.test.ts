@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { createApp } from '../src/app.js'
 import { prisma } from '../src/common/database/prisma.js'
 import { hashPassword } from '../src/common/auth/password.js'
+import { closeSessionStore } from '../src/common/auth/session.js'
 
 // Uses the real PostgreSQL session store (connect-pg-simple), so DATABASE_URL must be set.
 const app = createApp()
@@ -40,6 +41,7 @@ async function login(email: string, cookie?: string): Promise<request.Response> 
 afterAll(async () => {
   await prisma.$executeRaw`DELETE FROM user_sessions WHERE sess->>'userId' = ANY(${createdUserIds}::text[])`
   await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } })
+  await closeSessionStore()
 })
 
 describe('session authentication API with PostgreSQL store (US01.01)', () => {
