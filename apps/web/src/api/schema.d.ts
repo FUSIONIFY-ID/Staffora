@@ -112,7 +112,11 @@ export interface paths {
         put?: never;
         /**
          * Sign in user
-         * @description Authenticates user credentials, rotates session ID, and establishes an HTTP-only session cookie.
+         * @description Authenticates user credentials, rotates the session ID (session fixation protection), and
+         *     establishes the `staffora.sid` session cookie (HttpOnly, SameSite=Lax, Path=/, Secure in
+         *     staging/production, 8-hour rolling inactivity timeout). Exempt from CSRF validation.
+         *     Unknown email and wrong password return the same generic 401 response.
+         *     Limited to 5 attempts per 15 minutes per IP address and email.
          */
         post: {
             parameters: {
@@ -129,7 +133,10 @@ export interface paths {
                          * @example admin@staffora.internal
                          */
                         email: string;
-                        /** @example SuperSecret123! */
+                        /**
+                         * @description Not checked against the 12-character creation policy, so the policy is never disclosed on sign-in.
+                         * @example SuperSecret123!
+                         */
                         password: string;
                     };
                 };
@@ -138,16 +145,27 @@ export interface paths {
                 /** @description Login successful */
                 200: {
                     headers: {
+                        /** @description New `staffora.sid` session cookie. */
+                        "Set-Cookie"?: string;
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            data?: components["schemas"]["UserIdentity"];
+                            data: components["schemas"]["LoginResult"];
                         };
                     };
                 };
-                /** @description Invalid credentials */
+                /** @description Invalid credentials (generic message) or inactive account */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Request body validation failed */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -183,7 +201,7 @@ export interface paths {
         put?: never;
         /**
          * Sign out user
-         * @description Destroys current session and clears the session cookie.
+         * @description Destroys the server-side session row (immediate revocation) and clears the session cookie.
          */
         post: {
             parameters: {
@@ -200,6 +218,24 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+                /** @description Unauthenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid CSRF token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
                 };
             };
         };
@@ -218,7 +254,7 @@ export interface paths {
         };
         /**
          * Current authenticated identity
-         * @description Retrieves the currently logged-in user profile, role, and linked employee details.
+         * @description Retrieves the currently logged-in user profile, role, and linked employee details. Sessions of deactivated accounts are destroyed and receive 401.
          */
         get: {
             parameters: {
@@ -268,7 +304,7 @@ export interface paths {
         };
         /**
          * Retrieve CSRF token
-         * @description Returns the active synchronizer CSRF token stored in the current session.
+         * @description Returns the active synchronizer CSRF token stored in the current session. Send it as `X-CSRF-Token` on every POST, PUT, PATCH, and DELETE request.
          */
         get: {
             parameters: {
@@ -287,9 +323,18 @@ export interface paths {
                     content: {
                         "application/json": {
                             data?: {
-                                csrfToken?: string;
+                                csrfToken: string;
                             };
                         };
+                    };
+                };
+                /** @description Unauthenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1350,9 +1395,18 @@ export interface components {
                 employeeCode?: string;
                 fullName?: string;
                 workEmail?: string;
+                /** Format: uuid */
+                departmentId?: string;
                 departmentName?: string;
+                /** Format: uuid */
+                jobRoleId?: string;
                 jobRoleTitle?: string;
             } | null;
+        };
+        LoginResult: {
+            user: components["schemas"]["UserIdentity"];
+            /** @description Synchronizer token for the new session; send as `X-CSRF-Token` on state-changing requests. */
+            csrfToken: string;
         };
         Department: {
             /** Format: uuid */
