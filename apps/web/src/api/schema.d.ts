@@ -114,7 +114,10 @@ export interface paths {
          * Sign in user
          * @description Authenticates user credentials, rotates the session ID (session fixation protection), and
          *     establishes the `staffora.sid` session cookie (HttpOnly, SameSite=Lax, Path=/, Secure in
-         *     staging/production, 8-hour rolling inactivity timeout). Exempt from CSRF validation.
+         *     staging/production, 8-hour rolling inactivity timeout).
+         *     Requires the `X-CSRF-Token` header like every other state-changing request: call
+         *     `GET /auth/csrf-token` first to get a token on the anonymous session, then send it here.
+         *     A successful login rotates the session and returns a new token in `data.csrfToken`.
          *     Unknown email and wrong password return the same generic 401 response.
          *     Limited to 5 attempts per 15 minutes per IP address and email.
          */
@@ -157,6 +160,15 @@ export interface paths {
                 };
                 /** @description Invalid credentials (generic message) or inactive account */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid CSRF token */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -304,7 +316,10 @@ export interface paths {
         };
         /**
          * Retrieve CSRF token
-         * @description Returns the active synchronizer CSRF token stored in the current session. Send it as `X-CSRF-Token` on every POST, PUT, PATCH, and DELETE request.
+         * @description Returns the synchronizer CSRF token stored in the current session, issuing one first if the
+         *     session has none. Works without a login session: an anonymous session is created and its
+         *     cookie returned, so the token can protect `POST /auth/login`. Send the token as
+         *     `X-CSRF-Token` on every POST, PUT, PATCH, and DELETE request.
          */
         get: {
             parameters: {
@@ -318,6 +333,8 @@ export interface paths {
                 /** @description CSRF token value */
                 200: {
                     headers: {
+                        /** @description `staffora.sid` cookie of the anonymous session, when the request had none. */
+                        "Set-Cookie"?: string;
                         [name: string]: unknown;
                     };
                     content: {
@@ -326,15 +343,6 @@ export interface paths {
                                 csrfToken: string;
                             };
                         };
-                    };
-                };
-                /** @description Unauthenticated */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };

@@ -49,10 +49,15 @@ paths:
       description: |
         Authenticates user credentials, rotates the session ID (session fixation protection), and
         establishes the `staffora.sid` session cookie (HttpOnly, SameSite=Lax, Path=/, Secure in
-        staging/production, 8-hour rolling inactivity timeout). Exempt from CSRF validation.
+        staging/production, 8-hour rolling inactivity timeout).
+        Requires the `X-CSRF-Token` header like every other state-changing request: call
+        `GET /auth/csrf-token` first to get a token on the anonymous session, then send it here.
+        A successful login rotates the session and returns a new token in `data.csrfToken`.
         Unknown email and wrong password return the same generic 401 response.
         Limited to 5 attempts per 15 minutes per IP address and email.
-      security: []
+      security:
+        - sessionCookie: []
+          csrfToken: []
       requestBody:
         required: true
         content:
@@ -84,6 +89,12 @@ paths:
                     $ref: '#/components/schemas/LoginResult'
         '401':
           description: Invalid credentials (generic message) or inactive account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing or invalid CSRF token
           content:
             application/json:
               schema:
@@ -150,12 +161,21 @@ paths:
   /auth/csrf-token:
     get:
       summary: Retrieve CSRF token
-      description: Returns the active synchronizer CSRF token stored in the current session. Send it as `X-CSRF-Token` on every POST, PUT, PATCH, and DELETE request.
+      description: |
+        Returns the synchronizer CSRF token stored in the current session, issuing one first if the
+        session has none. Works without a login session: an anonymous session is created and its
+        cookie returned, so the token can protect `POST /auth/login`. Send the token as
+        `X-CSRF-Token` on every POST, PUT, PATCH, and DELETE request.
       security:
+        - {}
         - sessionCookie: []
       responses:
         '200':
           description: CSRF token value
+          headers:
+            Set-Cookie:
+              description: "`staffora.sid` cookie of the anonymous session, when the request had none."
+              schema: { type: string }
           content:
             application/json:
               schema:
@@ -166,12 +186,6 @@ paths:
                     required: [csrfToken]
                     properties:
                       csrfToken: { type: string }
-        '401':
-          description: Unauthenticated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /departments:
     get:
@@ -776,7 +790,7 @@ components:
       type: apiKey
       in: header
       name: X-CSRF-Token
-      description: Synchronizer token from login or `GET /auth/csrf-token`; required on POST, PUT, PATCH, and DELETE.
+      description: Synchronizer token from login or `GET /auth/csrf-token`; required on every POST, PUT, PATCH, and DELETE, including `POST /auth/login`.
   schemas:
     ErrorResponse:
       type: object

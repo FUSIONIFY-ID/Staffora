@@ -102,9 +102,16 @@ describe('CSRF synchronizer token (US01.01, TSD 8.3)', () => {
     expect(response.status).toBe(204)
   })
 
-  it('exempts only the login endpoint', async () => {
-    const response = await request(buildSessionApp(false)).post('/api/v1/auth/login')
-    expect(response.status).toBe(204)
+  it('does not exempt the login endpoint (CLAUDE.md, CODING_STANDARD 7.2)', async () => {
+    const app = buildSessionApp(false)
+    const cookie = firstCookie((await request(app).get('/start')).headers)
+
+    const withoutToken = await request(app).post('/api/v1/auth/login').set('Cookie', cookie)
+    expect(withoutToken.status).toBe(403)
+    expect(withoutToken.body.code).toBe('FORBIDDEN')
+
+    const withToken = await request(app).post('/api/v1/auth/login').set('Cookie', cookie).set('X-CSRF-Token', KNOWN_CSRF_TOKEN)
+    expect(withToken.status).toBe(204)
   })
 })
 

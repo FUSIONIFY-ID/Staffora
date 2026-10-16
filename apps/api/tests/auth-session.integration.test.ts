@@ -6,6 +6,7 @@ import { createApp } from '../src/app.js'
 import { prisma } from '../src/common/database/prisma.js'
 import { hashPassword } from '../src/common/auth/password.js'
 import { closeSessionStore } from '../src/common/auth/session.js'
+import { fetchCsrfSession, postLogin, sessionCookieFrom as sessionCookie } from './support/auth-login.js'
 
 // Uses the real PostgreSQL session store (connect-pg-simple), so DATABASE_URL must be set.
 const app = createApp()
@@ -21,12 +22,6 @@ async function createTestUser(label: string): Promise<{ id: string; email: strin
   return { id: user.id, email }
 }
 
-function sessionCookie(headers: Record<string, unknown>): string {
-  const setCookie = headers['set-cookie']
-  const cookie = Array.isArray(setCookie) ? setCookie.find((value) => String(value).startsWith('staffora.sid=')) : undefined
-  return typeof cookie === 'string' ? cookie.split(';')[0] ?? '' : ''
-}
-
 function sessionIdFromCookie(cookie: string): string {
   // Signed cookie format: staffora.sid=s:<sid>.<signature>
   const value = decodeURIComponent(cookie.replace('staffora.sid=', ''))
@@ -34,8 +29,12 @@ function sessionIdFromCookie(cookie: string): string {
 }
 
 async function login(email: string, cookie?: string): Promise<request.Response> {
-  const call = request(app).post('/api/v1/auth/login').send({ email, password: TEST_PASSWORD })
-  return cookie ? call.set('Cookie', cookie) : call
+  return postLogin(app, { email, password: TEST_PASSWORD }, cookie)
+}
+
+async function isAuthenticated(cookie: string): Promise<boolean> {
+  const me = await request(app).get('/api/v1/auth/me').set('Cookie', cookie)
+  return me.status === 200
 }
 
 afterAll(async () => {
@@ -64,7 +63,7 @@ describe('session authentication API with PostgreSQL store (US01.01)', () => {
   })
 
   it('rejects protected endpoints when the request carries no session cookie (AC03.02)', async () => {
-    const protectedEndpoints = ['/api/v1/auth/me', '/api/v1/auth/csrf-token', '/api/v1/users']
+    const protectedEndpoints = ['/api/v1/auth/me', '/api/v1/users', '/api/v1/employees']
 
     for (const endpoint of protectedEndpoints) {
       const response = await request(app).get(endpoint)
@@ -85,6 +84,58 @@ describe('session authentication API with PostgreSQL store (US01.01)', () => {
     expect(response.body.code).toBe('UNAUTHORIZED')
   })
 
+  it('issues a CSRF token on an anonymous session before sign-in (TSD 8.3)', async () => {
+    const response = await request(app).get('/api/v1/auth/csrf-token')
+
+    expect(response.status).toBe(200)
+    expect(typeof response.body.data.csrfToken).toBe('string')
+    const cookie = sessionCookie(response.headers)
+    const row = await prisma.userSession.findUnique({ where: { sid: sessionIdFromCookie(cookie) } })
+    expect(row).not.toBeNull()
+    expect(await isAuthenticated(cookie)).toBe(false)
+
+    await prisma.userSession.delete({ where: { sid: sessionIdFromCookie(cookie) } })
+  })
+
+  it('rejects sign-in without a valid CSRF token and creates no authenticated session (TSD 8.3)', async () => {
+    const user = await createTestUser('login-csrf')
+    const credentials = { email: user.email, password: TEST_PASSWORD }
+    const anonymous = await fetchCsrfSession(app)
+    const otherBrowser = await fetchCsrfSession(app)
+
+    const withoutToken = await request(app).post('/api/v1/auth/login').send(credentials)
+    const withoutTokenHeader = await request(app).post('/api/v1/auth/login').set('Cookie', anonymous.cookie).send(credentials)
+    const withAnotherSessionsToken = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Cookie', anonymous.cookie)
+      .set('X-CSRF-Token', otherBrowser.csrfToken)
+      .send(credentials)
+
+    for (const response of [withoutToken, withoutTokenHeader, withAnotherSessionsToken]) {
+      expect(response.status).toBe(403)
+      expect(response.body.code).toBe('FORBIDDEN')
+      expect(response.body).not.toHaveProperty('data')
+    }
+    expect(await isAuthenticated(anonymous.cookie)).toBe(false)
+  })
+
+  it('rotates the CSRF token on sign-in so the pre-login token stops working (TSD 8.1, 8.3)', async () => {
+    const user = await createTestUser('csrf-rotate')
+    const anonymous = await fetchCsrfSession(app)
+
+    const response = await login(user.email, anonymous.cookie)
+    const cookie = sessionCookie(response.headers)
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.csrfToken).not.toBe(anonymous.csrfToken)
+    const staleTokenLogout = await request(app)
+      .post('/api/v1/auth/logout')
+      .set('Cookie', cookie)
+      .set('X-CSRF-Token', anonymous.csrfToken)
+    expect(staleTokenLogout.status).toBe(403)
+    expect(await isAuthenticated(cookie)).toBe(true)
+  })
+
   it('rotates the session ID on login and discards the previous session (TSD 8.1)', async () => {
     const user = await createTestUser('rotate')
     const firstCookie = sessionCookie((await login(user.email)).headers)
@@ -98,16 +149,16 @@ describe('session authentication API with PostgreSQL store (US01.01)', () => {
 
   it('returns an identical generic error for unknown email and wrong password (AC02.03, AC02.04)', async () => {
     const user = await createTestUser('generic')
-    const unknown = await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: `nobody-${randomUUID()}@staffora.test`, password: TEST_PASSWORD })
-    const wrong = await request(app).post('/api/v1/auth/login').send({ email: user.email, password: 'WrongPassword2026!' })
+    const browser = await fetchCsrfSession(app)
+    const unknown = await postLogin(app, { email: `nobody-${randomUUID()}@staffora.test`, password: TEST_PASSWORD }, browser.cookie)
+    const wrong = await postLogin(app, { email: user.email, password: 'WrongPassword2026!' }, browser.cookie)
 
     expect(unknown.status).toBe(401)
     expect(wrong.status).toBe(401)
     expect(unknown.body.message).toBe(wrong.body.message)
     expect(unknown.body.code).toBe(wrong.body.code)
-    expect(sessionCookie(wrong.headers)).toBe('')
+    // The anonymous session the browser holds is never upgraded by a failed sign-in.
+    expect(await isAuthenticated(browser.cookie)).toBe(false)
   })
 
   it('requires the CSRF token to log out and keeps the session when it is missing (TSD 8.3)', async () => {
@@ -151,10 +202,11 @@ describe('session authentication API with PostgreSQL store (US01.01)', () => {
     const row = await prisma.userSession.findUnique({ where: { sid: sessionIdFromCookie(cookie) } })
     expect(row).toBeNull()
 
-    const relogin = await login(user.email)
+    const browser = await fetchCsrfSession(app)
+    const relogin = await login(user.email, browser.cookie)
     expect(relogin.status).toBe(401)
     expect(relogin.body.message).toBe('Invalid email or password.')
-    expect(sessionCookie(relogin.headers)).toBe('')
+    expect(await isAuthenticated(browser.cookie)).toBe(false)
   })
 
   it('lets another account sign in from a browser still holding a revoked session cookie (AC02.01)', async () => {
@@ -175,7 +227,9 @@ describe('session authentication API with PostgreSQL store (US01.01)', () => {
 
   it('rate limits repeated login attempts per IP and email (TSD 8.5)', async () => {
     const email = `us0101-ratelimit-${randomUUID()}@staffora.test`
-    const attempt = (): request.Test => request(app).post('/api/v1/auth/login').send({ email, password: 'WrongPassword2026!' })
+    const browser = await fetchCsrfSession(app)
+    const attempt = (): Promise<request.Response> =>
+      postLogin(app, { email, password: 'WrongPassword2026!' }, browser.cookie)
 
     for (let index = 0; index < 5; index++) {
       expect((await attempt()).status).toBe(401)

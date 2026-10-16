@@ -45,11 +45,7 @@ const getMe: RequestHandler = (req, res, next) => {
   sendSuccess(res, req.user)
 }
 
-const getCsrfToken: RequestHandler = (req, res, next) => {
-  if (!req.user) {
-    next(new UnauthorizedError('Not authenticated.'))
-    return
-  }
+const getCsrfToken: RequestHandler = (req, res) => {
   sendSuccess(res, { csrfToken: ensureCsrfToken(req) })
 }
 
