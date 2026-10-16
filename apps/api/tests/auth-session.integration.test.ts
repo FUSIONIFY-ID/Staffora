@@ -61,6 +61,28 @@ describe('session authentication API with PostgreSQL store (US01.01)', () => {
     expect(me.body.data.id).toBe(user.id)
   })
 
+  it('rejects protected endpoints when the request carries no session cookie (AC03.02)', async () => {
+    const protectedEndpoints = ['/api/v1/auth/me', '/api/v1/auth/csrf-token', '/api/v1/users']
+
+    for (const endpoint of protectedEndpoints) {
+      const response = await request(app).get(endpoint)
+
+      expect(response.status, endpoint).toBe(401)
+      expect(response.body.code, endpoint).toBe('UNAUTHORIZED')
+      expect(response.body).not.toHaveProperty('data')
+      expect(sessionCookie(response.headers), endpoint).toBe('')
+    }
+  })
+
+  it('rejects a forged session cookie that has no matching server-side session (AC03.02)', async () => {
+    const forgedCookie = `staffora.sid=${encodeURIComponent(`s:${randomUUID()}.forged-signature`)}`
+
+    const response = await request(app).get('/api/v1/auth/me').set('Cookie', forgedCookie)
+
+    expect(response.status).toBe(401)
+    expect(response.body.code).toBe('UNAUTHORIZED')
+  })
+
   it('rotates the session ID on login and discards the previous session (TSD 8.1)', async () => {
     const user = await createTestUser('rotate')
     const firstCookie = sessionCookie((await login(user.email)).headers)
