@@ -190,7 +190,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
             id="resource-create-button"
             variant="primary"
             onClick={handleOpenCreate}
-            className="shadow-lg shadow-blue-600/30 font-semibold"
+            className="w-full sm:w-auto shadow-lg shadow-blue-600/30 font-semibold"
           >
             + Tambah Karyawan
           </Button>

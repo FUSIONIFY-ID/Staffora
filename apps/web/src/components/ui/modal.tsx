@@ -39,23 +39,23 @@ export const Modal: React.FC<ModalProps> = ({
   }[size]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
       <div
-        className={`w-full ${sizeClasses} rounded-2xl border border-slate-800 bg-slate-900/95 p-6 shadow-2xl transition-all`}
+        className={`w-full ${sizeClasses} max-h-[90vh] flex flex-col rounded-2xl border border-slate-800 bg-slate-900/95 p-4 sm:p-6 shadow-2xl transition-all shadow-black/50`}
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <h3 className="text-lg font-bold text-slate-100">{title}</h3>
+        <div className="flex shrink-0 items-center justify-between pb-3 sm:pb-4 border-b border-slate-800">
+          <h3 className="text-base sm:text-lg font-bold text-slate-100">{title}</h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-800"
+            className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800"
             aria-label="Close"
           >
             ✕
           </button>
         </div>
-        <div className="mt-4">{children}</div>
+        <div className="mt-4 overflow-y-auto pr-1 flex-1">{children}</div>
       </div>
     </div>
   )

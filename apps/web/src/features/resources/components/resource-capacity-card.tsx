@@ -114,7 +114,7 @@ export const ResourceCapacityCard: React.FC<ResourceCapacityCardProps> = ({
           type="submit"
           variant="secondary"
           disabled={startDate > endDate}
-          className="hover:border-slate-500"
+          className="w-full hover:border-slate-500"
         >
           Evaluasi Rentang Waktu
         </Button>

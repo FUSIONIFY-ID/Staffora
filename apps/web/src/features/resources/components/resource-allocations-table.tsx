@@ -31,7 +31,7 @@ export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> =
       ) : (
         <div className="mt-4 space-y-4">
           <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/40">
-            <table className="w-full text-left text-sm text-slate-300">
+            <table className="w-full min-w-[560px] text-left text-sm text-slate-300">
               <thead className="border-b border-slate-800 bg-slate-950/70 text-xs font-semibold uppercase tracking-wider text-slate-400">
                 <tr>
                   <th scope="col" className="px-4 py-3">Proyek</th>

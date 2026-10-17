@@ -193,13 +193,13 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
       {/* Profile Header Card */}
       <Card className="border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600/30 via-slate-800 to-indigo-600/25 border border-blue-500/30 text-xl font-extrabold text-blue-300 shadow-lg shadow-blue-500/15">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600/30 via-slate-800 to-indigo-600/25 border border-blue-500/30 text-xl font-extrabold text-blue-300 shadow-lg shadow-blue-500/15">
               {initials}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-white tracking-tight">{employee.fullName}</h1>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-bold text-white tracking-tight break-words">{employee.fullName}</h1>
                 <Badge
                   variant={employee.status === 'ACTIVE' ? 'green' : 'gray'}
                   className="gap-1.5"
@@ -212,7 +212,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
                   {employee.status === 'ACTIVE' ? 'Aktif' : 'Non-Aktif'}
                 </Badge>
               </div>
-              <p className="font-mono text-xs text-slate-400 mt-1">
+              <p className="font-mono text-xs text-slate-400 mt-1 break-all sm:break-normal">
                 {employee.employeeCode} &bull; {employee.workEmail}
               </p>
               <div className="mt-2.5 flex flex-wrap gap-2 text-xs text-slate-300">
@@ -231,7 +231,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
               id="resource-detail-edit-button"
               variant="secondary"
               onClick={() => setIsEditModalOpen(true)}
-              className="hover:border-blue-500/40"
+              className="w-full sm:w-auto hover:border-blue-500/40"
             >
               Edit Profil
             </Button>

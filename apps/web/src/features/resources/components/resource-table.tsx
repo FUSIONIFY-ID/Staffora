@@ -67,8 +67,13 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/70 shadow-xl shadow-black/30 backdrop-blur-sm">
+      {/* Mobile scroll indicator */}
+      <div className="flex sm:hidden items-center justify-between px-3.5 py-1.5 border-b border-slate-800/80 bg-slate-950/50 text-[11px] text-slate-400">
+        <span>👉 Geser horizontal untuk melihat kolom lengkap</span>
+        <span className="font-mono text-slate-500">{resources.length} baris</span>
+      </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-300">
+        <table className="w-full min-w-[680px] text-left text-sm text-slate-300">
           <thead className="border-b border-slate-800 bg-slate-950/70 text-xs font-semibold uppercase tracking-wider text-slate-400">
             <tr>
               <th scope="col" className="px-4 py-3.5">Kode</th>

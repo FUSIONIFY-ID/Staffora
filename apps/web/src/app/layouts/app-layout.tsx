@@ -1,14 +1,15 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../providers/auth-provider.js'
 import { Badge } from '../../components/ui/badge.js'
 import { Button } from '../../components/ui/button.js'
 
-export const AppLayout: React.FC = () => {
+export const AppLayout: React.FC = (): React.JSX.Element => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  const handleLogout = async () => {
+  const handleLogout = async (): Promise<void> => {
     await logout()
     navigate('/login')
   }
@@ -39,7 +40,23 @@ export const AppLayout: React.FC = () => {
       <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo & Navigation */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 sm:gap-8">
+            {/* Hamburger Button for Mobile */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
+              aria-label={isMobileMenuOpen ? 'Tutup Menu' : 'Buka Menu'}
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+
             <Link to="/dashboard" className="flex items-center gap-3 group">
               <img
                 src="/logo-icon.png"
@@ -71,7 +88,7 @@ export const AppLayout: React.FC = () => {
           </div>
 
           {/* User Profile & Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
@@ -93,10 +110,38 @@ export const AppLayout: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-800 bg-slate-900/95 px-4 pt-3 pb-4 space-y-1 backdrop-blur-xl animate-fadeIn">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={({ isActive }) =>
+                  `block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-blue-600/20 text-blue-300 font-semibold border-l-2 border-blue-500'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+            {user && (
+              <div className="pt-3 mt-2 border-t border-slate-800/80 px-2 sm:hidden flex items-center justify-between text-xs text-slate-400">
+                <span>{user.employee?.fullName || user.email}</span>
+                <Badge variant={roleBadgeVariant}>{user.role.replace('_', ' ')}</Badge>
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Outlet />
       </main>
 
@@ -107,3 +152,4 @@ export const AppLayout: React.FC = () => {
     </div>
   )
 }
+
