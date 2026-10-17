@@ -44,6 +44,10 @@ import { workforceController } from "../src/modules/workforce/workforce.controll
 import { createSessionMiddleware } from "../src/common/auth/session.js";
 import { generalRateLimitMiddleware } from "../src/common/auth/rate-limiter.js";
 import { identityLoaderMiddleware } from "../src/common/auth/identity-loader.js";
+import {
+  validateParams,
+  skillIdParamSchema,
+} from "../src/common/validation/validate.js";
 
 describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () => {
   const app = createApp({ useMemorySession: true });
@@ -1188,6 +1192,29 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       );
       expect(passed).toBe(true);
     });
+
+    it("preserves prior path parameters when validateParams is run in nested sub-routers (F29)", () => {
+      const mockReq = {
+        params: {
+          id: "11111111-1111-1111-1111-111111111111",
+          skillId: "22222222-2222-2222-2222-222222222222",
+        },
+      } as unknown as Request;
+      const mockRes = {} as Response;
+      let nextCalled = false;
+
+      validateParams(skillIdParamSchema)(mockReq, mockRes, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(true);
+      expect((mockReq.params as Record<string, string>).id).toBe(
+        "11111111-1111-1111-1111-111111111111",
+      );
+      expect((mockReq.params as Record<string, string>).skillId).toBe(
+        "22222222-2222-2222-2222-222222222222",
+      );
+    });
   });
 
   describe("8. Workforce RBAC & Controller Protection", () => {
@@ -1575,6 +1602,16 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
         .set("Cookie", adminCookie)
         .set("X-CSRF-Token", adminCsrf)
         .send({ proficiencyLevel: 4 });
+      expect(res.status).toBe(501);
+      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+    });
+
+    it("returns 501 Not Implemented for DELETE /employees/:id/skills/:skillId with valid UUIDs (F29)", async () => {
+      const validSkillId = randomUUID();
+      const res = await request(app)
+        .delete(`/api/v1/employees/${employeeOwnId}/skills/${validSkillId}`)
+        .set("Cookie", adminCookie)
+        .set("X-CSRF-Token", adminCsrf);
       expect(res.status).toBe(501);
       expect(res.body.code).toBe("NOT_IMPLEMENTED");
     });

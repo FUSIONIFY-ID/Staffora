@@ -69,8 +69,12 @@ export function validateParams(schema: ZodType): RequestHandler {
         ),
       );
     }
+    const validated = (
+      typeof result.data === "object" && result.data !== null ? result.data : {}
+    ) as Record<string, string>;
+
     Object.defineProperty(req, "params", {
-      value: result.data,
+      value: { ...req.params, ...validated },
       writable: true,
       configurable: true,
     });

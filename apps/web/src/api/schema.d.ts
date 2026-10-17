@@ -654,6 +654,7 @@ export interface paths {
                 };
                 401: components["responses"]["UnauthorizedResponse"];
                 403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
                 501: components["responses"]["NotImplementedResponse"];
             };
         };
@@ -1034,6 +1035,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
                 501: components["responses"]["NotImplementedResponse"];
             };
         };

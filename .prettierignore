@@ -3,3 +3,6 @@ package-lock.json
 **/coverage
 **/node_modules
 **/generated
+apps/web/src/api/schema.d.ts
+.claude
+.codex

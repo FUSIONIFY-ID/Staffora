@@ -406,6 +406,8 @@ paths:
           $ref: "#/components/responses/UnauthorizedResponse"
         "403":
           $ref: "#/components/responses/ForbiddenResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
         "501":
           $ref: "#/components/responses/NotImplementedResponse"
     post:
@@ -721,6 +723,8 @@ paths:
                 $ref: "#/components/schemas/ProjectListResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
         "501":
           $ref: "#/components/responses/NotImplementedResponse"
     post:
