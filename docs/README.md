@@ -32,3 +32,7 @@ Dokumentasi teknis resmi dan executable contract untuk implementasi Staffora MVP
 - [`deployment.md`](runbooks/deployment.md): Prosedur deployment staging dan production menggunakan single-VM & Docker Compose.
 - [`rollback.md`](runbooks/rollback.md): Prosedur rollback cepat aplikasi dan mitigasi database migration.
 - [`troubleshooting.md`](runbooks/troubleshooting.md): Diagnosis error umum, deadlock capacity locking, dan session debugging.
+
+### 6. [UI Specifications (`docs/ui-specs/`)](ui-specs/design-system/design-system.md)
+- [`design-system/`](ui-specs/design-system/design-system.md): Token visual, tipografi, ukuran komponen, dan state screen yang diturunkan dari design reference Figma "Staffora — Product Design & Prototype (MVP v1.0)". Ini acuan visual yang berlaku; `design-system.json` adalah versi mesinnya untuk agen koding.
+- Spesifikasi per fitur ditambahkan sebagai subfolder terpisah saat dibutuhkan.

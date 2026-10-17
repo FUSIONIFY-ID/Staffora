@@ -105,7 +105,7 @@ and the relevant Architecture Decision Record (ADR).
 - [ ] Direct navigation to restricted routes renders an explicit 403 Forbidden state with a return link, never disguised as empty data.
 - [ ] All data-driven screens handle loading, empty, error, and populated states.
 - [ ] Forms provide immediate client-side validation feedback and display backend validation errors.
-- [ ] UI uses consistent dark theme (`#0a0f1d`) and brand tokens with Tailwind CSS 4 and shared UI primitives.
+- [ ] UI uses the design tokens from `docs/ui-specs/design-system/design-system.md` (light mode only, per [ADR-011](architecture/decisions/adr-011-figma-design-system-light-mode.md)) with Tailwind CSS 4 and shared UI primitives. Components do not hard-code hex values for colours a token already defines.
 
 ## Database & Prisma Migrations
 

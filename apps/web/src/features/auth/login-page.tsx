@@ -1,10 +1,24 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../app/providers/auth-provider.js'
+import { homePathForRole } from '../../app/navigation/nav-config.js'
 import { Button } from '../../components/ui/button.js'
 import { Input } from '../../components/ui/input.js'
 import { Alert } from '../../components/ui/alert.js'
 
+/**
+ * Login screen, per design frame 01: a 680px brand panel on #111827 and a 420px
+ * auth card.
+ *
+ * The brand panel renders the product name and tagline as text. The design uses
+ * text here, and the previous raster logo carried an opaque white background
+ * that showed as a white box against the dark panel.
+ *
+ * There is no quick sign-in control. An earlier revision kept one with the
+ * seeded account passwords written into the source, which shipped them inside
+ * the production bundle. Seeded credentials belong in the environment, not in a
+ * client build.
+ */
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -13,7 +27,7 @@ export const LoginPage: React.FC = () => {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     if (!email || !password) return
 
@@ -22,122 +36,75 @@ export const LoginPage: React.FC = () => {
 
     try {
       const user = await login(email, password)
-      if (user.role === 'EMPLOYEE') {
-        navigate('/my-profile')
-      } else {
-        navigate('/dashboard')
-      }
+      navigate(homePathForRole(user.role))
     } catch (err: unknown) {
-      setError((err as Error)?.message || 'Invalid email or password.')
+      setError(err instanceof Error && err.message ? err.message : 'Invalid email or password.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleQuickLogin = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail)
-    setPassword(demoPass)
-  }
-
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4 bg-slate-950">
-      <div className="w-full max-w-md">
-        {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-blue-600/10 border border-blue-500/20 mb-4 shadow-xl shadow-blue-500/5">
-            <img
-              src="/logo-icon.png"
-              alt="Staffora"
-              className="h-12 w-12 object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none'
-              }}
-            />
+    <div className="min-h-screen flex bg-surface-page">
+      {/* Brand Panel */}
+      <aside className="hidden lg:flex w-[680px] shrink-0 flex-col justify-center bg-surface-brand-panel px-16">
+        <p className="text-2xl font-semibold text-white">Staffora</p>
+        <p className="mt-4 text-lg text-white/70">Right People. Right Project.</p>
+      </aside>
+
+      {/* Auth Card */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center items-center px-4 py-10">
+        <div className="w-full max-w-[420px] bg-surface-white border border-line rounded-[14px] p-8">
+          {/* Brand Header */}
+          <div className="mb-8">
+            <h1 className="text-[28px] font-semibold leading-[41px] text-ink">Welcome back</h1>
+            <p className="text-sm text-ink-muted mt-1">Sign in to continue to Staffora</p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Sign in to Staffora</h1>
-          <p className="text-sm text-slate-400 mt-1">Project Resource Allocation & Workforce Planning</p>
-        </div>
 
-        {/* Login Form Panel */}
-        <div className="glass-panel p-8">
-          {error && (
-            <Alert type="error" className="mb-6">
-              {error}
-            </Alert>
-          )}
+          {/* Login Form Panel */}
+          <div>
+            {error && (
+              <Alert type="error" className="mb-6">
+                {error}
+              </Alert>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <Input
-              label="Work Email"
-              type="email"
-              placeholder="you@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoFocus
-              id="login-email"
-            />
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <Input
+                label="Work Email"
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+                id="login-email"
+              />
 
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              id="login-password"
-            />
+              <Input
+                label="Password"
+                type="password"
+                placeholder="••••••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                id="login-password"
+              />
 
-            <Button
-              type="submit"
-              className="w-full"
-              isLoading={isLoading}
-              disabled={!email || !password || isLoading}
-              id="login-submit-button"
-            >
-              Sign In
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                className="w-full h-12"
+                isLoading={isLoading}
+                disabled={!email || !password || isLoading}
+                id="login-submit-button"
+              >
+                Sign In
+              </Button>
+            </form>
 
-          {/* Development Quick Role Switcher */}
-          <div className="mt-8 pt-6 border-t border-slate-800">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 text-center">
-              Quick Sign-in (Seeded Accounts)
+            <p className="mt-8 pt-6 border-t border-line text-center text-xs text-ink-dim">
+              Internal company application &middot; Authorized users only
             </p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin@staffora.internal', 'StafforaAdmin2026!')}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-left border border-slate-700/60 transition-colors"
-              >
-                <div className="font-semibold text-purple-400">Admin</div>
-                <div className="text-[10px] text-slate-400 truncate">admin@staffora.internal</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('pm@staffora.internal', 'StafforaPM2026!')}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-left border border-slate-700/60 transition-colors"
-              >
-                <div className="font-semibold text-blue-400">Project Manager</div>
-                <div className="text-[10px] text-slate-400 truncate">pm@staffora.internal</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('rm@staffora.internal', 'StafforaRM2026!')}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-left border border-slate-700/60 transition-colors"
-              >
-                <div className="font-semibold text-amber-400">Resource Manager</div>
-                <div className="text-[10px] text-slate-400 truncate">rm@staffora.internal</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('employee@staffora.internal', 'StafforaEmp2026!')}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-left border border-slate-700/60 transition-colors"
-              >
-                <div className="font-semibold text-emerald-400">Employee</div>
-                <div className="text-[10px] text-slate-400 truncate">employee@staffora.internal</div>
-              </button>
-            </div>
           </div>
         </div>
       </div>

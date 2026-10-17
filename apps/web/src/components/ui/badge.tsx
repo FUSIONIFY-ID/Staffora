@@ -8,12 +8,12 @@ export interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({ children, variant = 'blue', className = '' }) => {
   const variantStyles = {
-    blue: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-    green: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    amber: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    red: 'bg-red-500/15 text-red-400 border-red-500/30',
-    purple: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
-    gray: 'bg-slate-700/40 text-slate-300 border-slate-600/30',
+    blue: 'bg-info-surface text-info-text border-info-border',
+    green: 'bg-success-surface text-success-text border-success-border',
+    amber: 'bg-warning-surface text-warning-text border-warning-border',
+    red: 'bg-danger-surface text-danger-text border-danger-border',
+    purple: 'bg-violet-surface text-violet-text border-violet-border',
+    gray: 'bg-surface-chip text-ink-muted border-line',
   }[variant]
 
   return (
