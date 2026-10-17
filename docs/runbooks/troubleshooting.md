@@ -76,7 +76,7 @@ Panduan diagnosa dan penanganan insiden operasional Staffora.
 
   ```sql
   WITH ranked AS (
-    SELECT id, row_number() OVER (PARTITION BY lower(name) ORDER BY created_at, id) AS rn
+    SELECT id, name, row_number() OVER (PARTITION BY lower(name) ORDER BY created_at, id) AS rn
     FROM departments
   )
   SELECT (array_agg(id ORDER BY rn))[1] AS keep_id, (array_agg(id ORDER BY rn))[2] AS drop_id

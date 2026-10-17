@@ -40,8 +40,13 @@ addition instead of several newly mandatory fields.
 | --- | --- | --- | --- |
 | `evaluatedPeriod` | object: `startDate`, `endDate`, `peakConcurrentAllocation`, `remainingCapacity` | PRD US02.01 - AC04.04 requires peak concurrent allocation and remaining capacity for a selected date range. The shape matches the object already declared in the `dev` contract. | yes — confirm the AC |
 
-`evaluatedPeriod` was declared but not marked `required` on `dev`. It is now
-required, because the route always evaluates the window, defaulting to today.
+`evaluatedPeriod` was declared but not marked `required` on `dev`. It stays an
+optional property in the parent schema for the same reason as the fields above:
+the route always evaluates the window and always returns the object, but the
+published contract keeps the `dev` list so no field becomes newly mandatory
+without Tech Lead sign-off. Its own members (`startDate`, `endDate`,
+`peakConcurrentAllocation`, `remainingCapacity`) are `required` inside the
+object, because a partially filled window would be unusable.
 
 ## `EmployeeSkill`
 

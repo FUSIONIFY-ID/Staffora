@@ -5,6 +5,7 @@ import { createApp } from '../../src/app.js'
 import { prisma } from '../../src/common/database/prisma.js'
 import { hashPassword } from '../../src/common/auth/password.js'
 import { identityRepository } from '../../src/modules/identity/identity.repository.js'
+import { postLogin, sessionCookieFrom } from './auth-login.js'
 
 export type Role = 'admin' | 'projectManager' | 'resourceManager' | 'employee'
 
@@ -117,13 +118,13 @@ export async function login(role: Role): Promise<Session> {
     throw new Error(`The ${role} account was not created; call setupWorkforceFixture first.`)
   }
 
-  const res = await request(app)
-    .post('/api/v1/auth/login')
-    .send({ email: account.email, password: account.password })
+  // POST /auth/login is CSRF-protected, so the fixture does what the browser does: take a
+  // token on the anonymous session, sign in with it, then keep the rotated session and token.
+  const res = await postLogin(app, { email: account.email, password: account.password })
   expect(res.status).toBe(200)
 
   const session: Session = {
-    cookie: res.headers['set-cookie']?.[0] ?? '',
+    cookie: sessionCookieFrom(res.headers),
     csrfToken: res.body.data.csrfToken as string,
     employeeId: account.employeeId,
   }
