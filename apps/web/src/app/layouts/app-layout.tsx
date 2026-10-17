@@ -40,12 +40,12 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
       <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo & Navigation */}
-          <div className="flex items-center gap-4 sm:gap-8">
-            {/* Hamburger Button for Mobile */}
+          <div className="flex items-center gap-3 sm:gap-6">
+            {/* Hamburger Button for Mobile & Tablet (< 1280px) */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-              className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
+              className="xl:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
               aria-label={isMobileMenuOpen ? 'Tutup Menu' : 'Buka Menu'}
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,7 +57,7 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
               </svg>
             </button>
 
-            <Link to="/dashboard" className="flex items-center gap-3 group">
+            <Link to="/dashboard" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
               <img
                 src="/logo-icon.png"
                 alt="Staffora Emblem"
@@ -68,13 +68,14 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
               </span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-1">
+            {/* Desktop Navbar (>= 1280px) */}
+            <nav className="hidden xl:flex items-center gap-1">
               {navItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                       isActive
                         ? 'bg-blue-600/15 text-blue-400 font-semibold'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -88,18 +89,18 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
           </div>
 
           {/* User Profile & Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div className="text-right hidden sm:block">
-                  <div className="text-sm font-medium text-slate-200">
+                  <div className="text-sm font-medium text-slate-200 max-w-[140px] sm:max-w-[180px] lg:max-w-[220px] truncate">
                     {user.employee?.fullName || user.email}
                   </div>
                   <div className="flex items-center justify-end gap-1.5 mt-0.5">
                     <Badge variant={roleBadgeVariant}>{user.role.replace('_', ' ')}</Badge>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="whitespace-nowrap shrink-0">
                   Sign out
                 </Button>
               </div>
@@ -111,9 +112,9 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer */}
+        {/* Mobile & Tablet Navigation Drawer (< 1280px) */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-800 bg-slate-900/95 px-4 pt-3 pb-4 space-y-1 backdrop-blur-xl animate-fadeIn">
+          <div className="xl:hidden border-t border-slate-800 bg-slate-900/95 px-4 pt-3 pb-4 space-y-1 backdrop-blur-xl animate-fadeIn shadow-2xl">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -132,7 +133,7 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
             ))}
             {user && (
               <div className="pt-3 mt-2 border-t border-slate-800/80 px-2 sm:hidden flex items-center justify-between text-xs text-slate-400">
-                <span>{user.employee?.fullName || user.email}</span>
+                <span className="truncate max-w-[180px]">{user.employee?.fullName || user.email}</span>
                 <Badge variant={roleBadgeVariant}>{user.role.replace('_', ' ')}</Badge>
               </div>
             )}
