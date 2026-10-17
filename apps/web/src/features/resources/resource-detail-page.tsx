@@ -82,6 +82,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
       void queryClient.invalidateQueries({ queryKey: ['employee', employeeId] })
       void queryClient.invalidateQueries({ queryKey: ['employees'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      void queryClient.invalidateQueries({ queryKey: ['capacity'] })
       setFeedback({ type: 'success', message: 'Profil karyawan berhasil diperbarui.' })
     },
   })
@@ -95,7 +96,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
     return (
       <div className="flex min-h-96 flex-col items-center justify-center gap-3">
         <Spinner size="lg" />
-        <p className="text-sm text-slate-400">Memuat profil karyawan...</p>
+        <p className="text-sm font-medium text-slate-400">Memuat profil karyawan...</p>
       </div>
     )
   }
@@ -108,8 +109,8 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
 
     return (
       <div className="space-y-6">
-        <Link to="/resources" className="text-xs text-blue-400 hover:underline">
-          &larr; Kembali ke Direktori
+        <Link to="/resources" className="text-xs font-semibold text-blue-400 hover:underline">
+          &larr; Kembali ke Direktori Karyawan
         </Link>
         <Alert
           type="error"
@@ -147,6 +148,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
   const initials = employee.fullName
     ? employee.fullName
         .split(' ')
+        .filter(Boolean)
         .map((p) => p[0])
         .slice(0, 2)
         .join('')
@@ -162,10 +164,10 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
 
   return (
     <div className="space-y-6">
-      {/* Back Link */}
+      {/* Back Navigation */}
       <div>
-        <Link to="/resources" className="text-xs font-semibold text-blue-400 hover:underline">
-          &larr; Kembali ke Direktori Karyawan
+        <Link to="/resources" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors">
+          <span>&larr;</span> Kembali ke Direktori Karyawan
         </Link>
       </div>
 
@@ -178,28 +180,46 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
         </Alert>
       )}
 
+      {/* Inactive Employee Warning Banner */}
+      {employee.status === 'INACTIVE' && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-300 shadow-lg shadow-amber-950/20">
+          <span className="text-base">⚠️</span>
+          <div>
+            <strong>Karyawan Berstatus Non-Aktif:</strong> Karyawan ini tidak dapat dialokasikan pada proyek baru. Seluruh data historis alokasi proyek dan keahlian tetap disimpan untuk kebutuhan pelaporan dan audit.
+          </div>
+        </div>
+      )}
+
       {/* Profile Header Card */}
-      <Card className="border-slate-800 bg-slate-900/60 p-6">
+      <Card className="border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600/15 border border-blue-500/30 text-xl font-bold text-blue-400 shadow-lg shadow-blue-500/10">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600/30 via-slate-800 to-indigo-600/25 border border-blue-500/30 text-xl font-extrabold text-blue-300 shadow-lg shadow-blue-500/15">
               {initials}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-white">{employee.fullName}</h1>
-                <Badge variant={employee.status === 'ACTIVE' ? 'green' : 'gray'}>
+                <h1 className="text-2xl font-bold text-white tracking-tight">{employee.fullName}</h1>
+                <Badge
+                  variant={employee.status === 'ACTIVE' ? 'green' : 'gray'}
+                  className="gap-1.5"
+                >
+                  <span
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${
+                      employee.status === 'ACTIVE' ? 'bg-emerald-400' : 'bg-slate-400'
+                    }`}
+                  />
                   {employee.status === 'ACTIVE' ? 'Aktif' : 'Non-Aktif'}
                 </Badge>
               </div>
-              <p className="font-mono text-xs text-slate-400 mt-0.5">
+              <p className="font-mono text-xs text-slate-400 mt-1">
                 {employee.employeeCode} &bull; {employee.workEmail}
               </p>
-              <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-300">
-                <span className="rounded-md bg-slate-800/80 px-2.5 py-1">
+              <div className="mt-2.5 flex flex-wrap gap-2 text-xs text-slate-300">
+                <span className="rounded-md bg-slate-800/90 border border-slate-700/60 px-2.5 py-1">
                   Departemen: <strong className="text-white">{employee.departmentName ?? '—'}</strong>
                 </span>
-                <span className="rounded-md bg-slate-800/80 px-2.5 py-1">
+                <span className="rounded-md bg-slate-800/90 border border-slate-700/60 px-2.5 py-1">
                   Peran: <strong className="text-white">{employee.jobRoleTitle ?? '—'}</strong>
                 </span>
               </div>
@@ -211,6 +231,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
               id="resource-detail-edit-button"
               variant="secondary"
               onClick={() => setIsEditModalOpen(true)}
+              className="hover:border-blue-500/40"
             >
               Edit Profil
             </Button>
@@ -246,3 +267,4 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
     </div>
   )
 }
+

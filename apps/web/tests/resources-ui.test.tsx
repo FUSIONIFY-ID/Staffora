@@ -482,4 +482,84 @@ describe('US02.01 - Employee Resource Directory & Profile', () => {
       expect(apiClient).toHaveBeenCalledWith(expect.stringContaining('page=2'))
     })
   })
+
+  it('displays active filter chips and allows clearing individual filters', async () => {
+    apiClient.mockImplementation((endpoint: string) => {
+      if (endpoint === '/departments') {
+        return Promise.resolve({ data: [{ id: 'dept-1', name: 'Engineering' }] })
+      }
+      if (endpoint === '/job-roles') {
+        return Promise.resolve({ data: [{ id: 'role-1', name: 'Developer' }] })
+      }
+      if (endpoint.startsWith('/employees')) {
+        return Promise.resolve({ data: mockEmployeeData, meta: { page: 1, pageSize: 20, total: 2 } })
+      }
+      return Promise.resolve({ data: [] })
+    })
+
+    renderWithClient(<ResourcesPage />, {
+      initialEntries: ['/resources?search=Budi&departmentId=dept-1&status=ACTIVE'],
+    })
+
+    expect(await screen.findByText('Filter Aktif:')).toBeInTheDocument()
+    expect(screen.getByText(/Cari: “Budi”/)).toBeInTheDocument()
+    expect(await screen.findByText(/Dept: Engineering/)).toBeInTheDocument()
+    expect(screen.getByText(/Status: Aktif/)).toBeInTheDocument()
+
+    // Clear search chip
+    const clearSearchBtn = screen.getByRole('button', { name: 'Hapus filter pencarian' })
+    fireEvent.click(clearSearchBtn)
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Cari: “Budi”/)).not.toBeInTheDocument()
+    })
+  })
+
+  it('renders inactive employee banner and historical allocation notice on detail page', async () => {
+    const inactiveDetailData = {
+      ...mockEmployeeData[1],
+      skills: [{ id: 'sk-1', skillId: 's-1', skillName: 'UI Design', proficiencyLevel: 3 }],
+      allocations: [
+        {
+          id: 'al-past-1',
+          projectId: 'p-legacy-1',
+          projectName: 'Legacy Portal',
+          jobRoleId: 'role-2',
+          jobRoleTitle: 'UI Designer',
+          allocationPercentage: 100,
+          startDate: '2026-01-01',
+          endDate: '2026-06-30',
+        },
+      ],
+      evaluatedPeriod: {
+        startDate: '2026-10-01',
+        endDate: '2026-10-31',
+        peakConcurrentAllocation: 0,
+        remainingCapacity: 100,
+      },
+    }
+
+    apiClient.mockImplementation((endpoint: string) => {
+      if (endpoint.startsWith('/employees/emp-102')) {
+        return Promise.resolve({ data: inactiveDetailData })
+      }
+      return Promise.resolve({ data: [] })
+    })
+
+    renderDetailWithClient('emp-102')
+
+    expect(await screen.findByText('Siti Aminah')).toBeInTheDocument()
+    // Verify Inactive status warning banner
+    expect(screen.getByText('Karyawan Berstatus Non-Aktif:')).toBeInTheDocument()
+    expect(screen.getByText(/Legacy Portal/i)).toBeInTheDocument()
+    // Verify historical preservation notice
+    expect(
+      screen.getByText(/Riwayat penugasan proyek tetap diarsipkan dan dipertahankan dalam sistem/i),
+    ).toBeInTheDocument()
+    // Verify capacity visual meter texts
+    expect(screen.getByText(/Beban Kerja Terpakai \(Peak: 0%\)/i)).toBeInTheDocument()
+    expect(screen.getByText(/Sisa Kapasitas \(100%\)/i)).toBeInTheDocument()
+  })
 })
+
+

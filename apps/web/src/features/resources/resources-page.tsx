@@ -169,14 +169,19 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Direktori Karyawan & Sumber Daya</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-extrabold tracking-tight text-white">Direktori Karyawan & Sumber Daya</h1>
             <Badge variant="blue">Workforce</Badge>
+            {typeof pagination.total === 'number' && (
+              <span className="inline-flex items-center rounded-full bg-slate-800/90 border border-slate-700/60 px-2.5 py-0.5 text-xs font-medium text-slate-300 shadow-sm">
+                {pagination.total} Total Karyawan
+              </span>
+            )}
           </div>
-          <p className="text-sm text-slate-400 mt-1">
-            Kelola visibilitas karyawan, peran kerja, departemen, dan ketersediaan kapasitas kerja.
+          <p className="text-sm text-slate-400 mt-1.5 max-w-2xl">
+            Kelola visibilitas karyawan, peran kerja, departemen, dan ketersediaan kapasitas kerja secara real-time.
           </p>
         </div>
 
@@ -185,6 +190,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
             id="resource-create-button"
             variant="primary"
             onClick={handleOpenCreate}
+            className="shadow-lg shadow-blue-600/30 font-semibold"
           >
             + Tambah Karyawan
           </Button>
