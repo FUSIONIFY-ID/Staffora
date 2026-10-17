@@ -16,7 +16,6 @@ import { ProjectsPage } from '../../features/projects/projects-page.js'
 import { ProjectDetailPage } from '../../features/projects/project-detail-page.js'
 import { AllocationsPage } from '../../features/allocations/allocations-page.js'
 import { MyProfilePage } from '../../features/my-profile/my-profile-page.js'
-import { ResourceFinderPage } from '../../features/resource-finder/resource-finder-page.js'
 import { UsersPage } from '../../features/admin/users-page.js'
 
 const RootRedirect: React.FC = () => {
@@ -77,15 +76,6 @@ export const AppRouter: React.FC = () => {
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER']}>
               <ResourceDetailPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/resource-finder"
-          element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER']}>
-              <ResourceFinderPage />
             </ProtectedRoute>
           }
         />
