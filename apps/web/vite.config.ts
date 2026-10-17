@@ -19,5 +19,5 @@ export default defineConfig({
     proxy: { '/api': apiProxyTarget },
     watch: { usePolling, interval: 300 },
   },
-  test: { environment: 'jsdom', setupFiles: ['./tests/setup.ts'], include: ['tests/**/*.test.tsx'] },
+  test: { environment: 'jsdom', setupFiles: ['./tests/setup.ts'], include: ['tests/**/*.test.{ts,tsx}'] },
 })
