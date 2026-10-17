@@ -92,9 +92,9 @@ describe('AppLayout (AC02 - Role-based navigation)', () => {
     expect(screen.getByRole('link', { name: 'Capacity' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Allocations' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Users' })).toBeInTheDocument() // Admin only
-    // Design frame 02 shows My Profile in the full menu, so it is not
-    // Employee-only, and the route guard has always allowed every role.
-    expect(screen.getByRole('link', { name: 'My Profile' })).toBeInTheDocument()
+    // PRD §2.2 grants self-view only in the Employee column, so the Admin menu
+    // must not offer My Profile.
+    expect(screen.queryByRole('link', { name: 'My Profile' })).not.toBeInTheDocument()
   })
 
   it('renders Employee navigation with My Profile and assigned Projects only', () => {

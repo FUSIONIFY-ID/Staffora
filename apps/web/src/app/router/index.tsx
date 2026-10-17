@@ -7,7 +7,7 @@ import { LoadingState } from '../../components/loading-state.js'
 import { NotFoundView } from '../layouts/not-found-view.js'
 import {
   ADMIN_ROLES,
-  ALL_ROLES,
+  EMPLOYEE_ROLES,
   MANAGEMENT_ROLES,
   PROJECT_ROLES,
   homePathForRole,
@@ -153,7 +153,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path="/my-profile"
           element={
-            <ProtectedRoute allowedRoles={ALL_ROLES}>
+            <ProtectedRoute allowedRoles={EMPLOYEE_ROLES}>
               <MyProfilePage />
             </ProtectedRoute>
           }

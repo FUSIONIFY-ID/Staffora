@@ -104,14 +104,24 @@ describe('route guards', () => {
     expect(await screen.findByRole('heading', { name: /Welcome back/i })).toBeInTheDocument()
   })
 
-  it('renders My Profile for every role, matching the sidebar entry', async () => {
-    for (const role of ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE'] as Role[]) {
+  it('renders My Profile for an Employee and denies it to every other role', async () => {
+    vi.restoreAllMocks()
+    mockAuth(makeUser('EMPLOYEE'))
+    const allowed = renderAt('/my-profile')
+    expect(await screen.findByRole('heading', { name: 'My Profile' })).toBeInTheDocument()
+    expect(screen.queryByText(DENIED)).not.toBeInTheDocument()
+    allowed.unmount()
+
+    // PRD §2.2 grants self-view only in the Employee column and US06.02 AC01.01
+    // names Employee, while BR-G02 guarantees an employee profile only for Project
+    // Manager, Resource Manager, and Employee, so the route must deny the rest.
+    for (const role of ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] as Role[]) {
       vi.restoreAllMocks()
       mockAuth(makeUser(role))
       const { unmount } = renderAt('/my-profile')
 
-      expect(await screen.findByRole('heading', { name: 'My Profile' })).toBeInTheDocument()
-      expect(screen.queryByText(DENIED)).not.toBeInTheDocument()
+      expect(await screen.findByRole('heading', { name: DENIED })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'My Profile' })).not.toBeInTheDocument()
       unmount()
     }
   })

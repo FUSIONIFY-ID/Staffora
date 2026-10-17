@@ -10,7 +10,6 @@ export const MANAGEMENT_ROLES: readonly Role[] = ['ADMIN', 'PROJECT_MANAGER', 'R
 export const PROJECT_ROLES: readonly Role[] = [...MANAGEMENT_ROLES, 'EMPLOYEE']
 export const EMPLOYEE_ROLES: readonly Role[] = ['EMPLOYEE']
 export const ADMIN_ROLES: readonly Role[] = ['ADMIN']
-export const ALL_ROLES: readonly Role[] = [...MANAGEMENT_ROLES, 'EMPLOYEE']
 
 export interface NavItem {
   label: string
@@ -50,12 +49,14 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   },
   {
     label: 'My Workspace',
-    // Design frame 02 renders the full menu, Administration included, together
-    // with My Profile, so the user shown there is an Admin and My Profile is not
-    // an Employee-only entry. The route guard has always allowed every role, so
-    // ALL_ROLES here makes the menu and the guard agree instead of contradicting
-    // each other.
-    items: [{ label: 'My Profile', path: '/my-profile', roles: ALL_ROLES }],
+    // PRD §2.2 grants self-view only in the Employee column ("View Own"), and
+    // US06.02 AC01.01 says "Employee can access My Profile". BR-G02 guarantees an
+    // employee profile only for Project Manager, Resource Manager, and Employee —
+    // Admin is not covered, so the page has nothing it can rely on for an Admin.
+    // Design frame 02 draws one identical chrome in every frame — frame 18 shows
+    // the full menu beside "Current role: Employee" — so it cannot be read as a
+    // per-role visibility grant.
+    items: [{ label: 'My Profile', path: '/my-profile', roles: EMPLOYEE_ROLES }],
   },
   {
     label: 'Administration',
