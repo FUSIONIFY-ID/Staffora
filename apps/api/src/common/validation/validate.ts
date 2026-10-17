@@ -6,6 +6,10 @@ export const uuidParamSchema = z.object({
   id: z.string().uuid({ message: "Invalid UUID format." }),
 });
 
+export const skillIdParamSchema = z.object({
+  skillId: z.string().uuid({ message: "Invalid UUID format." }),
+});
+
 function formatZodErrors(error: ZodError): Record<string, string[]> {
   const formatted: Record<string, string[]> = {};
   for (const issue of error.issues) {

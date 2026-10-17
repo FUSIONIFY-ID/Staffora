@@ -12,7 +12,8 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === "--id") out.id = argv[++i];
     else if (arg.startsWith("--id=")) out.id = arg.slice("--id=".length);
-    else if (arg === "--discarded" || arg === "--discard") out.status = "discarded";
+    else if (arg === "--discarded" || arg === "--discard")
+      out.status = "discarded";
     else if (arg === "--error") {
       out.status = "agent_error";
       out.message = argv[++i] || "unknown error";
@@ -34,13 +35,23 @@ export async function completeCli() {
   }
 
   const serverInfo = readServerInfo();
-  const serverResult = serverInfo ? await completeThroughServer(serverInfo, args) : null;
+  const serverResult = serverInfo
+    ? await completeThroughServer(serverInfo, args)
+    : null;
   if (serverResult?.ok) {
-    const store = createLiveSessionStore({ cwd: process.cwd(), sessionId: args.id });
+    const store = createLiveSessionStore({
+      cwd: process.cwd(),
+      sessionId: args.id,
+    });
     const snapshot = store.getSnapshot(args.id, { includeCompleted: true });
     console.log(
       JSON.stringify(
-        { ok: true, id: args.id, phase: snapshot?.phase || args.status, snapshot },
+        {
+          ok: true,
+          id: args.id,
+          phase: snapshot?.phase || args.status,
+          snapshot,
+        },
         null,
         2,
       ),
@@ -48,15 +59,28 @@ export async function completeCli() {
     return;
   }
 
-  const store = createLiveSessionStore({ cwd: process.cwd(), sessionId: args.id });
+  const store = createLiveSessionStore({
+    cwd: process.cwd(),
+    sessionId: args.id,
+  });
   const event =
     args.status === "discarded"
       ? { type: "discarded", id: args.id }
       : args.status === "agent_error"
-        ? { type: "agent_error", id: args.id, message: args.message || "unknown error" }
+        ? {
+            type: "agent_error",
+            id: args.id,
+            message: args.message || "unknown error",
+          }
         : { type: "complete", id: args.id };
   const snapshot = store.appendEvent(event);
-  console.log(JSON.stringify({ ok: true, id: args.id, phase: snapshot.phase, snapshot }, null, 2));
+  console.log(
+    JSON.stringify(
+      { ok: true, id: args.id, phase: snapshot.phase, snapshot },
+      null,
+      2,
+    ),
+  );
 }
 
 function readServerInfo() {
@@ -74,7 +98,12 @@ async function completeThroughServer(info, args) {
     const res = await fetch(`http://localhost:${info.port}/poll`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: info.token, id: args.id, type, message: args.message }),
+      body: JSON.stringify({
+        token: info.token,
+        id: args.id,
+        type,
+        message: args.message,
+      }),
     });
     if (!res.ok) return null;
     return await res.json();
@@ -84,6 +113,9 @@ async function completeThroughServer(info, args) {
 }
 
 const _running = process.argv[1];
-if (_running?.endsWith("live-complete.mjs") || _running?.endsWith("live-complete.mjs/")) {
+if (
+  _running?.endsWith("live-complete.mjs") ||
+  _running?.endsWith("live-complete.mjs/")
+) {
   completeCli();
 }

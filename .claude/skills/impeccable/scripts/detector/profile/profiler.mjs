@@ -1,5 +1,7 @@
 function profileNow() {
-  return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+  return typeof performance !== "undefined" && performance.now
+    ? performance.now()
+    : Date.now();
 }
 
 function createDetectorProfile() {
@@ -33,7 +35,11 @@ function recordProfileEvent(profile, event) {
 
 function extractFindingIds(findings) {
   if (!Array.isArray(findings) || findings.length === 0) return [];
-  return [...new Set(findings.map((f) => f?.id || f?.type || f?.antipattern).filter(Boolean))];
+  return [
+    ...new Set(
+      findings.map((f) => f?.id || f?.type || f?.antipattern).filter(Boolean),
+    ),
+  ];
 }
 
 function profileFindings(profile, meta, callback) {

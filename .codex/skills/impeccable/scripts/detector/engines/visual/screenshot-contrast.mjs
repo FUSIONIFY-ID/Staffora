@@ -11,17 +11,26 @@ function sanitizeScreenshotClip(clip, viewport) {
   return { x, y, width, height };
 }
 
-async function compareScreenshotContrast(page, beforeBase64, afterBase64, candidate) {
+async function compareScreenshotContrast(
+  page,
+  beforeBase64,
+  afterBase64,
+  candidate,
+) {
   return page.evaluate(
     async ({ beforeBase64, afterBase64, candidate }) => {
       const loadImage = (base64) =>
         new Promise((resolve, reject) => {
           const img = new Image();
           img.onload = () => resolve(img);
-          img.onerror = () => reject(new Error("Could not decode contrast screenshot"));
+          img.onerror = () =>
+            reject(new Error("Could not decode contrast screenshot"));
           img.src = `data:image/png;base64,${base64}`;
         });
-      const [before, after] = await Promise.all([loadImage(beforeBase64), loadImage(afterBase64)]);
+      const [before, after] = await Promise.all([
+        loadImage(beforeBase64),
+        loadImage(afterBase64),
+      ]);
       const width = Math.min(before.width, after.width);
       const height = Math.min(before.height, after.height);
       if (width < 1 || height < 1) return null;
@@ -96,7 +105,12 @@ async function compareScreenshotContrast(page, beforeBase64, afterBase64, candid
 
       ratios.sort((a, b) => a - b);
       const pick = (pct) =>
-        ratios[Math.min(ratios.length - 1, Math.max(0, Math.floor((pct / 100) * ratios.length)))];
+        ratios[
+          Math.min(
+            ratios.length - 1,
+            Math.max(0, Math.floor((pct / 100) * ratios.length)),
+          )
+        ];
       return {
         glyphPixels,
         strongestDelta,
@@ -128,7 +142,9 @@ async function captureVisualContrastCandidate(page, candidate, viewport) {
         return false;
       }
       if (!el) return false;
-      let style = document.getElementById("impeccable-visual-contrast-hide-style");
+      let style = document.getElementById(
+        "impeccable-visual-contrast-hide-style",
+      );
       if (!style) {
         style = document.createElement("style");
         style.id = "impeccable-visual-contrast-hide-style";
@@ -145,7 +161,8 @@ async function captureVisualContrastCandidate(page, candidate, viewport) {
         document.head.appendChild(style);
       }
       el.setAttribute("data-impeccable-visual-contrast-target", token);
-      if (backgroundClipText) el.setAttribute("data-impeccable-bgclip-text", "true");
+      if (backgroundClipText)
+        el.setAttribute("data-impeccable-bgclip-text", "true");
       return true;
     },
     {
@@ -182,16 +199,27 @@ async function captureVisualContrastCandidate(page, candidate, viewport) {
       .catch(() => {});
   }
 
-  const metrics = await compareScreenshotContrast(page, beforeBase64, afterBase64, candidate);
-  if (!metrics || !Number.isFinite(metrics.p10Ratio) || metrics.glyphPixels < 8) return null;
+  const metrics = await compareScreenshotContrast(
+    page,
+    beforeBase64,
+    afterBase64,
+    candidate,
+  );
+  if (!metrics || !Number.isFinite(metrics.p10Ratio) || metrics.glyphPixels < 8)
+    return null;
   const measuredRatio = metrics.p10Ratio;
   if (measuredRatio >= candidate.threshold) return null;
   const textLabel = candidate.text ? ` "${candidate.text}"` : "";
-  const reasonLabel = (candidate.reasons || []).slice(0, 3).join(", ") || "visual background";
+  const reasonLabel =
+    (candidate.reasons || []).slice(0, 3).join(", ") || "visual background";
   return {
     id: "low-contrast",
     snippet: `pixel contrast ${measuredRatio.toFixed(1)}:1 median ${metrics.medianRatio.toFixed(1)}:1 (need ${candidate.threshold}:1) on ${reasonLabel}${textLabel}`,
   };
 }
 
-export { sanitizeScreenshotClip, compareScreenshotContrast, captureVisualContrastCandidate };
+export {
+  sanitizeScreenshotClip,
+  compareScreenshotContrast,
+  captureVisualContrastCandidate,
+};

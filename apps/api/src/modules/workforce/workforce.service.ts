@@ -25,9 +25,7 @@ export const workforceService = {
     );
   },
 
-  async getEmployees(
-    _query: Record<string, unknown>,
-  ): Promise<{
+  async getEmployees(_query: Record<string, unknown>): Promise<{
     data: unknown[];
     total: number;
     page: number;

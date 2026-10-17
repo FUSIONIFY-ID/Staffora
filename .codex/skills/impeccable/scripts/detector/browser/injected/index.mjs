@@ -127,13 +127,17 @@ if (IS_BROWSER) {
 
   function hideSpotlight() {
     spotlightTarget = null;
-    if (spotlightBackdrop) spotlightBackdrop.classList.remove("impeccable-visible");
+    if (spotlightBackdrop)
+      spotlightBackdrop.classList.remove("impeccable-visible");
   }
 
   function isInViewport(el) {
     const r = el.getBoundingClientRect();
     return (
-      r.top >= 0 && r.left >= 0 && r.bottom <= window.innerHeight && r.right <= window.innerWidth
+      r.top >= 0 &&
+      r.left >= 0 &&
+      r.bottom <= window.innerHeight &&
+      r.right <= window.innerWidth
     );
   }
 
@@ -265,7 +269,11 @@ if (IS_BROWSER) {
   document.addEventListener("transitionend", (e) => {
     if (e.propertyName !== "transform") return;
     for (const o of overlays) {
-      if (!o._targetEl || o.classList.contains("impeccable-banner") || o.style.display === "none")
+      if (
+        !o._targetEl ||
+        o.classList.contains("impeccable-banner") ||
+        o.style.display === "none"
+      )
         continue;
       if (e.target === o._targetEl || e.target.contains(o._targetEl)) {
         positionOverlay(o);
@@ -275,7 +283,9 @@ if (IS_BROWSER) {
 
   const highlight = function (el, findings) {
     if (el._impeccableOverlay) detachOverlay(el._impeccableOverlay);
-    const hasSlop = findings.some((f) => RULE_CATEGORY[f.type || f.id] === "slop");
+    const hasSlop = findings.some(
+      (f) => RULE_CATEGORY[f.type || f.id] === "slop",
+    );
 
     const fixed = isInFixedContext(el);
     const rect = el.getBoundingClientRect();
@@ -580,7 +590,9 @@ if (IS_BROWSER) {
       try {
         const matching = parent.querySelectorAll(":scope > " + sel);
         if (matching.length > 1) {
-          const sameType = [...parent.children].filter((c) => c.tagName === el.tagName);
+          const sameType = [...parent.children].filter(
+            (c) => c.tagName === el.tagName,
+          );
           const idx = sameType.indexOf(el) + 1;
           sel += `:nth-of-type(${idx})`;
         }
@@ -676,7 +688,8 @@ if (IS_BROWSER) {
     if (bgClip === "text" && ownBgImage && ownBgImage !== "none") {
       reasons.add("background-clip text");
     }
-    if (style.textShadow && style.textShadow !== "none") reasons.add("text shadow");
+    if (style.textShadow && style.textShadow !== "none")
+      reasons.add("text shadow");
 
     let current = el;
     while (current && current.nodeType === 1) {
@@ -692,30 +705,44 @@ if (IS_BROWSER) {
       if (parseFloat(currentStyle.opacity) < 0.99) reasons.add("opacity stack");
       if (currentStyle.mixBlendMode && currentStyle.mixBlendMode !== "normal")
         reasons.add("blend mode");
-      if (currentStyle.filter && currentStyle.filter !== "none") reasons.add("filter");
+      if (currentStyle.filter && currentStyle.filter !== "none")
+        reasons.add("filter");
       if (currentStyle.backdropFilter && currentStyle.backdropFilter !== "none")
         reasons.add("backdrop filter");
 
       const solidBg = parseRgb(currentStyle.backgroundColor);
-      if (solidBg && solidBg.a >= 0.95 && (!bgImage || bgImage === "none")) break;
+      if (solidBg && solidBg.a >= 0.95 && (!bgImage || bgImage === "none"))
+        break;
       current = current.parentElement;
     }
 
     const sampleRect = getDirectTextRect(el) || el.getBoundingClientRect();
     if (sampleRect && document.elementsFromPoint) {
       const points = [
-        [sampleRect.left + sampleRect.width / 2, sampleRect.top + sampleRect.height / 2],
         [
-          sampleRect.left + Math.min(sampleRect.width - 1, Math.max(1, sampleRect.width * 0.25)),
+          sampleRect.left + sampleRect.width / 2,
           sampleRect.top + sampleRect.height / 2,
         ],
         [
-          sampleRect.left + Math.min(sampleRect.width - 1, Math.max(1, sampleRect.width * 0.75)),
+          sampleRect.left +
+            Math.min(
+              sampleRect.width - 1,
+              Math.max(1, sampleRect.width * 0.25),
+            ),
+          sampleRect.top + sampleRect.height / 2,
+        ],
+        [
+          sampleRect.left +
+            Math.min(
+              sampleRect.width - 1,
+              Math.max(1, sampleRect.width * 0.75),
+            ),
           sampleRect.top + sampleRect.height / 2,
         ],
       ];
       for (const [x, y] of points) {
-        if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
+        if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight)
+          continue;
         const stack = document.elementsFromPoint(x, y);
         const selfIndex = stack.findIndex(
           (node) => node === el || el.contains(node) || node.contains?.(el),
@@ -741,7 +768,9 @@ if (IS_BROWSER) {
   }
 
   function collectVisualContrastCandidates(options = {}) {
-    const maxCandidates = Number.isFinite(options.maxCandidates) ? options.maxCandidates : 12;
+    const maxCandidates = Number.isFinite(options.maxCandidates)
+      ? options.maxCandidates
+      : 12;
     const candidates = [];
     for (const el of document.querySelectorAll("*")) {
       if (candidates.length >= maxCandidates) break;
@@ -763,7 +792,8 @@ if (IS_BROWSER) {
       if (!hasDirectText || isEmojiOnlyText(directText)) continue;
 
       const bgColor = readOwnBackgroundColor(el, style);
-      const isStyledButton = (tag === "a" || tag === "button") && bgColor && bgColor.a > 0.5;
+      const isStyledButton =
+        (tag === "a" || tag === "button") && bgColor && bgColor.a > 0.5;
       if (SAFE_TAGS.has(tag) && !isStyledButton) continue;
 
       const rect = getDirectTextRect(el) || el.getBoundingClientRect();
@@ -853,7 +883,9 @@ if (IS_BROWSER) {
   }
 
   function firstCssUrl(value) {
-    const match = String(value || "").match(/url\((?:"([^"]+)"|'([^']+)'|([^)]*))\)/i);
+    const match = String(value || "").match(
+      /url\((?:"([^"]+)"|'([^']+)'|([^)]*))\)/i,
+    );
     if (!match) return "";
     return (match[1] || match[2] || match[3] || "").trim();
   }
@@ -891,9 +923,16 @@ if (IS_BROWSER) {
     return [first, tokens[1] || "50%"];
   }
 
-  function resolvePaintedImageRect(containerRect, image, sizeValue, positionValue) {
-    const intrinsicWidth = image.naturalWidth || image.videoWidth || image.width || 1;
-    const intrinsicHeight = image.naturalHeight || image.videoHeight || image.height || 1;
+  function resolvePaintedImageRect(
+    containerRect,
+    image,
+    sizeValue,
+    positionValue,
+  ) {
+    const intrinsicWidth =
+      image.naturalWidth || image.videoWidth || image.width || 1;
+    const intrinsicHeight =
+      image.naturalHeight || image.videoHeight || image.height || 1;
     let paintedWidth = intrinsicWidth;
     let paintedHeight = intrinsicHeight;
     const size = String(sizeValue || "auto").trim();
@@ -901,8 +940,14 @@ if (IS_BROWSER) {
     if (size === "cover" || size === "contain") {
       const scale =
         size === "cover"
-          ? Math.max(containerRect.width / intrinsicWidth, containerRect.height / intrinsicHeight)
-          : Math.min(containerRect.width / intrinsicWidth, containerRect.height / intrinsicHeight);
+          ? Math.max(
+              containerRect.width / intrinsicWidth,
+              containerRect.height / intrinsicHeight,
+            )
+          : Math.min(
+              containerRect.width / intrinsicWidth,
+              containerRect.height / intrinsicHeight,
+            );
       paintedWidth = intrinsicWidth * scale;
       paintedHeight = intrinsicHeight * scale;
     } else if (size && size !== "auto") {
@@ -911,16 +956,27 @@ if (IS_BROWSER) {
       const heightToken = parts[1] || "auto";
       if (/%$/.test(widthToken))
         paintedWidth = containerRect.width * (parseFloat(widthToken) / 100);
-      else if (/px$/.test(widthToken)) paintedWidth = parseFloat(widthToken) || paintedWidth;
-      if (heightToken === "auto") paintedHeight = paintedWidth * (intrinsicHeight / intrinsicWidth);
+      else if (/px$/.test(widthToken))
+        paintedWidth = parseFloat(widthToken) || paintedWidth;
+      if (heightToken === "auto")
+        paintedHeight = paintedWidth * (intrinsicHeight / intrinsicWidth);
       else if (/%$/.test(heightToken))
         paintedHeight = containerRect.height * (parseFloat(heightToken) / 100);
-      else if (/px$/.test(heightToken)) paintedHeight = parseFloat(heightToken) || paintedHeight;
+      else if (/px$/.test(heightToken))
+        paintedHeight = parseFloat(heightToken) || paintedHeight;
     }
 
     const [xToken, yToken] = parsePositionPair(positionValue);
-    const positionX = parsePositionToken(xToken, containerRect.width, paintedWidth);
-    const positionY = parsePositionToken(yToken, containerRect.height, paintedHeight);
+    const positionX = parsePositionToken(
+      xToken,
+      containerRect.width,
+      paintedWidth,
+    );
+    const positionY = parsePositionToken(
+      yToken,
+      containerRect.height,
+      paintedHeight,
+    );
     return {
       left: containerRect.left + positionX,
       top: containerRect.top + positionY,
@@ -936,16 +992,24 @@ if (IS_BROWSER) {
   }
 
   function resolveObjectImageRect(containerRect, image, style) {
-    const intrinsicWidth = image.naturalWidth || image.videoWidth || image.width || 1;
-    const intrinsicHeight = image.naturalHeight || image.videoHeight || image.height || 1;
+    const intrinsicWidth =
+      image.naturalWidth || image.videoWidth || image.width || 1;
+    const intrinsicHeight =
+      image.naturalHeight || image.videoHeight || image.height || 1;
     const fit = style.objectFit || "fill";
     let paintedWidth = containerRect.width;
     let paintedHeight = containerRect.height;
     if (fit === "contain" || fit === "cover") {
       const scale =
         fit === "cover"
-          ? Math.max(containerRect.width / intrinsicWidth, containerRect.height / intrinsicHeight)
-          : Math.min(containerRect.width / intrinsicWidth, containerRect.height / intrinsicHeight);
+          ? Math.max(
+              containerRect.width / intrinsicWidth,
+              containerRect.height / intrinsicHeight,
+            )
+          : Math.min(
+              containerRect.width / intrinsicWidth,
+              containerRect.height / intrinsicHeight,
+            );
       paintedWidth = intrinsicWidth * scale;
       paintedHeight = intrinsicHeight * scale;
     } else if (fit === "none") {
@@ -962,8 +1026,12 @@ if (IS_BROWSER) {
     }
     const [xToken, yToken] = parseObjectPosition(style.objectPosition);
     return {
-      left: containerRect.left + parsePositionToken(xToken, containerRect.width, paintedWidth),
-      top: containerRect.top + parsePositionToken(yToken, containerRect.height, paintedHeight),
+      left:
+        containerRect.left +
+        parsePositionToken(xToken, containerRect.width, paintedWidth),
+      top:
+        containerRect.top +
+        parsePositionToken(yToken, containerRect.height, paintedHeight),
       width: paintedWidth,
       height: paintedHeight,
       intrinsicWidth,
@@ -985,14 +1053,16 @@ if (IS_BROWSER) {
         0,
         Math.min(
           paintedRect.intrinsicWidth - 1,
-          ((point.x - paintedRect.left) / paintedRect.width) * paintedRect.intrinsicWidth,
+          ((point.x - paintedRect.left) / paintedRect.width) *
+            paintedRect.intrinsicWidth,
         ),
       ),
       y: Math.max(
         0,
         Math.min(
           paintedRect.intrinsicHeight - 1,
-          ((point.y - paintedRect.top) / paintedRect.height) * paintedRect.intrinsicHeight,
+          ((point.y - paintedRect.top) / paintedRect.height) *
+            paintedRect.intrinsicHeight,
         ),
       ),
     };
@@ -1000,7 +1070,8 @@ if (IS_BROWSER) {
 
   async function loadVisualContrastImage(src) {
     if (!src) return null;
-    if (visualContrastImageCache.has(src)) return visualContrastImageCache.get(src);
+    if (visualContrastImageCache.has(src))
+      return visualContrastImageCache.get(src);
     const promise = new Promise((resolve) => {
       const img = new Image();
       let settled = false;
@@ -1035,7 +1106,10 @@ if (IS_BROWSER) {
     if (visualContrastRasterCache.has(drawable)) {
       const cached = visualContrastRasterCache.get(drawable);
       if (!cached || !cached.ctx)
-        return { status: "unresolved", reason: cached?.reason || "image sample failed" };
+        return {
+          status: "unresolved",
+          reason: cached?.reason || "image sample failed",
+        };
       try {
         const x = Math.max(
           0,
@@ -1043,7 +1117,10 @@ if (IS_BROWSER) {
         );
         const y = Math.max(
           0,
-          Math.min(cached.height - 1, Math.floor(sourcePoint.y * cached.scaleY)),
+          Math.min(
+            cached.height - 1,
+            Math.floor(sourcePoint.y * cached.scaleY),
+          ),
         );
         const data = cached.ctx.getImageData(x, y, 1, 1).data;
         return {
@@ -1061,10 +1138,15 @@ if (IS_BROWSER) {
     }
 
     const canvas = document.createElement("canvas");
-    const intrinsicWidth = drawable.naturalWidth || drawable.videoWidth || drawable.width || 1;
-    const intrinsicHeight = drawable.naturalHeight || drawable.videoHeight || drawable.height || 1;
+    const intrinsicWidth =
+      drawable.naturalWidth || drawable.videoWidth || drawable.width || 1;
+    const intrinsicHeight =
+      drawable.naturalHeight || drawable.videoHeight || drawable.height || 1;
     const maxRasterSide = 640;
-    const scale = Math.min(1, maxRasterSide / Math.max(intrinsicWidth, intrinsicHeight));
+    const scale = Math.min(
+      1,
+      maxRasterSide / Math.max(intrinsicWidth, intrinsicHeight),
+    );
     canvas.width = Math.max(1, Math.round(intrinsicWidth * scale));
     canvas.height = Math.max(1, Math.round(intrinsicHeight * scale));
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -1079,8 +1161,14 @@ if (IS_BROWSER) {
         scaleY: canvas.height / intrinsicHeight,
       };
       visualContrastRasterCache.set(drawable, cached);
-      const x = Math.max(0, Math.min(cached.width - 1, Math.floor(sourcePoint.x * cached.scaleX)));
-      const y = Math.max(0, Math.min(cached.height - 1, Math.floor(sourcePoint.y * cached.scaleY)));
+      const x = Math.max(
+        0,
+        Math.min(cached.width - 1, Math.floor(sourcePoint.x * cached.scaleX)),
+      );
+      const y = Math.max(
+        0,
+        Math.min(cached.height - 1, Math.floor(sourcePoint.y * cached.scaleY)),
+      );
       const data = ctx.getImageData(x, y, 1, 1).data;
       return {
         status: "sampled",
@@ -1103,8 +1191,12 @@ if (IS_BROWSER) {
     const bgImage = style.backgroundImage || "";
     if (bgImage && bgImage !== "none") {
       if (/gradient/i.test(bgImage)) {
-        const color = pickWorstContrastColor(textColor, parseGradientColors(bgImage));
-        if (color) return { status: "sampled", color, method: "analytic-gradient" };
+        const color = pickWorstContrastColor(
+          textColor,
+          parseGradientColors(bgImage),
+        );
+        if (color)
+          return { status: "sampled", color, method: "analytic-gradient" };
       }
       if (/url\s*\(/i.test(bgImage)) {
         const img = await loadVisualContrastImage(firstCssUrl(bgImage));
@@ -1116,14 +1208,20 @@ if (IS_BROWSER) {
           getLayerValue(style.backgroundPosition) || "50% 50%",
         );
         const sourcePoint = pointToImageSource(point, paintedRect);
-        if (!sourcePoint) return { status: "unresolved", reason: "point outside background image" };
+        if (!sourcePoint)
+          return {
+            status: "unresolved",
+            reason: "point outside background image",
+          };
         const sample = sampleDrawablePixel(img, sourcePoint);
-        if (sample.status === "sampled") return { ...sample, method: "canvas-background-image" };
+        if (sample.status === "sampled")
+          return { ...sample, method: "canvas-background-image" };
         return sample;
       }
     }
     const bg = parseRgb(style.backgroundColor);
-    if (bg && bg.a > 0.05) return { status: "sampled", color: bg, method: "solid-background" };
+    if (bg && bg.a > 0.05)
+      return { status: "sampled", color: bg, method: "solid-background" };
     return { status: "unresolved", reason: "no readable background" };
   }
 
@@ -1132,17 +1230,23 @@ if (IS_BROWSER) {
     const style = getComputedStyle(img);
     const paintedRect = resolveObjectImageRect(rect, img, style);
     const sourcePoint = pointToImageSource(point, paintedRect);
-    if (!sourcePoint) return { status: "unresolved", reason: "point outside image" };
+    if (!sourcePoint)
+      return { status: "unresolved", reason: "point outside image" };
     const sample = sampleDrawablePixel(img, sourcePoint);
-    if (sample.status === "sampled") return { ...sample, method: "canvas-img-underlay" };
+    if (sample.status === "sampled")
+      return { ...sample, method: "canvas-img-underlay" };
 
     if (img.currentSrc || img.src) {
       const loaded = await loadVisualContrastImage(img.currentSrc || img.src);
       if (loaded) {
         const loadedRect = {
           ...paintedRect,
-          intrinsicWidth: loaded.naturalWidth || loaded.width || paintedRect.intrinsicWidth,
-          intrinsicHeight: loaded.naturalHeight || loaded.height || paintedRect.intrinsicHeight,
+          intrinsicWidth:
+            loaded.naturalWidth || loaded.width || paintedRect.intrinsicWidth,
+          intrinsicHeight:
+            loaded.naturalHeight ||
+            loaded.height ||
+            paintedRect.intrinsicHeight,
         };
         const loadedPoint = pointToImageSource(point, loadedRect);
         if (loadedPoint) {
@@ -1169,14 +1273,24 @@ if (IS_BROWSER) {
     const points = [];
     for (const y of ys) {
       for (const x of xs) {
-        if (x >= 0 && y >= 0 && x <= window.innerWidth && y <= window.innerHeight)
+        if (
+          x >= 0 &&
+          y >= 0 &&
+          x <= window.innerWidth &&
+          y <= window.innerHeight
+        )
           points.push({ x, y });
       }
     }
     return points;
   }
 
-  async function sampleVisualBackgroundAtPoint(el, point, textColor, depth = 0) {
+  async function sampleVisualBackgroundAtPoint(
+    el,
+    point,
+    textColor,
+    depth = 0,
+  ) {
     if (depth > 8) {
       return { status: "unresolved", reason: "background stack too deep" };
     }
@@ -1184,7 +1298,9 @@ if (IS_BROWSER) {
       typeof document.elementsFromPoint === "function"
         ? document.elementsFromPoint(point.x, point.y)
         : [];
-    const selfIndex = stack.findIndex((node) => node === el || el.contains(node));
+    const selfIndex = stack.findIndex(
+      (node) => node === el || el.contains(node),
+    );
     const nodes = selfIndex >= 0 ? stack.slice(selfIndex) : [el, ...stack];
     const unresolved = [];
 
@@ -1215,7 +1331,8 @@ if (IS_BROWSER) {
         });
         if (sourcePoint) {
           const sample = sampleDrawablePixel(node, sourcePoint);
-          if (sample.status === "sampled") return { ...sample, method: `canvas-${tag}-underlay` };
+          if (sample.status === "sampled")
+            return { ...sample, method: `canvas-${tag}-underlay` };
           unresolved.push(sample.reason);
         }
         continue;
@@ -1223,7 +1340,8 @@ if (IS_BROWSER) {
       const style = getComputedStyle(node);
       const sample = await sampleCssBackground(node, style, point, textColor);
       if (sample.status === "sampled") {
-        if (!sample.color || sample.color.a == null || sample.color.a >= 0.95) return sample;
+        if (!sample.color || sample.color.a == null || sample.color.a >= 0.95)
+          return sample;
         const under = await sampleVisualBackgroundAtPoint(
           node.parentElement || document.body,
           point,
@@ -1255,12 +1373,27 @@ if (IS_BROWSER) {
     try {
       el = document.querySelector(candidate.selector);
     } catch {
-      return { ...candidate, status: "unresolved", confidence: "none", reason: "stale selector" };
+      return {
+        ...candidate,
+        status: "unresolved",
+        confidence: "none",
+        reason: "stale selector",
+      };
     }
     if (!el)
-      return { ...candidate, status: "unresolved", confidence: "none", reason: "missing element" };
+      return {
+        ...candidate,
+        status: "unresolved",
+        confidence: "none",
+        reason: "missing element",
+      };
     if (!isRenderedForBrowserRule(el))
-      return { ...candidate, status: "unresolved", confidence: "none", reason: "hidden element" };
+      return {
+        ...candidate,
+        status: "unresolved",
+        confidence: "none",
+        reason: "hidden element",
+      };
 
     const blockingReason = (candidate.reasons || []).find(
       (reason) =>
@@ -1338,7 +1471,12 @@ if (IS_BROWSER) {
 
     ratios.sort((a, b) => a - b);
     const pick = (pct) =>
-      ratios[Math.min(ratios.length - 1, Math.max(0, Math.floor((pct / 100) * ratios.length)))];
+      ratios[
+        Math.min(
+          ratios.length - 1,
+          Math.max(0, Math.floor((pct / 100) * ratios.length)),
+        )
+      ];
     const measuredRatio = pick(10);
     const medianRatio = pick(50);
     const status = measuredRatio < candidate.threshold ? "fail" : "pass";
@@ -1353,7 +1491,8 @@ if (IS_BROWSER) {
       ratio: measuredRatio,
       medianRatio,
       samples: ratios.length,
-      finding: status === "fail" ? { id: "low-contrast", snippet: detail } : null,
+      finding:
+        status === "fail" ? { id: "low-contrast", snippet: detail } : null,
     };
   }
 
@@ -1371,7 +1510,8 @@ if (IS_BROWSER) {
     for (const candidate of candidates) {
       if (
         shouldScrollOffscreen &&
-        (window.scrollX !== restoreScroll.x || window.scrollY !== restoreScroll.y)
+        (window.scrollX !== restoreScroll.x ||
+          window.scrollY !== restoreScroll.y)
       ) {
         window.scrollTo(restoreScroll.x, restoreScroll.y);
         await waitForVisualPaint();
@@ -1389,7 +1529,11 @@ if (IS_BROWSER) {
           el = null;
         }
         if (el && typeof el.scrollIntoView === "function") {
-          el.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
+          el.scrollIntoView({
+            block: "center",
+            inline: "nearest",
+            behavior: "instant",
+          });
           await waitForVisualPaint();
           result = await analyzeVisualContrastCandidate(candidate);
         }
@@ -1406,9 +1550,13 @@ if (IS_BROWSER) {
   }
 
   function isElementHidden(el) {
-    if (!el || el === document.body || el === document.documentElement) return false;
+    if (!el || el === document.body || el === document.documentElement)
+      return false;
     if (typeof el.checkVisibility === "function")
-      return !el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
+      return !el.checkVisibility({
+        checkOpacity: false,
+        checkVisibilityCSS: true,
+      });
     // Fallback: zero size or no offsetParent (covers display:none and detached subtrees)
     return el.offsetWidth === 0 && el.offsetHeight === 0;
   }
@@ -1418,7 +1566,9 @@ if (IS_BROWSER) {
       selector: generateSelector(el),
       tagName: el.tagName?.toLowerCase() || "unknown",
       rect:
-        el !== document.body && el !== document.documentElement && el.getBoundingClientRect
+        el !== document.body &&
+        el !== document.documentElement &&
+        el.getBoundingClientRect
           ? el.getBoundingClientRect().toJSON()
           : null,
       isPageLevel: el === document.body || el === document.documentElement,
@@ -1440,7 +1590,10 @@ if (IS_BROWSER) {
 
   const printSummary = function (allFindings) {
     if (allFindings.length === 0) {
-      console.log("%c[impeccable] No anti-patterns found.", "color: #22c55e; font-weight: bold");
+      console.log(
+        "%c[impeccable] No anti-patterns found.",
+        "color: #22c55e; font-weight: bold",
+      );
       return;
     }
     console.group(
@@ -1513,10 +1666,15 @@ if (IS_BROWSER) {
     const allowedColors = (raw.allowedColors || [])
       .filter(
         (color) =>
-          color && Number.isFinite(color.r) && Number.isFinite(color.g) && Number.isFinite(color.b),
+          color &&
+          Number.isFinite(color.r) &&
+          Number.isFinite(color.g) &&
+          Number.isFinite(color.b),
       )
       .map((color) => ({ r: color.r, g: color.g, b: color.b }));
-    const allowedRadii = (raw.allowedRadii || []).map(Number).filter((px) => Number.isFinite(px));
+    const allowedRadii = (raw.allowedRadii || [])
+      .map(Number)
+      .filter((px) => Number.isFinite(px));
     return {
       present: true,
       hasFonts: raw.hasFonts === true && allowedFonts.size > 0,
@@ -1554,7 +1712,9 @@ if (IS_BROWSER) {
     const parsed = parseAnyColor(text);
     if (!parsed) return true;
     if ((parsed.a ?? 1) <= 0.05) return true;
-    return designSystem.allowedColors.some((color) => browserColorsClose(parsed, color));
+    return designSystem.allowedColors.some((color) =>
+      browserColorsClose(parsed, color),
+    );
   }
 
   function isBrowserTransparentCss(value) {
@@ -1571,11 +1731,18 @@ if (IS_BROWSER) {
     const text = String(raw || "")
       .trim()
       .toLowerCase();
-    if (!text || text === "0" || text === "none" || text === "initial" || text === "inherit")
+    if (
+      !text ||
+      text === "0" ||
+      text === "none" ||
+      text === "initial" ||
+      text === "inherit"
+    )
       return true;
     if (text.includes("var(") || text.includes("%")) return true;
     const px = resolveLengthPx(text, 16);
-    if (px == null || !Number.isFinite(px) || px <= DESIGN_RADIUS_TOLERANCE_PX) return true;
+    if (px == null || !Number.isFinite(px) || px <= DESIGN_RADIUS_TOLERANCE_PX)
+      return true;
     if (designSystem.hasPillRadius && px >= 99) return true;
     return designSystem.allowedRadii.some(
       (allowed) => Math.abs(allowed - px) <= DESIGN_RADIUS_TOLERANCE_PX,
@@ -1616,7 +1783,11 @@ if (IS_BROWSER) {
 
     if (designSystem.hasFonts && browserHasDirectText(el)) {
       const font = browserPrimaryFont(style.fontFamily || "");
-      if (font && !designSystem.allowedFonts.has(font) && !seen.fonts.has(font)) {
+      if (
+        font &&
+        !designSystem.allowedFonts.has(font) &&
+        !seen.fonts.has(font)
+      ) {
         seen.fonts.add(font);
         findings.push({
           type: "design-system-font",
@@ -1628,12 +1799,16 @@ if (IS_BROWSER) {
 
     if (designSystem.hasColors) {
       const colorChecks = [];
-      if (browserHasDirectText(el)) colorChecks.push(["text color", style.color]);
+      if (browserHasDirectText(el))
+        colorChecks.push(["text color", style.color]);
       if (!isBrowserTransparentCss(style.backgroundColor))
         colorChecks.push(["background", style.backgroundColor]);
       for (const side of ["Top", "Right", "Bottom", "Left"]) {
         if ((parseFloat(style[`border${side}Width`]) || 0) > 0) {
-          colorChecks.push([`border-${side.toLowerCase()}`, style[`border${side}Color`]]);
+          colorChecks.push([
+            `border-${side.toLowerCase()}`,
+            style[`border${side}Color`],
+          ]);
         }
       }
       if ((parseFloat(style.outlineWidth) || 0) > 0)
@@ -1685,12 +1860,19 @@ if (IS_BROWSER) {
   function checkBrowserDesignSystemSources(designSystem, seen) {
     if (!designSystem?.hasFonts) return [];
     const findings = [];
-    for (const link of document.querySelectorAll('link[href*="fonts.googleapis.com/css"]')) {
+    for (const link of document.querySelectorAll(
+      'link[href*="fonts.googleapis.com/css"]',
+    )) {
       const href = link.getAttribute("href") || "";
       for (const match of href.matchAll(/[?&]family=([^&]+)/g)) {
         const display = decodeBrowserGoogleFamily(match[1]);
         const font = normalizeBrowserFontName(display);
-        if (!font || designSystem.allowedFonts.has(font) || seen.fonts.has(font)) continue;
+        if (
+          !font ||
+          designSystem.allowedFonts.has(font) ||
+          seen.fonts.has(font)
+        )
+          continue;
         seen.fonts.add(font);
         findings.push({
           type: "design-system-font",
@@ -1704,10 +1886,16 @@ if (IS_BROWSER) {
 
   function collectBrowserFindings() {
     const groupMap = new Map();
-    const _disabled = EXTENSION_MODE ? window.__IMPECCABLE_CONFIG__?.disabledRules || [] : [];
+    const _disabled = EXTENSION_MODE
+      ? window.__IMPECCABLE_CONFIG__?.disabledRules || []
+      : [];
     const _ruleOk = (id) => !_disabled.length || !_disabled.includes(id);
     const designSystem = browserDesignSystemConfig();
-    const designSeen = { fonts: new Set(), colors: new Set(), radii: new Set() };
+    const designSeen = {
+      fonts: new Set(),
+      colors: new Set(),
+      radii: new Set(),
+    };
     // Note: provider-gated rules (--gpt / --gemini) are NOT filtered here. In a
     // real browser env (detector page, live overlay, extension) running every
     // check is free, so we always surface them; the gating is purely a CLI
@@ -1731,18 +1919,54 @@ if (IS_BROWSER) {
       if (el === document.body || el === document.documentElement) continue;
 
       const findings = [
-        ...checkElementBordersDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementColorsDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementMotionDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementGlowDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementAIPaletteDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementIconTileDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementItalicSerifDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementQualityDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementOversizedH1DOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementClippedOverflowDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementGptBorderShadowDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-        ...checkElementTextOverflowDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
+        ...checkElementBordersDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementColorsDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementMotionDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementGlowDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementAIPaletteDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementIconTileDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementItalicSerifDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementQualityDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementOversizedH1DOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementClippedOverflowDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementGptBorderShadowDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
+        ...checkElementTextOverflowDOM(el).map((f) => ({
+          type: f.id,
+          detail: f.snippet,
+        })),
         ...checkElementDesignSystemDOM(el, designSystem, designSeen),
       ].filter((f) => _ruleOk(f.type));
 
@@ -1754,15 +1978,20 @@ if (IS_BROWSER) {
         .map((f) => ({ type: f.id, detail: f.snippet }))
         .filter((f) => _ruleOk(f.type));
       if (eyebrowFindings.length > 0 && el.previousElementSibling) {
-        addBrowserFindings(groupMap, el.previousElementSibling, eyebrowFindings);
+        addBrowserFindings(
+          groupMap,
+          el.previousElementSibling,
+          eyebrowFindings,
+        );
       }
     }
 
     const pageLevelFindings = [];
 
-    const designSourceFindings = checkBrowserDesignSystemSources(designSystem, designSeen).filter(
-      (f) => _ruleOk(f.type),
-    );
+    const designSourceFindings = checkBrowserDesignSystemSources(
+      designSystem,
+      designSeen,
+    ).filter((f) => _ruleOk(f.type));
     if (designSourceFindings.length > 0) {
       pageLevelFindings.push(...designSourceFindings);
       addBrowserFindings(groupMap, document.body, designSourceFindings);
@@ -1785,11 +2014,15 @@ if (IS_BROWSER) {
     const layoutFindings = checkLayout().filter((f) => _ruleOk(f.type));
     for (const f of layoutFindings) {
       const el = f.el || document.body;
-      addBrowserFindings(groupMap, el, [{ type: f.type, detail: f.detail || f.snippet }]);
+      addBrowserFindings(groupMap, el, [
+        { type: f.type, detail: f.detail || f.snippet },
+      ]);
     }
 
     // Page-level quality checks (headings, etc.)
-    const qualityFindings = checkPageQualityDOM().filter((f) => _ruleOk(f.type));
+    const qualityFindings = checkPageQualityDOM().filter((f) =>
+      _ruleOk(f.type),
+    );
     if (qualityFindings.length > 0) {
       pageLevelFindings.push(...qualityFindings);
       addBrowserFindings(groupMap, document.body, qualityFindings);
@@ -1828,7 +2061,10 @@ if (IS_BROWSER) {
   }
 
   function shouldRunVisualContrast(options = {}) {
-    return options.visualContrast === true || window.__IMPECCABLE_CONFIG__?.visualContrast === true;
+    return (
+      options.visualContrast === true ||
+      window.__IMPECCABLE_CONFIG__?.visualContrast === true
+    );
   }
 
   function visualContrastOptions(options = {}) {
@@ -1865,7 +2101,9 @@ if (IS_BROWSER) {
       lastVisualContrastAnalyses.push(result);
       return;
     }
-    const idx = lastVisualContrastAnalyses.findIndex((item) => item.selector === result.selector);
+    const idx = lastVisualContrastAnalyses.findIndex(
+      (item) => item.selector === result.selector,
+    );
     if (idx >= 0) lastVisualContrastAnalyses[idx] = result;
     else lastVisualContrastAnalyses.push(result);
   }
@@ -1879,7 +2117,8 @@ if (IS_BROWSER) {
   }
 
   function addVisualContrastResult(groupMap, result, options = {}) {
-    if (result.status !== "fail" || !result.finding || !result.selector) return false;
+    if (result.status !== "fail" || !result.finding || !result.selector)
+      return false;
     let el = null;
     try {
       el = document.querySelector(result.selector);
@@ -1887,7 +2126,8 @@ if (IS_BROWSER) {
       el = null;
     }
     if (!el) return false;
-    const findingType = result.finding.type || result.finding.id || "low-contrast";
+    const findingType =
+      result.finding.type || result.finding.id || "low-contrast";
     const existing = groupMap.get(el) || [];
     if (existing.some((f) => (f.type || f.id) === findingType)) return false;
     addBrowserFindings(groupMap, el, [
@@ -1896,7 +2136,11 @@ if (IS_BROWSER) {
         detail: result.finding.detail || result.finding.snippet,
       },
     ]);
-    if (options.decorate && el !== document.body && el !== document.documentElement) {
+    if (
+      options.decorate &&
+      el !== document.body &&
+      el !== document.documentElement
+    ) {
       highlight(el, groupMap.get(el) || []);
     }
     return true;
@@ -1949,9 +2193,18 @@ if (IS_BROWSER) {
     }
   }
 
-  function scheduleLazyVisualContrast(groupMap, analyses, options = {}, runtime = {}) {
+  function scheduleLazyVisualContrast(
+    groupMap,
+    analyses,
+    options = {},
+    runtime = {},
+  ) {
     disconnectLazyVisualContrastObserver();
-    if (options.visualContrastLazy === false || options.scrollOffscreen !== false) return;
+    if (
+      options.visualContrastLazy === false ||
+      options.scrollOffscreen !== false
+    )
+      return;
     if (typeof IntersectionObserver === "undefined") return;
     const unresolved = (analyses || []).filter(
       (result) =>
@@ -1977,7 +2230,9 @@ if (IS_BROWSER) {
             .then((result) => {
               if (generation !== scanGeneration) return;
               rememberVisualContrastAnalysis(result);
-              const added = addVisualContrastResult(groupMap, result, { decorate: true });
+              const added = addVisualContrastResult(groupMap, result, {
+                decorate: true,
+              });
               if (added) {
                 postSerializedFindings(groupMap, options);
                 window.dispatchEvent(
@@ -2015,7 +2270,11 @@ if (IS_BROWSER) {
     }
   }
 
-  async function addVisualContrastFindings(groupMap, options = {}, runtime = {}) {
+  async function addVisualContrastFindings(
+    groupMap,
+    options = {},
+    runtime = {},
+  ) {
     if (!shouldRunVisualContrast(options)) {
       lastVisualContrastAnalyses = [];
       disconnectLazyVisualContrastObserver();
@@ -2023,7 +2282,8 @@ if (IS_BROWSER) {
     }
     const resolvedOptions = visualContrastOptions(options);
     const analyses = await analyzeVisualContrast(resolvedOptions);
-    if (runtime.generation && runtime.generation !== scanGeneration) return analyses;
+    if (runtime.generation && runtime.generation !== scanGeneration)
+      return analyses;
     lastVisualContrastAnalyses = analyses;
     for (const result of analyses) {
       addVisualContrastResult(groupMap, result, { decorate: runtime.decorate });
@@ -2094,9 +2354,13 @@ if (IS_BROWSER) {
     const collected = collectBrowserFindings();
     const allFindings = renderBrowserFindings(collected, options);
     if (shouldRunVisualContrast(options)) {
-      addVisualContrastFindings(collected.groupMap, options, { decorate: true, generation })
+      addVisualContrastFindings(collected.groupMap, options, {
+        decorate: true,
+        generation,
+      })
         .then(() => {
-          if (generation === scanGeneration) postSerializedFindings(collected.groupMap, options);
+          if (generation === scanGeneration)
+            postSerializedFindings(collected.groupMap, options);
         })
         .catch((err) => {
           reportVisualContrastError(err);
@@ -2123,23 +2387,34 @@ if (IS_BROWSER) {
   const detect = function (options = {}) {
     lastVisualContrastAnalyses = [];
     const { allFindings } = collectBrowserFindings();
-    return options.serialize === false ? allFindings : serializeFindings(allFindings);
+    return options.serialize === false
+      ? allFindings
+      : serializeFindings(allFindings);
   };
 
   const detectAsync = async function (options = {}) {
     if (shouldRunVisualContrast(options)) {
       const { allFindings } = await collectBrowserFindingsAsync(options);
-      return options.serialize === false ? allFindings : serializeFindings(allFindings);
+      return options.serialize === false
+        ? allFindings
+        : serializeFindings(allFindings);
     }
     lastVisualContrastAnalyses = [];
     const { allFindings } = collectBrowserFindings();
-    return options.serialize === false ? allFindings : serializeFindings(allFindings);
+    return options.serialize === false
+      ? allFindings
+      : serializeFindings(allFindings);
   };
 
   if (EXTENSION_MODE) {
     // Extension mode: listen for commands, don't auto-scan
     window.addEventListener("message", (e) => {
-      if (e.source !== window || !e.data || e.data.source !== "impeccable-command") return;
+      if (
+        e.source !== window ||
+        !e.data ||
+        e.data.source !== "impeccable-command"
+      )
+        return;
       if (e.data.action === "scan") {
         if (e.data.config) window.__IMPECCABLE_CONFIG__ = e.data.config;
         try {
@@ -2151,7 +2426,10 @@ if (IS_BROWSER) {
       if (e.data.action === "toggle-overlays") {
         const visible = !document.body.classList.contains("impeccable-hidden");
         document.body.classList.toggle("impeccable-hidden", visible);
-        window.postMessage({ source: "impeccable-overlays-toggled", visible: !visible }, "*");
+        window.postMessage(
+          { source: "impeccable-overlays-toggled", visible: !visible },
+          "*",
+        );
       }
       if (e.data.action === "remove") {
         clearOverlays();
@@ -2164,7 +2442,9 @@ if (IS_BROWSER) {
       }
       if (e.data.action === "highlight") {
         try {
-          const target = e.data.selector ? document.querySelector(e.data.selector) : null;
+          const target = e.data.selector
+            ? document.querySelector(e.data.selector)
+            : null;
           if (target) {
             // Scroll first so positionOverlay reads the post-scroll rect
             if (!isInViewport(target) && target.scrollIntoView) {
@@ -2209,7 +2489,9 @@ if (IS_BROWSER) {
         }
       };
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => setTimeout(runAutoScan, 100));
+        document.addEventListener("DOMContentLoaded", () =>
+          setTimeout(runAutoScan, 100),
+        );
       } else {
         setTimeout(runAutoScan, 100);
       }
@@ -2220,7 +2502,9 @@ if (IS_BROWSER) {
   window.impeccableDetectAsync = detectAsync;
   window.impeccableScan = scan;
   window.impeccableScanAsync = scanAsync;
-  window.impeccableCollectVisualContrastCandidates = collectVisualContrastCandidates;
+  window.impeccableCollectVisualContrastCandidates =
+    collectVisualContrastCandidates;
   window.impeccableAnalyzeVisualContrast = analyzeVisualContrast;
-  window.impeccableGetLastVisualContrastAnalyses = () => lastVisualContrastAnalyses.slice();
+  window.impeccableGetLastVisualContrastAnalyses = () =>
+    lastVisualContrastAnalyses.slice();
 }

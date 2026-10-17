@@ -14,7 +14,6 @@ import { requireAuth, requireRole } from "../../common/auth/rbac.js";
 // Sub-router mounted under /api/v1/projects/:id/staffing-requirements
 export const projectStaffingRouter = Router({ mergeParams: true });
 projectStaffingRouter.use(requireAuth());
-projectStaffingRouter.use(validateParams(uuidParamSchema));
 
 projectStaffingRouter.get("/", staffingController.getRequirementsForProject);
 projectStaffingRouter.post(

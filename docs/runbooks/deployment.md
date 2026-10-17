@@ -7,15 +7,25 @@ Panduan operasional deployment Staffora ke staging dan production.
 ## 1. Deployment Topology (TSD 16.2 & ADR-007)
 
 Staffora dideploy pada **Single Linux VM + Docker Compose** dengan entry point **Nginx Reverse Proxy**:
+
 - `Nginx`: Melayani TLS termination, menyajikan static React build di `/`, me-reverse proxy `/api/v1` ke container Express API, dan menyajikan `/api-docs` (Swagger UI).
 - `Express API`: Node.js 24 LTS container.
 - `PostgreSQL`: PostgreSQL 18 container (tidak diekspos ke public internet).
+
+### 1.1 Environment Mode untuk Staging dan Production
+
+`NODE_ENV` hanya menerima `development`, `test`, dan `production` (`apps/api/src/config/env.ts`). Tidak ada nilai `staging`.
+
+- **Staging dan production sama-sama memakai `NODE_ENV=production`.** Dengan begitu keduanya menjalankan aturan yang sama: `SESSION_SECRET` dan `DATABASE_URL` wajib ada (server menolak boot tanpa keduanya), cookie `staffora.sid` diberi flag `Secure`, dan `trust proxy` disetel ke 1 hop.
+- **Wajib diakses lewat HTTPS.** API hanya menganggap request aman jika proxy tepat di depannya (satu hop) mengirim `X-Forwarded-Proto: https`. Pastikan Nginx yang meneruskan `/api/` ke container API mengirim header ini dengan nilai protokol asli dari klien.
+- **Gejala jika diakses lewat HTTP biasa:** login menjawab 200, tetapi tanpa `Set-Cookie` (express-session menolak mengirim cookie `Secure` lewat koneksi tidak aman). Baris session tetap tercatat di `user_sessions` tanpa cookie yang memakainya, dan request berikutnya mendapat 401. Ini perilaku fail-closed, bukan bug: perbaiki konfigurasi HTTPS/proxy, jangan turunkan `NODE_ENV`.
 
 ---
 
 ## 2. Automated Staging Deployment (TSD 16.4)
 
 Setiap merge ke branch `main` akan memicu GitHub Actions:
+
 1. Menjalankan linter, typechecker, test suites, dan disposable migration test.
 2. Membangun multi-arch Docker images dan mem-push ke GitHub Container Registry (`ghcr.io`).
 3. Deploy otomatis ke staging VM.

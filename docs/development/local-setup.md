@@ -7,6 +7,7 @@ Dokumen ini menjelaskan langkah-langkah menyiapkan local environment Staffora un
 ## 1. System Prerequisites
 
 Pastikan perangkat lokal Anda telah terinstall:
+
 - **Node.js**: v24 LTS (direkomendasikan) atau Node.js v20+
 - **npm**: v10+ (terbawa bersama Node.js)
 - **Docker Desktop** / Docker Engine & Docker Compose
@@ -40,6 +41,7 @@ cp apps/web/.env.example apps/web/.env
 ```
 
 Pastikan variabel di `apps/api/.env` sesuai:
+
 ```env
 NODE_ENV=development
 PORT=3000
@@ -48,6 +50,7 @@ SESSION_SECRET=local-development-session-secret-must-be-long-and-random-32char
 ```
 
 Dan variabel di `apps/web/.env` sesuai:
+
 ```env
 VITE_API_BASE_URL=/api/v1
 ```
@@ -63,6 +66,7 @@ docker compose up -d db
 ```
 
 Untuk memverifikasi database sehat:
+
 ```bash
 docker compose ps
 ```
@@ -111,6 +115,7 @@ Perintah ini membangun image `dev` (target) dan menjalankan `db` + `api` + `web`
 source sehingga setiap edit langsung ter-apply. Berhentikan stack dengan `npm run stack:down`.
 
 Akses aplikasi di browser:
+
 - **Web App**: [http://localhost:5173](http://localhost:5173)
 - **API Base**: [http://localhost:3000/api/v1](http://localhost:3000/api/v1)
 - **API Health Live**: [http://localhost:3000/api/v1/health/live](http://localhost:3000/api/v1/health/live)
@@ -122,9 +127,9 @@ Akses aplikasi di browser:
 
 Gunakan akun seeded berikut untuk menguji role-based access:
 
-| Role | Email | Password |
-| :--- | :--- | :--- |
-| **Admin** | `admin@staffora.internal` | `StafforaAdmin2026!` |
-| **Project Manager** | `pm@staffora.internal` | `StafforaPM2026!` |
-| **Resource Manager** | `rm@staffora.internal` | `StafforaRM2026!` |
-| **Employee** | `employee@staffora.internal` | `StafforaEmp2026!` |
+| Role                 | Email                        | Password             |
+| :------------------- | :--------------------------- | :------------------- |
+| **Admin**            | `admin@staffora.internal`    | `StafforaAdmin2026!` |
+| **Project Manager**  | `pm@staffora.internal`       | `StafforaPM2026!`    |
+| **Resource Manager** | `rm@staffora.internal`       | `StafforaRM2026!`    |
+| **Employee**         | `employee@staffora.internal` | `StafforaEmp2026!`   |

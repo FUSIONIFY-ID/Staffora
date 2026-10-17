@@ -16,30 +16,31 @@
 provides enterprise visibility into employee skills, availability, workload, project staffing requirements,
 and guarantees capacity conflict prevention (preventing employee allocation from exceeding 100% on any date).
 
-| Layer         | Technology                                                                          |
-| ------------- | ----------------------------------------------------------------------------------- |
-| Runtime       | Node.js 24 LTS with npm Workspaces                                                  |
-| Language      | TypeScript with strict compiler settings (ESM in backend)                           |
-| Web           | React 19, Vite 8, React Router 7, TanStack Query 5, React Hook Form 7, Zod 4, Tailwind CSS 4 |
-| API           | Express.js 5 (Modular Monolith, versioned at `/api/v1`)                             |
-| Database & ORM| PostgreSQL 18, Prisma ORM 7 with `@prisma/adapter-pg`, UUID v4 primary keys        |
-| Auth & Session| Server-side session (`connect-pg-simple` in PostgreSQL), cookie `staffora.sid`, CSRF synchronizer token, bcryptjs (cost 12) |
-| Architecture  | Modular Monolith, deterministic capacity sweep-line calculation, row-level concurrency lock (`SELECT ... FOR UPDATE`) |
-| Observability | Pino + `pino-http`, sensitive field redaction, correlation `requestId`             |
+| Layer          | Technology                                                                                                                  |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Runtime        | Node.js 24 LTS with npm Workspaces                                                                                          |
+| Language       | TypeScript with strict compiler settings (ESM in backend)                                                                   |
+| Web            | React 19, Vite 8, React Router 7, TanStack Query 5, React Hook Form 7, Zod 4, Tailwind CSS 4                                |
+| API            | Express.js 5 (Modular Monolith, versioned at `/api/v1`)                                                                     |
+| Database & ORM | PostgreSQL 18, Prisma ORM 7 with `@prisma/adapter-pg`, UUID v4 primary keys                                                 |
+| Auth & Session | Server-side session (`connect-pg-simple` in PostgreSQL), cookie `staffora.sid`, CSRF synchronizer token, bcryptjs (cost 12) |
+| Architecture   | Modular Monolith, deterministic capacity sweep-line calculation, row-level concurrency lock (`SELECT ... FOR UPDATE`)       |
+| Observability  | Pino + `pino-http`, sensitive field redaction, correlation `requestId`                                                      |
 
 ## Team and Work Model
 
 Staffora is delivered by an internal engineering team under the leadership of Tech Lead **Arya Isnaidi**.
 Because team members are junior developers, strict discipline, precise task scoping, and unwavering adherence to contracts are mandatory.
 
-| Role                   | Team Member(s)   | Scope & Responsibilities |
-| ---------------------- | ---------------- | ------------------------ |
-| **Tech Lead**          | **Arya Isnaidi** | Architecture, technical decisions (ADR), PR review & approval, release promotion, acceptance sign-off |
-| **QA & DevOps**        | **Fikri**       | CI/CD pipelines, Docker environments, regression testing, E2E acceptance verification |
-| **Frontend Engineers** | **Wahyu & Nabil** | Web UI, forms, TanStack Query integration, client presentation (Stream A & B) |
-| **Backend Engineers**  | **Saiful & Jundy** | Express API endpoints, Prisma schema & migrations, Capacity engine, RBAC (Stream A & B) |
+| Role                   | Team Member(s)     | Scope & Responsibilities                                                                              |
+| ---------------------- | ------------------ | ----------------------------------------------------------------------------------------------------- |
+| **Tech Lead**          | **Arya Isnaidi**   | Architecture, technical decisions (ADR), PR review & approval, release promotion, acceptance sign-off |
+| **QA & DevOps**        | **Fikri**          | CI/CD pipelines, Docker environments, regression testing, E2E acceptance verification                 |
+| **Frontend Engineers** | **Wahyu & Nabil**  | Web UI, forms, TanStack Query integration, client presentation (Stream A & B)                         |
+| **Backend Engineers**  | **Saiful & Jundy** | Express API endpoints, Prisma schema & migrations, Capacity engine, RBAC (Stream A & B)               |
 
 ### Strict Operational Guardrails:
+
 1. **Mandatory Pre-Task Analysis & Contract Alignment:** Before creating, scaffolding, or writing ANY code, the AI agent MUST first read and analyze the project contracts. The agent MUST reference and adhere to @CLAUDE.md, @AGENTS.md, and @GEMINI.md, as well as the relevant documentation under `docs/` (PRD, TSD, ERD, OpenAPI, Coding Standards). NEVER start coding blindly without understanding the domain constraints.
 2. **Absolute Ban on Agent `git push` (Commit-Only Boundary):** AI agents are **STRICTLY PROHIBITED** from running `git push` under ANY circumstances (to `dev`, `main`, or feature branches). An agent's execution boundary terminates strictly at local `git commit`. Pushing to GitHub remote is an EXCLUSIVE human developer responsibility after manual inspection and review.
 3. **No Rogue Development:** Developers and AI agents MUST NOT invent unapproved features, extra endpoints, or bypass PRD/TSD contracts. Work only on assigned user stories (`USxx.xx — ACxx.xx`).
@@ -51,6 +52,7 @@ Because team members are junior developers, strict discipline, precise task scop
 All developers and AI agents MUST strictly use the `rebase` workflow from `dev`:
 
 ### 1. Creating a New Branch (Always from `dev` with rebase)
+
 ```bash
 git checkout dev
 git pull --rebase origin dev
@@ -58,18 +60,22 @@ git checkout -b <branch-name>
 ```
 
 ### 2. Branch Naming Standard
+
 Every branch MUST strictly follow the pattern:
+
 ```text
 [FE/BE/DB/QA]-S<SprintNumber>-[Kode]-subjudultask
 ```
 
 Prefix definitions:
+
 - `FE`: Frontend application work (Wahyu / Nabil)
 - `BE`: Backend API / logic work (Saiful / Jundy)
 - `DB`: Database schema, Prisma migrations, and seed scripts (Saiful / Jundy / Arya)
 - `QA`: Testing, acceptance validation, and DevOps infrastructure (Fikri)
 
 Examples:
+
 - `FE-S1-US01-login-screen`
 - `BE-S1-US01-session-auth-endpoints`
 - `DB-S1-US01-user-sessions-schema`
@@ -80,16 +86,20 @@ Examples:
 - `QA-S1-US01-verify-auth-session-flow`
 
 ### 3. Synchronization & Rebase Before PR
+
 Before creating a Pull Request or pushing changes:
+
 ```bash
 git checkout dev
 git pull --rebase origin dev
 git checkout <your-branch>
 git rebase dev
 ```
+
 Resolve any conflicts cleanly, re-verify tests, and push your scoped branch.
 
 ### 4. Pull Request & Approval
+
 - **Target Branch:** Normal task PRs always target `dev`.
 - **Release Promotion:** `main` is protected and strictly promoted by **Arya Isnaidi (Tech Lead)** upon milestone acceptance.
 - **Reviewer:** Arya Isnaidi conducts final review against `docs/CODE_REVIEW_CHECKLIST.md`.
@@ -97,6 +107,7 @@ Resolve any conflicts cleanly, re-verify tests, and push your scoped branch.
 ## Commit Safety Gate (AI Agents Forbidden from Pushing)
 
 When an AI agent is instructed to make commits or prepare branches:
+
 - **ABSOLUTE BAN ON `git push`:** AI agents are **STRICTLY FORBIDDEN** from running `git push` to ANY remote branch. The agent's work stops immediately after the local `git commit`. After committing, the agent must output the suggested push command for the human developer to run manually after inspection:
   ```bash
   # Manual human execution only:
@@ -121,17 +132,17 @@ When an AI agent is instructed to make commits or prepare branches:
 
 Before taking implementation, review, debug, or refactor action, align your task with the following workflow:
 
-| Task                                    | Action / Workflow Reference                                          |
-| --------------------------------------- | ------------------------------------------------------------------- |
-| Start any developer task                | Read PRD User Story & AC, check OpenAPI and ERD specs              |
-| Navigate architecture or trace an issue | Check `docs/architecture/overview.md` and relevant ADR               |
-| Diagnose a bug                          | Consult `docs/runbooks/troubleshooting.md`                          |
-| Build a Web feature                     | Follow `docs/CODING_STANDARD.md` Frontend standards, use UI library |
-| Add or change an API endpoint           | Update `docs/api/openapi.yaml` first, generate types with `npm run api:types` |
-| Change database schema                  | Update `schema.prisma`, create Prisma migration, update `docs/database/erd.md` |
+| Task                                    | Action / Workflow Reference                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------- |
+| Start any developer task                | Read PRD User Story & AC, check OpenAPI and ERD specs                           |
+| Navigate architecture or trace an issue | Check `docs/architecture/overview.md` and relevant ADR                          |
+| Diagnose a bug                          | Consult `docs/runbooks/troubleshooting.md`                                      |
+| Build a Web feature                     | Follow `docs/CODING_STANDARD.md` Frontend standards, use UI library             |
+| Add or change an API endpoint           | Update `docs/api/openapi.yaml` first, generate types with `npm run api:types`   |
+| Change database schema                  | Update `schema.prisma`, create Prisma migration, update `docs/database/erd.md`  |
 | Add / modify capacity logic             | Validate against all 15 Mandatory Capacity Scenarios (`tests/capacity.test.ts`) |
-| Review a change set                     | Verify against `docs/CODE_REVIEW_CHECKLIST.md`                      |
-| Prepare a commit                        | Follow Conventional Commits: `<type>(<scope>): <subject>`           |
+| Review a change set                     | Verify against `docs/CODE_REVIEW_CHECKLIST.md`                                  |
+| Prepare a commit                        | Follow Conventional Commits: `<type>(<scope>): <subject>`                       |
 
 ## Repository Layout
 
@@ -217,6 +228,7 @@ npm run build
 ```
 
 Specific test targets:
+
 - Backend tests: `npm test -w @staffora/api`
 - Frontend tests: `npm test -w @staffora/web`
 - Capacity test suite: `npx vitest run tests/capacity.test.ts` (all 15 mandatory scenarios must pass)

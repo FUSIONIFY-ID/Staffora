@@ -625,7 +625,10 @@ On every `live.mjs` boot, after inject, the project is scanned for HTML files un
   "serverPort": 8400,
   "pageFiles": ["..."],
   "configDrift": {
-    "orphans": ["public/new-section/index.html", "public/docs/new-command.html"],
+    "orphans": [
+      "public/new-section/index.html",
+      "public/docs/new-command.html"
+    ],
     "orphanCount": 2,
     "hint": "2 HTML file(s) exist but aren't in config.files. Consider adding them, or use a glob pattern like \"public/**/*.html\"."
   }
@@ -690,7 +693,8 @@ CSP expressed as structured directive arrays. Patch mechanism: declare a dev-onl
 
 ```ts
 // Dev-only allowance so impeccable live mode can load. Guarded by NODE_ENV.
-const __impeccableLiveDev = process.env.NODE_ENV === "development" ? ["http://localhost:8400"] : [];
+const __impeccableLiveDev =
+  process.env.NODE_ENV === "development" ? ["http://localhost:8400"] : [];
 ```
 
 **Append `...__impeccableLiveDev` to the script-src and connect-src directive arrays.** Per-framework specifics:
@@ -712,7 +716,8 @@ CSP built as a literal value string. Two-point patch: declare a dev-only string 
 
 ```ts
 // Dev-only allowance so impeccable live mode can load.
-const __impeccableLiveDev = process.env.NODE_ENV === "development" ? " http://localhost:8400" : "";
+const __impeccableLiveDev =
+  process.env.NODE_ENV === "development" ? " http://localhost:8400" : "";
 ```
 
 Then in the CSP value string:

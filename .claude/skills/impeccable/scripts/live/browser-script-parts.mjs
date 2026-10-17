@@ -7,7 +7,10 @@ export const LIVE_BROWSER_SCRIPT_PARTS = Object.freeze([
   Object.freeze({ name: "browser-ui", file: "live-browser.js" }),
 ]);
 
-export function resolveLiveBrowserScriptParts(scriptsDir, parts = LIVE_BROWSER_SCRIPT_PARTS) {
+export function resolveLiveBrowserScriptParts(
+  scriptsDir,
+  parts = LIVE_BROWSER_SCRIPT_PARTS,
+) {
   if (!scriptsDir) throw new Error("scriptsDir is required");
   return parts.map((part, index) => ({
     ...part,
@@ -19,7 +22,9 @@ export function resolveLiveBrowserScriptParts(scriptsDir, parts = LIVE_BROWSER_S
 export function assertLiveBrowserScriptParts(parts, exists = fs.existsSync) {
   for (const part of parts) {
     if (!exists(part.path)) {
-      throw new Error(`Live browser script part missing: ${part.name} (${part.path})`);
+      throw new Error(
+        `Live browser script part missing: ${part.name} (${part.path})`,
+      );
     }
   }
   return parts;

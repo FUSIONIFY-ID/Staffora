@@ -92,8 +92,14 @@ export function validateUserEmployeeLinkage(user: {
 }
 
 /**
- * Asserts that the authenticated user has a linked employee ID.
- * Returns the non-null employee ID or throws 403 ForbiddenError.
+ * Architectural Note (US01.02 / Foundation Utility):
+ * Asserts that the authenticated user has a linked employee ID (`user.employeeId`).
+ * Returns the non-null employee ID string or throws 403 ForbiddenError.
+ *
+ * Retention Rationale:
+ * Preserved as an authorization policy helper for upcoming user stories (US02 Workforce Management and US05 /me
+ * Employee Self-View) to narrow `user.employeeId` safely in service-level business policy checks without
+ * relying on unsafe non-null assertions (!).
  */
 export function assertLinkedEmployee(user: AuthenticatedUser): string {
   if (!user.employeeId) {

@@ -114,7 +114,9 @@
     const allowed = BRAND_FONT_DOMAINS[font];
     if (!allowed) return false;
     const host = location.hostname.toLowerCase();
-    return allowed.some((suffix) => host === suffix || host.endsWith("." + suffix));
+    return allowed.some(
+      (suffix) => host === suffix || host.endsWith("." + suffix),
+    );
   }
 
   const GENERIC_FONTS = new Set([
@@ -328,7 +330,8 @@
       description:
         "Repeating tiny uppercase tracked labels above section headings turns a brand page into AI editorial scaffolding. Replace them with stronger structure, artifacts, imagery, or a deliberate brand system.",
       skillSection: "Typography",
-      skillGuideline: "repeated eyebrow or kicker labels as section scaffolding",
+      skillGuideline:
+        "repeated eyebrow or kicker labels as section scaffolding",
     },
     {
       id: "numbered-section-markers",
@@ -594,7 +597,11 @@
     // rgb/rgba — use channel spread. Threshold 30 ≈ 11.7% of the 0–255 range.
     const rgb = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
     if (rgb) {
-      return Math.max(+rgb[1], +rgb[2], +rgb[3]) - Math.min(+rgb[1], +rgb[2], +rgb[3]) < 30;
+      return (
+        Math.max(+rgb[1], +rgb[2], +rgb[3]) -
+          Math.min(+rgb[1], +rgb[2], +rgb[3]) <
+        30
+      );
     }
 
     // oklch()/lch() — chroma is the second numeric component.
@@ -713,7 +720,9 @@
 
   function colorToHex(c) {
     if (!c) return "?";
-    return "#" + [c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, "0")).join("");
+    return (
+      "#" + [c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, "0")).join("")
+    );
   }
 
   // --- cli/engine/rules/checks.mjs ---
@@ -743,7 +752,8 @@
             id: "side-tab",
             snippet: `border-${sn}: ${w}px + border-radius: ${radius}px`,
           });
-        else if (w >= 3) findings.push({ id: "side-tab", snippet: `border-${sn}: ${w}px` });
+        else if (w >= 3)
+          findings.push({ id: "side-tab", snippet: `border-${sn}: ${w}px` });
       } else {
         if (radius > 0 && w >= 2)
           findings.push({
@@ -793,7 +803,10 @@
       // its own opaque background and direct text, it is a styled button — and
       // contrast on its own surface is a real, frequent bug worth flagging.
       const isStyledButton =
-        (tag === "a" || tag === "button") && hasDirectText && bgColor && bgColor.a > 0.5;
+        (tag === "a" || tag === "button") &&
+        hasDirectText &&
+        bgColor &&
+        bgColor.a > 0.5;
       if (!isStyledButton) return [];
     }
     const findings = [];
@@ -809,7 +822,8 @@
       if (bgs) {
         // Gray on colored background — flag if every stop is chromatic
         const textLum = relativeLuminance(textColor);
-        const isGray = !hasChroma(textColor, 20) && textLum > 0.05 && textLum < 0.85;
+        const isGray =
+          !hasChroma(textColor, 20) && textLum > 0.05 && textLum < 0.85;
         if (isGray && bgs.every((b) => hasChroma(b, 40))) {
           const bgLabel = effectiveBg
             ? colorToHex(effectiveBg)
@@ -823,7 +837,8 @@
         // Low contrast (WCAG AA) — worst case across all bg stops
         const ratios = bgs.map((b) => contrastRatio(textColor, b));
         let worstIdx = 0;
-        for (let i = 1; i < ratios.length; i++) if (ratios[i] < ratios[worstIdx]) worstIdx = i;
+        for (let i = 1; i < ratios.length; i++)
+          if (ratios[i] < ratios[worstIdx]) worstIdx = i;
         const ratio = ratios[worstIdx];
         const isLargeText =
           fontSize >= WCAG_LARGE_TEXT_PX ||
@@ -841,7 +856,10 @@
           // resolvable opaque ancestor; semi-transparent Tailwind tokens
           // like `text-paper/60` on `bg-ink` sections are the FP pattern.
           const isAlphaFallbackFP =
-            !DETECTOR_IS_BROWSER && !effectiveBg && textColor.a != null && textColor.a < 1;
+            !DETECTOR_IS_BROWSER &&
+            !effectiveBg &&
+            textColor.a != null &&
+            textColor.a < 1;
           if (!isAlphaFallbackFP) {
             findings.push({
               id: "low-contrast",
@@ -854,7 +872,11 @@
       // AI palette: purple/violet on headings
       if (hasChroma(textColor, 50)) {
         const hue = getHue(textColor);
-        if (hue >= 260 && hue <= 310 && (["h1", "h2", "h3"].includes(tag) || fontSize >= 20)) {
+        if (
+          hue >= 260 &&
+          hue <= 310 &&
+          (["h1", "h2", "h3"].includes(tag) || fontSize >= 20)
+        ) {
           findings.push({
             id: "ai-color-palette",
             snippet: `Purple/violet text (${colorToHex(textColor)}) on heading`,
@@ -865,38 +887,66 @@
 
     // Gradient text
     if (bgClip === "text" && bgImage && bgImage.includes("gradient")) {
-      findings.push({ id: "gradient-text", snippet: "background-clip: text + gradient" });
+      findings.push({
+        id: "gradient-text",
+        snippet: "background-clip: text + gradient",
+      });
     }
 
     // Tailwind class checks
     if (classList) {
-      const classStr = typeof classList === "string" ? classList : Array.from(classList).join(" ");
+      const classStr =
+        typeof classList === "string"
+          ? classList
+          : Array.from(classList).join(" ");
 
-      const grayMatch = classStr.match(/\btext-(?:gray|slate|zinc|neutral|stone)-\d+\b/);
+      const grayMatch = classStr.match(
+        /\btext-(?:gray|slate|zinc|neutral|stone)-\d+\b/,
+      );
       const colorBgMatch = classStr.match(
         /\bbg-(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d+\b/,
       );
       if (grayMatch && colorBgMatch) {
-        findings.push({ id: "gray-on-color", snippet: `${grayMatch[0]} on ${colorBgMatch[0]}` });
+        findings.push({
+          id: "gray-on-color",
+          snippet: `${grayMatch[0]} on ${colorBgMatch[0]}`,
+        });
       }
 
-      if (/\bbg-clip-text\b/.test(classStr) && /\bbg-gradient-to-/.test(classStr)) {
-        findings.push({ id: "gradient-text", snippet: "bg-clip-text + bg-gradient (Tailwind)" });
+      if (
+        /\bbg-clip-text\b/.test(classStr) &&
+        /\bbg-gradient-to-/.test(classStr)
+      ) {
+        findings.push({
+          id: "gradient-text",
+          snippet: "bg-clip-text + bg-gradient (Tailwind)",
+        });
       }
 
-      const purpleText = classStr.match(/\btext-(?:purple|violet|indigo)-\d+\b/);
+      const purpleText = classStr.match(
+        /\btext-(?:purple|violet|indigo)-\d+\b/,
+      );
       if (
         purpleText &&
-        (["h1", "h2", "h3"].includes(tag) || /\btext-(?:[2-9]xl)\b/.test(classStr))
+        (["h1", "h2", "h3"].includes(tag) ||
+          /\btext-(?:[2-9]xl)\b/.test(classStr))
       ) {
-        findings.push({ id: "ai-color-palette", snippet: `${purpleText[0]} on heading` });
+        findings.push({
+          id: "ai-color-palette",
+          snippet: `${purpleText[0]} on heading`,
+        });
       }
 
       if (
         /\bfrom-(?:purple|violet|indigo)-\d+\b/.test(classStr) &&
-        /\bto-(?:purple|violet|indigo|blue|cyan|pink|fuchsia)-\d+\b/.test(classStr)
+        /\bto-(?:purple|violet|indigo|blue|cyan|pink|fuchsia)-\d+\b/.test(
+          classStr,
+        )
       ) {
-        findings.push({ id: "ai-color-palette", snippet: "Purple/violet gradient (Tailwind)" });
+        findings.push({
+          id: "ai-color-palette",
+          snippet: "Purple/violet gradient (Tailwind)",
+        });
       }
     }
 
@@ -967,7 +1017,8 @@
 
     // Vertical stacking: tile must end above where the heading starts.
     // (Allow the check to skip when both top/bottom are 0 — jsdom layout case.)
-    if (headingTop && siblingBottom && siblingBottom > headingTop + 4) return [];
+    if (headingTop && siblingBottom && siblingBottom > headingTop + 4)
+      return [];
 
     const text = (headingText || "").trim().slice(0, 60);
     return [
@@ -1029,9 +1080,10 @@
     if (!cssColor) return false;
     const s = String(cssColor).trim();
     // rgb / rgba — direct channel-distance check.
-    const rgbM = /rgba?\(\s*(\d+)\s*,?\s+|\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(
-      s.replace(/rgba?\(\s*/, "rgb(").replace(/,/g, ", "),
-    );
+    const rgbM =
+      /rgba?\(\s*(\d+)\s*,?\s+|\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(
+        s.replace(/rgba?\(\s*/, "rgb(").replace(/,/g, ", "),
+      );
     const rgbStrict = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(s);
     if (rgbStrict) {
       const r = +rgbStrict[1],
@@ -1115,7 +1167,8 @@
 
     // Branch A: classic tracked-uppercase eyebrow.
     const isUppercased =
-      siblingTextTransform === "uppercase" || (/[A-Z]/.test(text) && !/[a-z]/.test(text));
+      siblingTextTransform === "uppercase" ||
+      (/[A-Z]/.test(text) && !/[a-z]/.test(text));
     const isClassicTracked = isUppercased && siblingLetterSpacing >= 1.6;
 
     // Branch B: modern accent-bold eyebrow — sentence case, low
@@ -1166,7 +1219,13 @@
   ]);
 
   function checkMotion(opts) {
-    const { tag, transitionProperty, animationName, timingFunctions, classList } = opts;
+    const {
+      tag,
+      transitionProperty,
+      animationName,
+      timingFunctions,
+      classList,
+    } = opts;
     if (SAFE_TAGS.has(tag)) return [];
     const findings = [];
 
@@ -1176,10 +1235,16 @@
       animationName !== "none" &&
       /bounce|elastic|wobble|jiggle|spring/i.test(animationName)
     ) {
-      findings.push({ id: "bounce-easing", snippet: `animation: ${animationName}` });
+      findings.push({
+        id: "bounce-easing",
+        snippet: `animation: ${animationName}`,
+      });
     }
     if (classList && /\banimate-bounce\b/.test(classList)) {
-      findings.push({ id: "bounce-easing", snippet: "animate-bounce (Tailwind)" });
+      findings.push({
+        id: "bounce-easing",
+        snippet: "animate-bounce (Tailwind)",
+      });
     }
 
     // Check timing functions for overshoot cubic-bezier (y values outside [0, 1])
@@ -1201,8 +1266,14 @@
     }
 
     // --- Layout property transition ---
-    if (transitionProperty && transitionProperty !== "all" && transitionProperty !== "none") {
-      const props = transitionProperty.split(",").map((p) => p.trim().toLowerCase());
+    if (
+      transitionProperty &&
+      transitionProperty !== "all" &&
+      transitionProperty !== "none"
+    ) {
+      const props = transitionProperty
+        .split(",")
+        .map((p) => p.trim().toLowerCase());
       const layoutFound = props.filter((p) => LAYOUT_TRANSITION_PROPS.has(p));
       if (layoutFound.length > 0) {
         findings.push({
@@ -1233,7 +1304,9 @@
       if (!color || !hasChroma(color, 30)) continue;
 
       // Extract px values — in computed style: "color Xpx Ypx BLURpx [SPREADpx]"
-      const afterColor = shadow.substring(shadow.indexOf(colorMatch[0]) + colorMatch[0].length);
+      const afterColor = shadow.substring(
+        shadow.indexOf(colorMatch[0]) + colorMatch[0].length,
+      );
       const beforeColor = shadow.substring(0, shadow.indexOf(colorMatch[0]));
       const pxVals = [
         ...beforeColor.matchAll(/([\d.]+)px/g),
@@ -1243,7 +1316,10 @@
       // Third value is blur (offset-x, offset-y, blur, [spread])
       if (pxVals.length >= 3 && pxVals[2] > 4) {
         return [
-          { id: "dark-glow", snippet: `Colored glow (${colorToHex(color)}) on dark background` },
+          {
+            id: "dark-glow",
+            snippet: `Colored glow (${colorToHex(color)}) on dark background`,
+          },
         ];
       }
     }
@@ -1261,12 +1337,16 @@
     // --- Color ---
 
     // AI color palette: purple/violet
-    const purpleHexRe = /#(?:7c3aed|8b5cf6|a855f7|9333ea|7e22ce|6d28d9|6366f1|764ba2|667eea)\b/gi;
+    const purpleHexRe =
+      /#(?:7c3aed|8b5cf6|a855f7|9333ea|7e22ce|6d28d9|6366f1|764ba2|667eea)\b/gi;
     if (purpleHexRe.test(html)) {
       const purpleTextRe =
         /(?:(?:^|;)\s*color\s*:\s*(?:.*?)(?:#(?:7c3aed|8b5cf6|a855f7|9333ea|7e22ce|6d28d9))|gradient.*?#(?:7c3aed|8b5cf6|a855f7|764ba2|667eea))/gi;
       if (purpleTextRe.test(html)) {
-        findings.push({ id: "ai-color-palette", snippet: "Purple/violet accent colors detected" });
+        findings.push({
+          id: "ai-color-palette",
+          snippet: "Purple/violet accent colors detected",
+        });
       }
     }
 
@@ -1277,19 +1357,26 @@
       const start = Math.max(0, gm.index - 200);
       const context = html.substring(start, gm.index + gm[0].length + 200);
       if (/gradient/i.test(context)) {
-        findings.push({ id: "gradient-text", snippet: "background-clip: text + gradient" });
+        findings.push({
+          id: "gradient-text",
+          snippet: "background-clip: text + gradient",
+        });
         break;
       }
     }
     if (/\bbg-clip-text\b/.test(html) && /\bbg-gradient-to-/.test(html)) {
-      findings.push({ id: "gradient-text", snippet: "bg-clip-text + bg-gradient (Tailwind)" });
+      findings.push({
+        id: "gradient-text",
+        snippet: "bg-clip-text + bg-gradient (Tailwind)",
+      });
     }
 
     // --- Layout ---
 
     // Monotonous spacing
     const spacingValues = [];
-    const spacingRe = /(?:padding|margin)(?:-(?:top|right|bottom|left))?\s*:\s*(\d+)px/gi;
+    const spacingRe =
+      /(?:padding|margin)(?:-(?:top|right|bottom|left))?\s*:\s*(\d+)px/gi;
     let sm;
     while ((sm = spacingRe.exec(html)) !== null) {
       const v = parseInt(sm[1], 10);
@@ -1299,11 +1386,13 @@
     while ((sm = gapRe.exec(html)) !== null) {
       spacingValues.push(parseInt(sm[1], 10));
     }
-    const twSpaceRe = /\b(?:p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap)-(\d+)\b/g;
+    const twSpaceRe =
+      /\b(?:p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap)-(\d+)\b/g;
     while ((sm = twSpaceRe.exec(html)) !== null) {
       spacingValues.push(parseInt(sm[1], 10) * 4);
     }
-    const remSpacingRe = /(?:padding|margin)(?:-(?:top|right|bottom|left))?\s*:\s*([\d.]+)rem/gi;
+    const remSpacingRe =
+      /(?:padding|margin)(?:-(?:top|right|bottom|left))?\s*:\s*([\d.]+)rem/gi;
     while ((sm = remSpacingRe.exec(html)) !== null) {
       const v = Math.round(parseFloat(sm[1]) * 16);
       if (v > 0 && v < 200) spacingValues.push(v);
@@ -1316,7 +1405,9 @@
       const dominantPct = maxCount / roundedSpacing.length;
       const unique = [...new Set(roundedSpacing)].filter((v) => v > 0);
       if (dominantPct > 0.6 && unique.length <= 3) {
-        const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+        const dominant = Object.entries(counts).sort(
+          (a, b) => b[1] - a[1],
+        )[0][0];
         findings.push({
           id: "monotonous-spacing",
           snippet: `~${dominant}px used ${maxCount}/${roundedSpacing.length} times (${Math.round(dominantPct * 100)}%)`,
@@ -1366,7 +1457,10 @@
         /\b(?:(?:max|min)-)?(?:width|height)\b|\bpadding(?:-(?:top|right|bottom|left))?\b|\bmargin(?:-(?:top|right|bottom|left))?\b/gi,
       );
       if (found) {
-        findings.push({ id: "layout-transition", snippet: `transition: ${found.join(", ")}` });
+        findings.push({
+          id: "layout-transition",
+          snippet: `transition: ${found.join(", ")}`,
+        });
         break;
       }
     }
@@ -1385,9 +1479,9 @@
         if (!colorMatch) continue;
         const [r, g, b] = [+colorMatch[1], +colorMatch[2], +colorMatch[3]];
         if (Math.max(r, g, b) - Math.min(r, g, b) < 30) continue;
-        const pxVals = [...val.matchAll(/(\d+)px|(?<![.\d])\b(0)\b(?![.\d])/g)].map(
-          (p) => +(p[1] || p[2]),
-        );
+        const pxVals = [
+          ...val.matchAll(/(\d+)px|(?<![.\d])\b(0)\b(?![.\d])/g),
+        ].map((p) => +(p[1] || p[2]));
         if (pxVals.length >= 3 && pxVals[2] > 4) {
           findings.push({
             id: "dark-glow",
@@ -1415,7 +1509,11 @@
         .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
         .replace(/<[^>]+>/g, " ");
       const tm = /\b(\w+)\s+theater\b/i.exec(bodyText);
-      if (tm) findings.push({ id: "theater-slop-phrase", snippet: `"${tm[0].trim()}"` });
+      if (tm)
+        findings.push({
+          id: "theater-slop-phrase",
+          snippet: `"${tm[0].trim()}"`,
+        });
     }
 
     // --- Provider tells (gated): image hover transform (Gemini) ---
@@ -1425,7 +1523,10 @@
     const imgHoverCss =
       /\bimg\b[^,{}]*:hover\b[^{}]*\{[^}]*\btransform\s*:\s*(?:scale|rotate|translate|matrix|skew)/i;
     if (imgHoverCss.test(html)) {
-      findings.push({ id: "image-hover-transform", snippet: "img:hover { transform } rule" });
+      findings.push({
+        id: "image-hover-transform",
+        snippet: "img:hover { transform } rule",
+      });
     }
     const imgTagRe = /<img\b[^>]*\bclass\s*=\s*"([^"]*)"/gi;
     let im;
@@ -1484,10 +1585,14 @@
   function resolveBackground(el, win, customPropMap) {
     let current = el;
     while (current && current.nodeType === 1) {
-      const style = DETECTOR_IS_BROWSER ? getComputedStyle(current) : win.getComputedStyle(current);
+      const style = DETECTOR_IS_BROWSER
+        ? getComputedStyle(current)
+        : win.getComputedStyle(current);
       const bgImage = style.backgroundImage || "";
       const hasGradientOrUrl =
-        bgImage && bgImage !== "none" && (/gradient/i.test(bgImage) || /url\s*\(/i.test(bgImage));
+        bgImage &&
+        bgImage !== "none" &&
+        (/gradient/i.test(bgImage) || /url\s*\(/i.test(bgImage));
 
       // Try the solid bg-color FIRST. If the element has both a solid color
       // and a gradient/url overlay (a common pattern: `background: var(--paper)
@@ -1507,10 +1612,18 @@
           // Inline-style fallback. jsdom doesn't decompose background
           // shorthand, so colors set via inline style are otherwise invisible.
           const rawStyle = current.getAttribute?.("style") || "";
-          const bgMatch = rawStyle.match(/background(?:-color)?\s*:\s*([^;]+)/i);
+          const bgMatch = rawStyle.match(
+            /background(?:-color)?\s*:\s*([^;]+)/i,
+          );
           const inlineBg = bgMatch ? bgMatch[1].trim() : "";
-          if (inlineBg && !/gradient/i.test(inlineBg) && !/url\s*\(/i.test(inlineBg)) {
-            bg = parseColorResolved(inlineBg, customPropMap) || parseAnyColor(inlineBg);
+          if (
+            inlineBg &&
+            !/gradient/i.test(inlineBg) &&
+            !/url\s*\(/i.test(inlineBg)
+          ) {
+            bg =
+              parseColorResolved(inlineBg, customPropMap) ||
+              parseAnyColor(inlineBg);
           }
         }
       }
@@ -1547,7 +1660,9 @@
   function resolveGradientStops(el, win) {
     let current = el;
     while (current && current.nodeType === 1) {
-      const style = DETECTOR_IS_BROWSER ? getComputedStyle(current) : win.getComputedStyle(current);
+      const style = DETECTOR_IS_BROWSER
+        ? getComputedStyle(current)
+        : win.getComputedStyle(current);
       const bgImage = style.backgroundImage || "";
       if (bgImage && bgImage !== "none" && /gradient/i.test(bgImage)) {
         const stops = parseGradientColors(bgImage);
@@ -1613,7 +1728,12 @@
       widths[s] = parseFloat(style[`border${s}Width`]) || 0;
       colors[s] = style[`border${s}Color`] || "";
     }
-    return checkBorders(tag, widths, colors, parseFloat(style.borderRadius) || 0);
+    return checkBorders(
+      tag,
+      widths,
+      colors,
+      parseFloat(style.borderRadius) || 0,
+    );
   }
 
   function checkElementColorsDOM(el) {
@@ -1667,7 +1787,8 @@
       .filter((n) => n.nodeType === 3)
       .map((n) => n.textContent)
       .join("");
-    const hasInlineEmojiIcon = sibling.children.length === 0 && isEmojiOnlyText(sibDirectText);
+    const hasInlineEmojiIcon =
+      sibling.children.length === 0 && isEmojiOnlyText(sibDirectText);
 
     return checkIconTile({
       headingTag: tag,
@@ -1745,7 +1866,10 @@
       }
       for (const rule of rules) {
         // Style rules only (type 1). Walk @media / @supports if present.
-        if (rule.type === 4 /* MEDIA_RULE */ || rule.type === 12 /* SUPPORTS_RULE */) {
+        if (
+          rule.type === 4 /* MEDIA_RULE */ ||
+          rule.type === 12 /* SUPPORTS_RULE */
+        ) {
           try {
             rules.push(...Array.from(rule.cssRules || []));
           } catch {
@@ -1776,11 +1900,16 @@
   function resolveVarRefs(raw, customPropMap, depth = 0) {
     if (typeof raw !== "string" || !raw.includes("var(")) return raw;
     if (depth > 8) return raw;
-    return raw.replace(/var\(\s*(--[a-zA-Z0-9_-]+)\s*(?:,\s*([^)]+))?\)/g, (_m, name, fallback) => {
-      const v = customPropMap.get(name);
-      if (v != null) return resolveVarRefs(v, customPropMap, depth + 1);
-      return fallback ? resolveVarRefs(fallback.trim(), customPropMap, depth + 1) : _m;
-    });
+    return raw.replace(
+      /var\(\s*(--[a-zA-Z0-9_-]+)\s*(?:,\s*([^)]+))?\)/g,
+      (_m, name, fallback) => {
+        const v = customPropMap.get(name);
+        if (v != null) return resolveVarRefs(v, customPropMap, depth + 1);
+        return fallback
+          ? resolveVarRefs(fallback.trim(), customPropMap, depth + 1)
+          : _m;
+      },
+    );
   }
 
   // OKLCH → sRGB conversion (Björn Ottosson's matrices). L in 0..1 (or %),
@@ -1820,7 +1949,8 @@
   function parseAnyColor(s) {
     if (!s || typeof s !== "string") return null;
     const str = s.trim();
-    if (str === "transparent" || str === "currentcolor" || str === "inherit") return null;
+    if (str === "transparent" || str === "currentcolor" || str === "inherit")
+      return null;
     let m;
     m = str.match(
       /rgba?\(\s*(\d+(?:\.\d+)?)\s*,?\s*(\d+(?:\.\d+)?)\s*,?\s*(\d+(?:\.\d+)?)(?:\s*[,/]\s*([\d.]+))?\s*\)/,
@@ -1935,12 +2065,15 @@
     } = opts;
     if (!["h2", "h3", "h4"].includes(headingTag)) return false;
     if (!headingText || headingText.length < 3) return false;
-    if (/^\/[\w-]+/i.test(headingText.replace(/^"|"$/g, "").trim())) return false;
+    if (/^\/[\w-]+/i.test(headingText.replace(/^"|"$/g, "").trim()))
+      return false;
     if (!(headingFontSize >= 20)) return false;
     if (!kickerTag || HEADING_TAGS.has(kickerTag)) return false;
     if (!["p", "span", "div", "small"].includes(kickerTag)) return false;
-    if (!kickerText || kickerText.length < 2 || kickerText.length > 34) return false;
-    if (/^step\s*\d+/i.test(kickerText) || /^\d{1,2}$/.test(kickerText)) return false;
+    if (!kickerText || kickerText.length < 2 || kickerText.length > 34)
+      return false;
+    if (/^step\s*\d+/i.test(kickerText) || /^\d{1,2}$/.test(kickerText))
+      return false;
 
     const isUppercased =
       kickerTextTransform === "uppercase" ||
@@ -1952,7 +2085,11 @@
     return true;
   }
 
-  function collectRepeatedSectionKickerCandidates(doc, getStyle, resolveLetterSpacing) {
+  function collectRepeatedSectionKickerCandidates(
+    doc,
+    getStyle,
+    resolveLetterSpacing,
+  ) {
     const candidates = [];
     for (const heading of doc.querySelectorAll("h2, h3, h4")) {
       if (heading.closest?.(REPEATED_KICKER_SKIP_SELECTOR)) continue;
@@ -1962,9 +2099,12 @@
 
       const headingStyle = getStyle(heading);
       const kickerStyle = getStyle(kicker);
-      const headingText = (heading.textContent || "").replace(/\s+/g, " ").trim();
+      const headingText = (heading.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim();
       const kickerText =
-        cleanInlineText(kicker) || (kicker.textContent || "").replace(/\s+/g, " ").trim();
+        cleanInlineText(kicker) ||
+        (kicker.textContent || "").replace(/\s+/g, " ").trim();
       const headingFontSize =
         resolveLetterSpacing(headingStyle.fontSize || "", 16) ||
         parseFloat(headingStyle.fontSize) ||
@@ -2019,7 +2159,10 @@
       tag,
       transitionProperty: style.transitionProperty || "",
       animationName: style.animationName || "",
-      timingFunctions: [style.animationTimingFunction, style.transitionTimingFunction]
+      timingFunctions: [
+        style.animationTimingFunction,
+        style.transitionTimingFunction,
+      ]
         .filter(Boolean)
         .join(" "),
       classList: el.getAttribute("class") || "",
@@ -2032,7 +2175,9 @@
     if (!style.boxShadow || style.boxShadow === "none") return [];
     // Use parent's background — glow radiates outward, so the surrounding context matters
     // If resolveBackground returns null (gradient), try to infer from the gradient colors
-    let parentBg = el.parentElement ? resolveBackground(el.parentElement) : resolveBackground(el);
+    let parentBg = el.parentElement
+      ? resolveBackground(el.parentElement)
+      : resolveBackground(el);
     if (!parentBg) {
       // Gradient background — sample its colors to determine if it's dark
       let cur = el.parentElement;
@@ -2056,7 +2201,11 @@
         cur = cur.parentElement;
       }
     }
-    return checkGlow({ tag, boxShadow: style.boxShadow, effectiveBg: parentBg });
+    return checkGlow({
+      tag,
+      boxShadow: style.boxShadow,
+      effectiveBg: parentBg,
+    });
   }
 
   function checkElementAIPaletteDOM(el) {
@@ -2070,11 +2219,17 @@
       if (hasChroma(c, 50)) {
         const hue = getHue(c);
         if (hue >= 260 && hue <= 310) {
-          findings.push({ id: "ai-color-palette", snippet: "Purple/violet gradient background" });
+          findings.push({
+            id: "ai-color-palette",
+            snippet: "Purple/violet gradient background",
+          });
           break;
         }
         if (hue >= 160 && hue <= 200) {
-          findings.push({ id: "ai-color-palette", snippet: "Cyan gradient background" });
+          findings.push({
+            id: "ai-color-palette",
+            snippet: "Cyan gradient background",
+          });
           break;
         }
       }
@@ -2084,9 +2239,12 @@
     const textColor = parseRgb(style.color);
     if (textColor && hasChroma(textColor, 80)) {
       const hue = getHue(textColor);
-      const isAIPalette = (hue >= 160 && hue <= 200) || (hue >= 260 && hue <= 310);
+      const isAIPalette =
+        (hue >= 160 && hue <= 200) || (hue >= 260 && hue <= 310);
       if (isAIPalette) {
-        const parentBg = el.parentElement ? resolveBackground(el.parentElement) : null;
+        const parentBg = el.parentElement
+          ? resolveBackground(el.parentElement)
+          : null;
         // Also check gradient parents
         let effectiveBg = parentBg;
         if (!effectiveBg) {
@@ -2123,7 +2281,15 @@
     return findings;
   }
 
-  const QUALITY_TEXT_TAGS = new Set(["p", "li", "td", "th", "dd", "blockquote", "figcaption"]);
+  const QUALITY_TEXT_TAGS = new Set([
+    "p",
+    "li",
+    "td",
+    "th",
+    "dd",
+    "blockquote",
+    "figcaption",
+  ]);
 
   // Resolve a CSS font-size value to pixels by walking up the parent chain.
   // Browsers resolve em/rem/% to px in getComputedStyle, but jsdom returns the
@@ -2132,7 +2298,8 @@
     const chain = []; // raw font-size strings, leaf → root
     let cur = el;
     while (cur && cur.nodeType === 1) {
-      const fs = (win ? win.getComputedStyle(cur) : getComputedStyle(cur)).fontSize;
+      const fs = (win ? win.getComputedStyle(cur) : getComputedStyle(cur))
+        .fontSize;
       chain.push(fs || "");
       cur = cur.parentElement;
     }
@@ -2155,7 +2322,8 @@
   // Resolve a CSS length value (line-height, letter-spacing, etc.) given a
   // known font-size context. Returns null for "normal" / unparseable values.
   function resolveLengthPx(value, fontSizePx) {
-    if (!value || value === "normal" || value === "auto" || value === "inherit") return null;
+    if (!value || value === "normal" || value === "auto" || value === "inherit")
+      return null;
     const num = parseFloat(value);
     if (isNaN(num)) return null;
     if (value.endsWith("px")) return num;
@@ -2169,7 +2337,8 @@
   function cssColorIsTransparent(value) {
     if (!value) return true;
     const str = String(value).trim().toLowerCase();
-    if (!str || str === "transparent" || str === "rgba(0, 0, 0, 0)") return true;
+    if (!str || str === "transparent" || str === "rgba(0, 0, 0, 0)")
+      return true;
     const parsed = parseAnyColor(str);
     if (parsed) return (parsed.a ?? 1) <= 0.05;
     return /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0(?:\.0+)?\s*\)$/.test(str);
@@ -2243,7 +2412,8 @@
   function hasMeaningfulDirectText(node) {
     if (!node?.childNodes) return false;
     for (const child of node.childNodes) {
-      if (child.nodeType === 3 && child.textContent.trim().length > 4) return true;
+      if (child.nodeType === 3 && child.textContent.trim().length > 4)
+        return true;
     }
     return false;
   }
@@ -2256,7 +2426,8 @@
       "a, button, code, dd, dt, figcaption, h1, h2, h3, h4, h5, h6, li, p, pre, span, td, th",
     );
     for (const node of candidates) {
-      if (!TEXT_EDGE_TAGS.has(node.tagName) || !hasMeaningfulDirectText(node)) continue;
+      if (!TEXT_EDGE_TAGS.has(node.tagName) || !hasMeaningfulDirectText(node))
+        continue;
       let nodeRect = null;
       try {
         nodeRect = node.getBoundingClientRect();
@@ -2270,8 +2441,10 @@
       )
         continue;
       if (nodeRect.top - rect.top <= TEXT_EDGE_THRESHOLD) flush.top = true;
-      if (rect.right - nodeRect.right <= TEXT_EDGE_THRESHOLD) flush.right = true;
-      if (rect.bottom - nodeRect.bottom <= TEXT_EDGE_THRESHOLD) flush.bottom = true;
+      if (rect.right - nodeRect.right <= TEXT_EDGE_THRESHOLD)
+        flush.right = true;
+      if (rect.bottom - nodeRect.bottom <= TEXT_EDGE_THRESHOLD)
+        flush.bottom = true;
       if (nodeRect.left - rect.left <= TEXT_EDGE_THRESHOLD) flush.left = true;
     }
     return flush;
@@ -2348,10 +2521,14 @@
       if (borderCount >= 2 || hasBg) {
         const vPads = [],
           hPads = [];
-        if (hasBg || borders.top > 0) vPads.push(parseFloat(style.paddingTop) || 0);
-        if (hasBg || borders.bottom > 0) vPads.push(parseFloat(style.paddingBottom) || 0);
-        if (hasBg || borders.left > 0) hPads.push(parseFloat(style.paddingLeft) || 0);
-        if (hasBg || borders.right > 0) hPads.push(parseFloat(style.paddingRight) || 0);
+        if (hasBg || borders.top > 0)
+          vPads.push(parseFloat(style.paddingTop) || 0);
+        if (hasBg || borders.bottom > 0)
+          vPads.push(parseFloat(style.paddingBottom) || 0);
+        if (hasBg || borders.left > 0)
+          hPads.push(parseFloat(style.paddingLeft) || 0);
+        if (hasBg || borders.right > 0)
+          hPads.push(parseFloat(style.paddingRight) || 0);
 
         const vMin = vPads.length ? Math.min(...vPads) : Infinity;
         const hMin = hPads.length ? Math.min(...hPads) : Infinity;
@@ -2434,9 +2611,13 @@
         };
         const borderVisible = {
           top: borderW.top > 0 && !cssColorIsTransparent(style.borderTopColor),
-          right: borderW.right > 0 && !cssColorIsTransparent(style.borderRightColor),
-          bottom: borderW.bottom > 0 && !cssColorIsTransparent(style.borderBottomColor),
-          left: borderW.left > 0 && !cssColorIsTransparent(style.borderLeftColor),
+          right:
+            borderW.right > 0 && !cssColorIsTransparent(style.borderRightColor),
+          bottom:
+            borderW.bottom > 0 &&
+            !cssColorIsTransparent(style.borderBottomColor),
+          left:
+            borderW.left > 0 && !cssColorIsTransparent(style.borderLeftColor),
         };
         // Outline detection. jsdom decomposes `border` shorthand into
         // border{Top,…}Width/Color but does NOT decompose `outline` —
@@ -2449,14 +2630,17 @@
           const wMatch = style.outline.match(/(\d+(?:\.\d+)?)\s*px/);
           if (wMatch) outlineW = parseFloat(wMatch[1]) || 0;
           if (!outlineStyleVal) {
-            outlineStyleVal = /\b(solid|dashed|dotted|double|groove|ridge|inset|outset)\b/.test(
-              style.outline,
-            )
-              ? "solid"
-              : "";
+            outlineStyleVal =
+              /\b(solid|dashed|dotted|double|groove|ridge|inset|outset)\b/.test(
+                style.outline,
+              )
+                ? "solid"
+                : "";
           }
           if (!outlineColorVal) {
-            const cMatch = style.outline.match(/(rgba?\([^)]+\)|#[0-9a-fA-F]{3,8}|[a-zA-Z]+)\s*$/);
+            const cMatch = style.outline.match(
+              /(rgba?\([^)]+\)|#[0-9a-fA-F]{3,8}|[a-zA-Z]+)\s*$/,
+            );
             if (cMatch) outlineColorVal = cMatch[1];
           }
         }
@@ -2497,7 +2681,12 @@
           // heuristic accepts some false negatives (a card with one heavily
           // padded middle child won't flag) for far fewer false positives.
           const CHILD_INSULATE_THRESHOLD = 4;
-          const childrenInsulate = { top: false, right: false, bottom: false, left: false };
+          const childrenInsulate = {
+            top: false,
+            right: false,
+            bottom: false,
+            left: false,
+          };
           for (const child of el.children) {
             let childStyle = getComputedStyleFor(win, child);
             if (!childStyle) continue;
@@ -2521,7 +2710,10 @@
                     childrenInsulate.top = true;
                   if (rect.right - childRect.right >= CHILD_INSULATE_THRESHOLD)
                     childrenInsulate.right = true;
-                  if (rect.bottom - childRect.bottom >= CHILD_INSULATE_THRESHOLD)
+                  if (
+                    rect.bottom - childRect.bottom >=
+                    CHILD_INSULATE_THRESHOLD
+                  )
                     childrenInsulate.bottom = true;
                   if (childRect.left - rect.left >= CHILD_INSULATE_THRESHOLD)
                     childrenInsulate.left = true;
@@ -2548,8 +2740,10 @@
           const flushSides = [];
           for (const side of ["top", "right", "bottom", "left"]) {
             const bgBoundsSide =
-              bgVisible && !(fullBleedBgBand && (side === "left" || side === "right"));
-            const sideBounded = borderVisible[side] || outlineVisible || bgBoundsSide;
+              bgVisible &&
+              !(fullBleedBgBand && (side === "left" || side === "right"));
+            const sideBounded =
+              borderVisible[side] || outlineVisible || bgBoundsSide;
             if (
               sideBounded &&
               pad[side] <= PAD_THRESHOLD &&
@@ -2578,16 +2772,22 @@
                   ? el.className.trim().split(/\s+/)[0]
                   : "";
               const boundaryParts = [];
-              const borderSidesVisible = ["top", "right", "bottom", "left"].filter(
-                (s) => borderVisible[s],
-              );
+              const borderSidesVisible = [
+                "top",
+                "right",
+                "bottom",
+                "left",
+              ].filter((s) => borderVisible[s]);
               if (borderSidesVisible.length === 4) boundaryParts.push("border");
               else if (borderSidesVisible.length > 0)
                 boundaryParts.push(`border-${borderSidesVisible.join("/")}`);
               if (outlineVisible) boundaryParts.push("outline");
               if (bgVisible) boundaryParts.push("bg");
-              const sidesLabel = flushSides.length === 4 ? "all sides" : flushSides.join("/");
-              const ident = cls ? `<${tag.toLowerCase()}> "${cls}"` : `<${tag.toLowerCase()}>`;
+              const sidesLabel =
+                flushSides.length === 4 ? "all sides" : flushSides.join("/");
+              const ident = cls
+                ? `<${tag.toLowerCase()}> "${cls}"`
+                : `<${tag.toLowerCase()}>`;
               findings.push({
                 id: "cramped-padding",
                 snippet: `${ident}: children flush against ${boundaryParts.join("+")} on ${sidesLabel} (no inset)`,
@@ -2622,7 +2822,8 @@
       ["P", "LI"].includes(tag.toUpperCase()) &&
       viewportWidth > 0
     ) {
-      const inNavHeader = el.closest && (el.closest("nav") || el.closest("header"));
+      const inNavHeader =
+        el.closest && (el.closest("nav") || el.closest("header"));
       const hasOwnBg =
         style.backgroundColor &&
         style.backgroundColor !== "rgba(0, 0, 0, 0)" &&
@@ -2652,7 +2853,11 @@
     }
 
     // --- Tight line height ---
-    if (hasDirectText && textLen > 50 && !["h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)) {
+    if (
+      hasDirectText &&
+      textLen > 50 &&
+      !["h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)
+    ) {
       if (lineHeightPx != null && fontSize > 0) {
         const ratio = lineHeightPx / fontSize;
         if (ratio > 0 && ratio < 1.3) {
@@ -2678,7 +2883,16 @@
     // --- Tiny body text ---
     // Only flag actual body content, not UI labels (buttons, tabs, badges, captions, footer text, etc.)
     if (hasDirectText && textLen > 20 && fontSize < 12) {
-      const skipTags = ["sub", "sup", "code", "kbd", "samp", "var", "caption", "figcaption"];
+      const skipTags = [
+        "sub",
+        "sup",
+        "code",
+        "kbd",
+        "samp",
+        "var",
+        "caption",
+        "figcaption",
+      ];
       const inUIContext =
         el.closest &&
         el.closest(
@@ -2721,7 +2935,10 @@
       if (letterSpacingPx != null && letterSpacingPx < 0) {
         const trackingEm = letterSpacingPx / fontSize;
         if (trackingEm <= -0.05) {
-          const excerpt = (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40);
+          const excerpt = (el.textContent || "")
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 40);
           findings.push({
             id: "extreme-negative-tracking",
             snippet: `letter-spacing: ${trackingEm.toFixed(2)}em — "${excerpt}"`,
@@ -2747,8 +2964,11 @@
     const letterSpacingPx = resolveLengthPx(style.letterSpacing, fontSize);
     const rect = el.getBoundingClientRect();
     const lineMax =
-      (typeof window !== "undefined" && window.__IMPECCABLE_CONFIG__?.lineLengthMax) || 80;
-    const viewportWidth = (typeof window !== "undefined" ? window.innerWidth : 0) || 0;
+      (typeof window !== "undefined" &&
+        window.__IMPECCABLE_CONFIG__?.lineLengthMax) ||
+      80;
+    const viewportWidth =
+      (typeof window !== "undefined" ? window.innerWidth : 0) || 0;
     return checkQuality({
       el,
       tag,
@@ -2774,7 +2994,10 @@
     let prevText = "";
     for (const h of headings) {
       const level = parseInt(h.tagName[1]);
-      const text = (h.textContent || "").trim().replace(/\s+/g, " ").slice(0, 60);
+      const text = (h.textContent || "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .slice(0, 60);
       if (prevLevel > 0 && level > prevLevel + 1) {
         findings.push({
           id: "skipped-heading",
@@ -2789,7 +3012,10 @@
 
   // Browser adapter (returns the legacy { type, detail } shape used by the overlay loop)
   function checkPageQualityDOM() {
-    return checkPageQualityFromDoc(document).map((f) => ({ type: f.id, detail: f.snippet }));
+    return checkPageQualityFromDoc(document).map((f) => ({
+      type: f.id,
+      detail: f.snippet,
+    }));
   }
 
   // Node adapters — take pre-extracted jsdom computed style
@@ -2835,7 +3061,12 @@
       if (widths[s] === 0 && overrides && overrides[s]) {
         widths[s] = overrides[s].width;
         colors[s] = overrides[s].color;
-      } else if (colors[s] && colors[s].startsWith("var(") && overrides && overrides[s]) {
+      } else if (
+        colors[s] &&
+        colors[s].startsWith("var(") &&
+        overrides &&
+        overrides[s]
+      ) {
         // Longhand case: jsdom kept the width but left the color as the
         // literal `var(...)` string. Substitute the resolved color.
         colors[s] = overrides[s].color;
@@ -2845,11 +3076,21 @@
     // resolveBorderRadiusPx so the value survives jsdom 29.1.0's broken
     // shorthand serialization. Falls back to the computed value for tests
     // and browser callers that don't pre-resolve.
-    const radius = resolvedRadius != null ? resolvedRadius : parseFloat(style.borderRadius) || 0;
+    const radius =
+      resolvedRadius != null
+        ? resolvedRadius
+        : parseFloat(style.borderRadius) || 0;
     return checkBorders(tag, widths, colors, radius);
   }
 
-  function checkElementColors(el, style, tag, window, customPropMap, hasAnchorInheritRule) {
+  function checkElementColors(
+    el,
+    style,
+    tag,
+    window,
+    customPropMap,
+    hasAnchorInheritRule,
+  ) {
     const directText = [...el.childNodes]
       .filter((n) => n.nodeType === 3)
       .map((n) => n.textContent)
@@ -2860,7 +3101,9 @@
     // jsdom returns literal "var(--X)" / "oklch(...)" for color, so plain
     // parseRgb misses Tailwind-tokenized text colors. Resolve through the
     // customPropMap first; fall back to parseRgb for vanilla rgb() pages.
-    let textColor = customPropMap ? parseColorResolved(style.color, customPropMap) : null;
+    let textColor = customPropMap
+      ? parseColorResolved(style.color, customPropMap)
+      : null;
     if (!textColor) textColor = parseRgb(style.color);
 
     // Anchor-inherit FP workaround: jsdom's UA stylesheet has `:link { color:
@@ -2883,8 +3126,9 @@
         if (cur.tagName !== "A") {
           const ps = window.getComputedStyle(cur);
           const inh =
-            (customPropMap ? parseColorResolved(ps.color, customPropMap) : null) ||
-            parseRgb(ps.color);
+            (customPropMap
+              ? parseColorResolved(ps.color, customPropMap)
+              : null) || parseRgb(ps.color);
           if (inh && !(inh.r === 0 && inh.g === 0 && inh.b === 238)) {
             textColor = inh;
             break;
@@ -2926,14 +3170,18 @@
     let iconWidth = 0;
     if (iconChild) {
       const iconStyle = window.getComputedStyle(iconChild);
-      iconWidth = parseFloat(iconStyle.width) || parseFloat(iconChild.getAttribute("width")) || 0;
+      iconWidth =
+        parseFloat(iconStyle.width) ||
+        parseFloat(iconChild.getAttribute("width")) ||
+        0;
     }
     // Or: tile contains an emoji/symbol character directly as its only content
     const sibDirectText = [...sibling.childNodes]
       .filter((n) => n.nodeType === 3)
       .map((n) => n.textContent)
       .join("");
-    const hasInlineEmojiIcon = sibling.children.length === 0 && isEmojiOnlyText(sibDirectText);
+    const hasInlineEmojiIcon =
+      sibling.children.length === 0 && isEmojiOnlyText(sibDirectText);
 
     return checkIconTile({
       headingTag: tag,
@@ -2946,7 +3194,12 @@
       siblingBgColor: parseRgb(sibStyle.backgroundColor),
       siblingBgImage: sibStyle.backgroundImage || "",
       siblingBorderWidth: parseFloat(sibStyle.borderTopWidth) || 0,
-      siblingBorderRadius: resolveBorderRadiusPx(sibling, sibStyle, sibWidth, window),
+      siblingBorderRadius: resolveBorderRadiusPx(
+        sibling,
+        sibStyle,
+        sibWidth,
+        window,
+      ),
       hasIconChild: !!iconChild || hasInlineEmojiIcon,
       iconChildWidth: iconWidth,
     });
@@ -2980,7 +3233,9 @@
     const letterSpacingRaw = customPropMap
       ? resolveVarRefs(sibStyle.letterSpacing, customPropMap)
       : sibStyle.letterSpacing;
-    const colorRaw = customPropMap ? resolveVarRefs(sibStyle.color, customPropMap) : sibStyle.color;
+    const colorRaw = customPropMap
+      ? resolveVarRefs(sibStyle.color, customPropMap)
+      : sibStyle.color;
     const headingFontSizeRaw = customPropMap
       ? resolveVarRefs(style.fontSize, customPropMap)
       : style.fontSize;
@@ -2996,7 +3251,8 @@
       siblingText: sibling.textContent || "",
       siblingTextTransform: sibStyle.textTransform || "",
       siblingFontSize,
-      siblingLetterSpacing: resolveLengthPx(letterSpacingRaw, siblingFontSize) || 0,
+      siblingLetterSpacing:
+        resolveLengthPx(letterSpacingRaw, siblingFontSize) || 0,
       siblingFontWeight: fontWeightRaw || "",
       siblingColor: colorRaw || "",
     });
@@ -3016,7 +3272,10 @@
       tag,
       transitionProperty: style.transitionProperty || "",
       animationName: style.animationName || "",
-      timingFunctions: [style.animationTimingFunction, style.transitionTimingFunction]
+      timingFunctions: [
+        style.animationTimingFunction,
+        style.transitionTimingFunction,
+      ]
         .filter(Boolean)
         .join(" "),
       classList: "",
@@ -3089,7 +3348,10 @@
       // Single-font check: only one distinct primary font across all text
       if (fontUsage.size === 1) {
         const only = [...fontUsage.keys()][0];
-        findings.push({ type: "single-font", detail: `only font used is ${only}` });
+        findings.push({
+          type: "single-font",
+          detail: `only font used is ${only}`,
+        });
       }
     }
 
@@ -3118,7 +3380,15 @@
     const tag = el.tagName.toLowerCase();
     if (
       SAFE_TAGS.has(tag) ||
-      ["input", "select", "textarea", "img", "video", "canvas", "picture"].includes(tag)
+      [
+        "input",
+        "select",
+        "textarea",
+        "img",
+        "video",
+        "canvas",
+        "picture",
+      ].includes(tag)
     )
       return false;
     const style = getComputedStyle(el);
@@ -3128,7 +3398,8 @@
       /\bshadow(?:-sm|-md|-lg|-xl|-2xl)?\b/.test(cls);
     const hasBorder = /\bborder\b/.test(cls);
     const hasRadius =
-      parseFloat(style.borderRadius) > 0 || /\brounded(?:-sm|-md|-lg|-xl|-2xl|-full)?\b/.test(cls);
+      parseFloat(style.borderRadius) > 0 ||
+      /\brounded(?:-sm|-md|-lg|-xl|-2xl|-full)?\b/.test(cls);
     const hasBg =
       (style.backgroundColor && style.backgroundColor !== "rgba(0, 0, 0, 0)") ||
       /\bbg-(?:white|gray-\d+|slate-\d+)\b/.test(cls);
@@ -3144,7 +3415,8 @@
       const cls = el.getAttribute("class") || "";
       const style = getComputedStyle(el);
       if (style.position === "absolute" || style.position === "fixed") continue;
-      if (/\b(?:dropdown|popover|tooltip|menu|modal|dialog)\b/i.test(cls)) continue;
+      if (/\b(?:dropdown|popover|tooltip|menu|modal|dialog)\b/i.test(cls))
+        continue;
       if ((el.textContent?.trim().length || 0) < 10) continue;
       const rect = el.getBoundingClientRect();
       if (rect.width < 50 || rect.height < 30) continue;
@@ -3167,7 +3439,8 @@
           break;
         }
       }
-      if (!isAncestor) findings.push({ type: "nested-cards", detail: "Card inside card", el });
+      if (!isAncestor)
+        findings.push({ type: "nested-cards", detail: "Card inside card", el });
     }
 
     return findings;
@@ -3246,7 +3519,10 @@
     if (fonts.size === 1) {
       const els = doc.querySelectorAll("*");
       if (els.length >= 20) {
-        findings.push({ id: "single-font", snippet: `only font used is ${[...fonts][0]}` });
+        findings.push({
+          id: "single-font",
+          snippet: `only font used is ${[...fonts][0]}`,
+        });
       }
     }
 
@@ -3258,7 +3534,8 @@
     for (const el of textEls) {
       const fontSize = parseFloat(win.getComputedStyle(el).fontSize);
       // Filter out sub-8px values (jsdom doesn't resolve relative units properly)
-      if (fontSize >= 8 && fontSize < 200) sizes.add(Math.round(fontSize * 10) / 10);
+      if (fontSize >= 8 && fontSize < 200)
+        sizes.add(Math.round(fontSize * 10) / 10);
     }
     if (sizes.size >= 3) {
       const sorted = [...sizes].sort((a, b) => a - b);
@@ -3278,7 +3555,15 @@
     const tag = el.tagName.toLowerCase();
     if (
       SAFE_TAGS.has(tag) ||
-      ["input", "select", "textarea", "img", "video", "canvas", "picture"].includes(tag)
+      [
+        "input",
+        "select",
+        "textarea",
+        "img",
+        "video",
+        "canvas",
+        "picture",
+      ].includes(tag)
     )
       return false;
 
@@ -3318,10 +3603,14 @@
       const rawStyle = el.getAttribute?.("style") || "";
 
       if (["pre", "code"].includes(tag)) continue;
-      if (/\b(?:absolute|fixed)\b/.test(cls) || /position\s*:\s*(?:absolute|fixed)/i.test(rawStyle))
+      if (
+        /\b(?:absolute|fixed)\b/.test(cls) ||
+        /position\s*:\s*(?:absolute|fixed)/i.test(rawStyle)
+      )
         continue;
       if ((el.textContent?.trim().length || 0) < 10) continue;
-      if (/\b(?:dropdown|popover|tooltip|menu|modal|dialog)\b/i.test(cls)) continue;
+      if (/\b(?:dropdown|popover|tooltip|menu|modal|dialog)\b/i.test(cls))
+        continue;
 
       // Walk up to find card-like ancestor
       let parent = el.parentElement;
@@ -3387,10 +3676,14 @@
     if (!cls) return null;
     // Arbitrary value: bg-[#f5f0e6] / bg-[rgb(245_240_230)] (underscores = spaces).
     const arb = cls.match(/\bbg-\[([^\]]+)\]/);
-    if (arb && isCreamColor(parseAnyColor(arb[1].replace(/_/g, " ")))) return `bg-[${arb[1]}]`;
+    if (arb && isCreamColor(parseAnyColor(arb[1].replace(/_/g, " "))))
+      return `bg-[${arb[1]}]`;
     // Named warm-light utilities.
     for (const [tok, hex] of Object.entries(TAILWIND_BG_HEX)) {
-      if (new RegExp(`(^|\\s)${tok}($|\\s)`).test(cls) && isCreamColor(parseAnyColor(hex)))
+      if (
+        new RegExp(`(^|\\s)${tok}($|\\s)`).test(cls) &&
+        isCreamColor(parseAnyColor(hex))
+      )
         return tok;
     }
     return null;
@@ -3398,10 +3691,12 @@
 
   function checkCreamPalette(doc, win) {
     const findings = [];
-    const body = doc.body || (doc.querySelector ? doc.querySelector("body") : null);
+    const body =
+      doc.body || (doc.querySelector ? doc.querySelector("body") : null);
     if (!body) return findings;
     const html = doc.documentElement;
-    const getCS = (el) => (win ? win.getComputedStyle(el) : getComputedStyle(el));
+    const getCS = (el) =>
+      win ? win.getComputedStyle(el) : getComputedStyle(el);
 
     // 1. Computed background — covers inline / <style> / linked CSS, and Tailwind
     //    once it's actually rendered (browser path).
@@ -3420,7 +3715,9 @@
     // 2. Tailwind class fallback — for the static path, where utility classes
     //    never resolve to computed CSS.
     for (const el of [body, html]) {
-      const tok = creamFromClassList(el && el.getAttribute ? el.getAttribute("class") : "");
+      const tok = creamFromClassList(
+        el && el.getAttribute ? el.getAttribute("class") : "",
+      );
       if (tok) {
         findings.push({
           id: "cream-palette",
@@ -3455,7 +3752,8 @@
       let viewportDetail = "";
       if (rect && viewportWidth > 0 && viewportHeight > 0) {
         const heightRatio = rect.height / viewportHeight;
-        const areaRatio = (rect.width * rect.height) / (viewportWidth * viewportHeight);
+        const areaRatio =
+          (rect.width * rect.height) / (viewportWidth * viewportHeight);
         const dominatesViewport =
           heightRatio >= OVERSIZED_H1_MIN_VIEWPORT_HEIGHT_RATIO ||
           areaRatio >= OVERSIZED_H1_MIN_VIEWPORT_AREA_RATIO;
@@ -3486,9 +3784,18 @@
     const fontSize = parseFloat(style.fontSize) || 0;
     const headingText = (el.textContent || "").trim().replace(/\s+/g, " ");
     const rect = el.getBoundingClientRect();
-    const viewportWidth = (typeof window !== "undefined" ? window.innerWidth : 0) || 0;
-    const viewportHeight = (typeof window !== "undefined" ? window.innerHeight : 0) || 0;
-    return checkOversizedH1({ tag, fontSize, headingText, rect, viewportWidth, viewportHeight });
+    const viewportWidth =
+      (typeof window !== "undefined" ? window.innerWidth : 0) || 0;
+    const viewportHeight =
+      (typeof window !== "undefined" ? window.innerHeight : 0) || 0;
+    return checkOversizedH1({
+      tag,
+      fontSize,
+      headingText,
+      rect,
+      viewportWidth,
+      viewportHeight,
+    });
   }
 
   // ─── GPT tell: hairline border + wide diffuse shadow (gated --gpt) ────────────
@@ -3514,8 +3821,12 @@
       // ordered length tokens: offsetX offsetY blur [spread]. Static jsdom keeps
       // unitless zeros ("0 0 24px"); browsers normalize to px ("0px 0px 24px") —
       // both reduce to the same numbers here.
-      const cleaned = layer.replace(CSS_COLOR_TOKEN_RE, " ").replace(/\b[a-z]+\b/gi, " ");
-      const nums = [...cleaned.matchAll(/-?\d*\.?\d+/g)].map((m) => parseFloat(m[0]));
+      const cleaned = layer
+        .replace(CSS_COLOR_TOKEN_RE, " ")
+        .replace(/\b[a-z]+\b/gi, " ");
+      const nums = [...cleaned.matchAll(/-?\d*\.?\d+/g)].map((m) =>
+        parseFloat(m[0]),
+      );
       if (nums.length >= 3) maxBlur = Math.max(maxBlur, nums[2]);
     }
     return maxBlur;
@@ -3527,11 +3838,21 @@
     return parsed ? (parsed.a ?? 1) : 1;
   }
 
-  function checkGptThinBorderWideShadow({ borderWidths, borderColors, boxShadow }) {
+  function checkGptThinBorderWideShadow({
+    borderWidths,
+    borderColors,
+    boxShadow,
+  }) {
     const visibleThinBorders = borderWidths
-      .map((width, index) => ({ width, alpha: cssColorAlpha(borderColors?.[index] || "") }))
+      .map((width, index) => ({
+        width,
+        alpha: cssColorAlpha(borderColors?.[index] || ""),
+      }))
       .filter(({ width, alpha }) => width > 0 && width <= 1.5 && alpha >= 0.28);
-    const maxBorder = Math.max(0, ...visibleThinBorders.map(({ width }) => width));
+    const maxBorder = Math.max(
+      0,
+      ...visibleThinBorders.map(({ width }) => width),
+    );
     const blur = shadowMaxBlurPx(boxShadow, { minAlpha: 0.12 });
     if (visibleThinBorders.length >= 2 && blur >= 16) {
       return [
@@ -3583,7 +3904,8 @@
   // A clipping container (overflow hidden/clip, not a scroll region) wrapping an
   // absolutely/fixed-positioned descendant clips popovers/menus that must escape.
   function classSelector(el) {
-    const cls = (el.getAttribute ? el.getAttribute("class") : el.className) || "";
+    const cls =
+      (el.getAttribute ? el.getAttribute("class") : el.className) || "";
     const tokens = String(cls).trim().split(/\s+/).filter(Boolean);
     const tag = el.tagName ? el.tagName.toLowerCase() : "el";
     return tokens.length ? `${tag}.${tokens.join(".")}` : tag;
@@ -3636,7 +3958,8 @@
     }
     if (typeof child.querySelector === "function") {
       try {
-        if (child.querySelector(POSITIONED_CHILD_INTERACTIVE_SELECTOR)) return true;
+        if (child.querySelector(POSITIONED_CHILD_INTERACTIVE_SELECTOR))
+          return true;
       } catch {}
     }
     return false;
@@ -3644,9 +3967,12 @@
 
   function clippingContainerIsIntentionalViewport(el) {
     if (!el || typeof el.getAttribute !== "function") return false;
-    const roleDescription = (el.getAttribute("aria-roledescription") || "").toLowerCase();
+    const roleDescription = (
+      el.getAttribute("aria-roledescription") || ""
+    ).toLowerCase();
     if (/\b(carousel|slider)\b/.test(roleDescription)) return true;
-    const ident = `${el.getAttribute("class") || ""} ${el.getAttribute("id") || ""}`.toLowerCase();
+    const ident =
+      `${el.getAttribute("class") || ""} ${el.getAttribute("id") || ""}`.toLowerCase();
     return (
       /\b(carousel|comparison|compare|fisheye|marquee|preview|scroller|slider|slideshow|split|viewport)\b/.test(
         ident,
@@ -3659,7 +3985,14 @@
     try {
       const rect = el.getBoundingClientRect();
       if (!rect) return null;
-      const values = [rect.top, rect.right, rect.bottom, rect.left, rect.width, rect.height];
+      const values = [
+        rect.top,
+        rect.right,
+        rect.bottom,
+        rect.left,
+        rect.width,
+        rect.height,
+      ];
       if (!values.every(Number.isFinite)) return null;
       if (rect.width <= 0 && rect.height <= 0) return null;
       return rect;
@@ -3726,7 +4059,8 @@
         if (positionedChildIsDecorative(child)) continue;
         const escapes = positionedChildEscapesClip(el, child, clipX, clipY);
         if (escapes === false) continue;
-        if (escapes === null && !positionedStyleImpliesEscape(childStyle)) continue;
+        if (escapes === null && !positionedStyleImpliesEscape(childStyle))
+          continue;
         return [
           {
             id: "clipped-overflow-container",
@@ -3795,7 +4129,9 @@
         .match(/^(-?\d+(?:\.\d+)?)%$/),
     );
     if (percents.some((match) => !match)) return false;
-    const [top, right, bottom, left] = percents.map((match) => parseFloat(match[1]));
+    const [top, right, bottom, left] = percents.map((match) =>
+      parseFloat(match[1]),
+    );
     return top + bottom >= 100 || left + right >= 100;
   }
 
@@ -3810,17 +4146,24 @@
       .map((value) => value.trim())
       .filter(Boolean);
     if (values.length !== 4) return false;
-    const [top, right, bottom, left] = values.map((value) => metricLengthPx(value, 16));
-    if ([top, right, bottom, left].some((value) => value === null)) return false;
+    const [top, right, bottom, left] = values.map((value) =>
+      metricLengthPx(value, 16),
+    );
+    if ([top, right, bottom, left].some((value) => value === null))
+      return false;
     return bottom <= top || right <= left;
   }
 
   function isScreenReaderOnlyTextStyle(style, metrics = {}) {
     if (!style) return false;
-    const overflowValues = [style.overflow, style.overflowX, style.overflowY].map((value) =>
-      String(value || "").toLowerCase(),
+    const overflowValues = [
+      style.overflow,
+      style.overflowX,
+      style.overflowY,
+    ].map((value) => String(value || "").toLowerCase());
+    const clipsOverflow = overflowValues.some(
+      (value) => value === "hidden" || value === "clip",
     );
-    const clipsOverflow = overflowValues.some((value) => value === "hidden" || value === "clip");
 
     const fontSize = metricLengthPx(style.fontSize, 16) || 16;
     const width = firstMetricLengthPx(
@@ -3837,13 +4180,20 @@
       style.height,
       style.blockSize,
     );
-    const isTiny = width !== null && height !== null && width <= 2 && height <= 2;
+    const isTiny =
+      width !== null && height !== null && width <= 2 && height <= 2;
     const isAbsolutelyHidden =
-      String(style.position || "").toLowerCase() === "absolute" && isTiny && clipsOverflow;
+      String(style.position || "").toLowerCase() === "absolute" &&
+      isTiny &&
+      clipsOverflow;
 
-    const clipPath = String(style.clipPath || style.webkitClipPath || "").trim();
+    const clipPath = String(
+      style.clipPath || style.webkitClipPath || "",
+    ).trim();
     const clip = String(style.clip || "").trim();
-    return isAbsolutelyHidden || clippedByInset(clipPath) || clippedByRect(clip);
+    return (
+      isAbsolutelyHidden || clippedByInset(clipPath) || clippedByRect(clip)
+    );
   }
 
   function isRenderedForBrowserRule(el) {
@@ -3851,10 +4201,15 @@
       if (cur.getAttribute?.("aria-hidden") === "true") return false;
       const style = getComputedStyle(cur);
       const visibility = String(style.visibility || "").toLowerCase();
-      if (style.display === "none" || visibility === "hidden" || visibility === "collapse")
+      if (
+        style.display === "none" ||
+        visibility === "hidden" ||
+        visibility === "collapse"
+      )
         return false;
       if ((parseFloat(style.opacity) || 0) <= 0.01) return false;
-      if (String(style.contentVisibility || "").toLowerCase() === "hidden") return false;
+      if (String(style.contentVisibility || "").toLowerCase() === "hidden")
+        return false;
     }
     return true;
   }
@@ -3881,7 +4236,8 @@
     )
       return [];
     const isScrollRegion = (s) =>
-      /(auto|scroll)/.test(s.overflowX || "") || /(auto|scroll)/.test(s.overflow || "");
+      /(auto|scroll)/.test(s.overflowX || "") ||
+      /(auto|scroll)/.test(s.overflow || "");
     if (isScrollRegion(style)) return [];
     // A scrollable ancestor means this overflow is intentional and scrollable.
     for (let p = el.parentElement; p; p = p.parentElement) {
@@ -4029,13 +4385,17 @@
 
     function hideSpotlight() {
       spotlightTarget = null;
-      if (spotlightBackdrop) spotlightBackdrop.classList.remove("impeccable-visible");
+      if (spotlightBackdrop)
+        spotlightBackdrop.classList.remove("impeccable-visible");
     }
 
     function isInViewport(el) {
       const r = el.getBoundingClientRect();
       return (
-        r.top >= 0 && r.left >= 0 && r.bottom <= window.innerHeight && r.right <= window.innerWidth
+        r.top >= 0 &&
+        r.left >= 0 &&
+        r.bottom <= window.innerHeight &&
+        r.right <= window.innerWidth
       );
     }
 
@@ -4152,7 +4512,10 @@
           /* best effort overlay teardown */
         }
       }
-      if (overlay._targetEl && overlay._targetEl._impeccableOverlay === overlay) {
+      if (
+        overlay._targetEl &&
+        overlay._targetEl._impeccableOverlay === overlay
+      ) {
         visibilityObserver.unobserve(overlay._targetEl);
         delete overlay._targetEl._impeccableOverlay;
       }
@@ -4167,7 +4530,11 @@
     document.addEventListener("transitionend", (e) => {
       if (e.propertyName !== "transform") return;
       for (const o of overlays) {
-        if (!o._targetEl || o.classList.contains("impeccable-banner") || o.style.display === "none")
+        if (
+          !o._targetEl ||
+          o.classList.contains("impeccable-banner") ||
+          o.style.display === "none"
+        )
           continue;
         if (e.target === o._targetEl || e.target.contains(o._targetEl)) {
           positionOverlay(o);
@@ -4177,7 +4544,9 @@
 
     const highlight = function (el, findings) {
       if (el._impeccableOverlay) detachOverlay(el._impeccableOverlay);
-      const hasSlop = findings.some((f) => RULE_CATEGORY[f.type || f.id] === "slop");
+      const hasSlop = findings.some(
+        (f) => RULE_CATEGORY[f.type || f.id] === "slop",
+      );
 
       const fixed = isInFixedContext(el);
       const rect = el.getBoundingClientRect();
@@ -4198,7 +4567,8 @@
       // Build per-finding label entries: ✦ prefix for slop
       const entries = findings.map((f) => {
         const name = TYPE_LABELS[f.type || f.id] || f.type || f.id;
-        const prefix = RULE_CATEGORY[f.type || f.id] === "slop" ? "\u2726 " : "";
+        const prefix =
+          RULE_CATEGORY[f.type || f.id] === "slop" ? "\u2726 " : "";
         return { name: prefix + name, detail: f.detail || f.snippet };
       });
       const allText = entries.map((e) => e.name).join(", ");
@@ -4469,7 +4839,9 @@
 
       if (el.classList && el.classList.length > 0) {
         const classes = [...el.classList]
-          .filter((c) => !c.startsWith("impeccable-") && !isLikelyHashedClass(c))
+          .filter(
+            (c) => !c.startsWith("impeccable-") && !isLikelyHashedClass(c),
+          )
           .slice(0, 2);
         if (classes.length > 0) {
           sel += "." + classes.map((c) => CSS.escape(c)).join(".");
@@ -4482,7 +4854,9 @@
         try {
           const matching = parent.querySelectorAll(":scope > " + sel);
           if (matching.length > 1) {
-            const sameType = [...parent.children].filter((c) => c.tagName === el.tagName);
+            const sameType = [...parent.children].filter(
+              (c) => c.tagName === el.tagName,
+            );
             const idx = sameType.indexOf(el) + 1;
             sel += `:nth-of-type(${idx})`;
           }
@@ -4578,7 +4952,8 @@
       if (bgClip === "text" && ownBgImage && ownBgImage !== "none") {
         reasons.add("background-clip text");
       }
-      if (style.textShadow && style.textShadow !== "none") reasons.add("text shadow");
+      if (style.textShadow && style.textShadow !== "none")
+        reasons.add("text shadow");
 
       let current = el;
       while (current && current.nodeType === 1) {
@@ -4591,33 +4966,51 @@
           if (/url\s*\(/i.test(bgImage)) reasons.add("image background");
           if (/gradient/i.test(bgImage)) reasons.add("gradient background");
         }
-        if (parseFloat(currentStyle.opacity) < 0.99) reasons.add("opacity stack");
+        if (parseFloat(currentStyle.opacity) < 0.99)
+          reasons.add("opacity stack");
         if (currentStyle.mixBlendMode && currentStyle.mixBlendMode !== "normal")
           reasons.add("blend mode");
-        if (currentStyle.filter && currentStyle.filter !== "none") reasons.add("filter");
-        if (currentStyle.backdropFilter && currentStyle.backdropFilter !== "none")
+        if (currentStyle.filter && currentStyle.filter !== "none")
+          reasons.add("filter");
+        if (
+          currentStyle.backdropFilter &&
+          currentStyle.backdropFilter !== "none"
+        )
           reasons.add("backdrop filter");
 
         const solidBg = parseRgb(currentStyle.backgroundColor);
-        if (solidBg && solidBg.a >= 0.95 && (!bgImage || bgImage === "none")) break;
+        if (solidBg && solidBg.a >= 0.95 && (!bgImage || bgImage === "none"))
+          break;
         current = current.parentElement;
       }
 
       const sampleRect = getDirectTextRect(el) || el.getBoundingClientRect();
       if (sampleRect && document.elementsFromPoint) {
         const points = [
-          [sampleRect.left + sampleRect.width / 2, sampleRect.top + sampleRect.height / 2],
           [
-            sampleRect.left + Math.min(sampleRect.width - 1, Math.max(1, sampleRect.width * 0.25)),
+            sampleRect.left + sampleRect.width / 2,
             sampleRect.top + sampleRect.height / 2,
           ],
           [
-            sampleRect.left + Math.min(sampleRect.width - 1, Math.max(1, sampleRect.width * 0.75)),
+            sampleRect.left +
+              Math.min(
+                sampleRect.width - 1,
+                Math.max(1, sampleRect.width * 0.25),
+              ),
+            sampleRect.top + sampleRect.height / 2,
+          ],
+          [
+            sampleRect.left +
+              Math.min(
+                sampleRect.width - 1,
+                Math.max(1, sampleRect.width * 0.75),
+              ),
             sampleRect.top + sampleRect.height / 2,
           ],
         ];
         for (const [x, y] of points) {
-          if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
+          if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight)
+            continue;
           const stack = document.elementsFromPoint(x, y);
           const selfIndex = stack.findIndex(
             (node) => node === el || el.contains(node) || node.contains?.(el),
@@ -4643,7 +5036,9 @@
     }
 
     function collectVisualContrastCandidates(options = {}) {
-      const maxCandidates = Number.isFinite(options.maxCandidates) ? options.maxCandidates : 12;
+      const maxCandidates = Number.isFinite(options.maxCandidates)
+        ? options.maxCandidates
+        : 12;
       const candidates = [];
       for (const el of document.querySelectorAll("*")) {
         if (candidates.length >= maxCandidates) break;
@@ -4665,7 +5060,8 @@
         if (!hasDirectText || isEmojiOnlyText(directText)) continue;
 
         const bgColor = readOwnBackgroundColor(el, style);
-        const isStyledButton = (tag === "a" || tag === "button") && bgColor && bgColor.a > 0.5;
+        const isStyledButton =
+          (tag === "a" || tag === "button") && bgColor && bgColor.a > 0.5;
         if (SAFE_TAGS.has(tag) && !isStyledButton) continue;
 
         const rect = getDirectTextRect(el) || el.getBoundingClientRect();
@@ -4755,7 +5151,9 @@
     }
 
     function firstCssUrl(value) {
-      const match = String(value || "").match(/url\((?:"([^"]+)"|'([^']+)'|([^)]*))\)/i);
+      const match = String(value || "").match(
+        /url\((?:"([^"]+)"|'([^']+)'|([^)]*))\)/i,
+      );
       if (!match) return "";
       return (match[1] || match[2] || match[3] || "").trim();
     }
@@ -4793,9 +5191,16 @@
       return [first, tokens[1] || "50%"];
     }
 
-    function resolvePaintedImageRect(containerRect, image, sizeValue, positionValue) {
-      const intrinsicWidth = image.naturalWidth || image.videoWidth || image.width || 1;
-      const intrinsicHeight = image.naturalHeight || image.videoHeight || image.height || 1;
+    function resolvePaintedImageRect(
+      containerRect,
+      image,
+      sizeValue,
+      positionValue,
+    ) {
+      const intrinsicWidth =
+        image.naturalWidth || image.videoWidth || image.width || 1;
+      const intrinsicHeight =
+        image.naturalHeight || image.videoHeight || image.height || 1;
       let paintedWidth = intrinsicWidth;
       let paintedHeight = intrinsicHeight;
       const size = String(sizeValue || "auto").trim();
@@ -4803,7 +5208,10 @@
       if (size === "cover" || size === "contain") {
         const scale =
           size === "cover"
-            ? Math.max(containerRect.width / intrinsicWidth, containerRect.height / intrinsicHeight)
+            ? Math.max(
+                containerRect.width / intrinsicWidth,
+                containerRect.height / intrinsicHeight,
+              )
             : Math.min(
                 containerRect.width / intrinsicWidth,
                 containerRect.height / intrinsicHeight,
@@ -4816,17 +5224,28 @@
         const heightToken = parts[1] || "auto";
         if (/%$/.test(widthToken))
           paintedWidth = containerRect.width * (parseFloat(widthToken) / 100);
-        else if (/px$/.test(widthToken)) paintedWidth = parseFloat(widthToken) || paintedWidth;
+        else if (/px$/.test(widthToken))
+          paintedWidth = parseFloat(widthToken) || paintedWidth;
         if (heightToken === "auto")
           paintedHeight = paintedWidth * (intrinsicHeight / intrinsicWidth);
         else if (/%$/.test(heightToken))
-          paintedHeight = containerRect.height * (parseFloat(heightToken) / 100);
-        else if (/px$/.test(heightToken)) paintedHeight = parseFloat(heightToken) || paintedHeight;
+          paintedHeight =
+            containerRect.height * (parseFloat(heightToken) / 100);
+        else if (/px$/.test(heightToken))
+          paintedHeight = parseFloat(heightToken) || paintedHeight;
       }
 
       const [xToken, yToken] = parsePositionPair(positionValue);
-      const positionX = parsePositionToken(xToken, containerRect.width, paintedWidth);
-      const positionY = parsePositionToken(yToken, containerRect.height, paintedHeight);
+      const positionX = parsePositionToken(
+        xToken,
+        containerRect.width,
+        paintedWidth,
+      );
+      const positionY = parsePositionToken(
+        yToken,
+        containerRect.height,
+        paintedHeight,
+      );
       return {
         left: containerRect.left + positionX,
         top: containerRect.top + positionY,
@@ -4842,15 +5261,20 @@
     }
 
     function resolveObjectImageRect(containerRect, image, style) {
-      const intrinsicWidth = image.naturalWidth || image.videoWidth || image.width || 1;
-      const intrinsicHeight = image.naturalHeight || image.videoHeight || image.height || 1;
+      const intrinsicWidth =
+        image.naturalWidth || image.videoWidth || image.width || 1;
+      const intrinsicHeight =
+        image.naturalHeight || image.videoHeight || image.height || 1;
       const fit = style.objectFit || "fill";
       let paintedWidth = containerRect.width;
       let paintedHeight = containerRect.height;
       if (fit === "contain" || fit === "cover") {
         const scale =
           fit === "cover"
-            ? Math.max(containerRect.width / intrinsicWidth, containerRect.height / intrinsicHeight)
+            ? Math.max(
+                containerRect.width / intrinsicWidth,
+                containerRect.height / intrinsicHeight,
+              )
             : Math.min(
                 containerRect.width / intrinsicWidth,
                 containerRect.height / intrinsicHeight,
@@ -4871,8 +5295,12 @@
       }
       const [xToken, yToken] = parseObjectPosition(style.objectPosition);
       return {
-        left: containerRect.left + parsePositionToken(xToken, containerRect.width, paintedWidth),
-        top: containerRect.top + parsePositionToken(yToken, containerRect.height, paintedHeight),
+        left:
+          containerRect.left +
+          parsePositionToken(xToken, containerRect.width, paintedWidth),
+        top:
+          containerRect.top +
+          parsePositionToken(yToken, containerRect.height, paintedHeight),
         width: paintedWidth,
         height: paintedHeight,
         intrinsicWidth,
@@ -4894,14 +5322,16 @@
           0,
           Math.min(
             paintedRect.intrinsicWidth - 1,
-            ((point.x - paintedRect.left) / paintedRect.width) * paintedRect.intrinsicWidth,
+            ((point.x - paintedRect.left) / paintedRect.width) *
+              paintedRect.intrinsicWidth,
           ),
         ),
         y: Math.max(
           0,
           Math.min(
             paintedRect.intrinsicHeight - 1,
-            ((point.y - paintedRect.top) / paintedRect.height) * paintedRect.intrinsicHeight,
+            ((point.y - paintedRect.top) / paintedRect.height) *
+              paintedRect.intrinsicHeight,
           ),
         ),
       };
@@ -4909,7 +5339,8 @@
 
     async function loadVisualContrastImage(src) {
       if (!src) return null;
-      if (visualContrastImageCache.has(src)) return visualContrastImageCache.get(src);
+      if (visualContrastImageCache.has(src))
+        return visualContrastImageCache.get(src);
       const promise = new Promise((resolve) => {
         const img = new Image();
         let settled = false;
@@ -4944,15 +5375,24 @@
       if (visualContrastRasterCache.has(drawable)) {
         const cached = visualContrastRasterCache.get(drawable);
         if (!cached || !cached.ctx)
-          return { status: "unresolved", reason: cached?.reason || "image sample failed" };
+          return {
+            status: "unresolved",
+            reason: cached?.reason || "image sample failed",
+          };
         try {
           const x = Math.max(
             0,
-            Math.min(cached.width - 1, Math.floor(sourcePoint.x * cached.scaleX)),
+            Math.min(
+              cached.width - 1,
+              Math.floor(sourcePoint.x * cached.scaleX),
+            ),
           );
           const y = Math.max(
             0,
-            Math.min(cached.height - 1, Math.floor(sourcePoint.y * cached.scaleY)),
+            Math.min(
+              cached.height - 1,
+              Math.floor(sourcePoint.y * cached.scaleY),
+            ),
           );
           const data = cached.ctx.getImageData(x, y, 1, 1).data;
           return {
@@ -4970,11 +5410,15 @@
       }
 
       const canvas = document.createElement("canvas");
-      const intrinsicWidth = drawable.naturalWidth || drawable.videoWidth || drawable.width || 1;
+      const intrinsicWidth =
+        drawable.naturalWidth || drawable.videoWidth || drawable.width || 1;
       const intrinsicHeight =
         drawable.naturalHeight || drawable.videoHeight || drawable.height || 1;
       const maxRasterSide = 640;
-      const scale = Math.min(1, maxRasterSide / Math.max(intrinsicWidth, intrinsicHeight));
+      const scale = Math.min(
+        1,
+        maxRasterSide / Math.max(intrinsicWidth, intrinsicHeight),
+      );
       canvas.width = Math.max(1, Math.round(intrinsicWidth * scale));
       canvas.height = Math.max(1, Math.round(intrinsicHeight * scale));
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -4995,7 +5439,10 @@
         );
         const y = Math.max(
           0,
-          Math.min(cached.height - 1, Math.floor(sourcePoint.y * cached.scaleY)),
+          Math.min(
+            cached.height - 1,
+            Math.floor(sourcePoint.y * cached.scaleY),
+          ),
         );
         const data = ctx.getImageData(x, y, 1, 1).data;
         return {
@@ -5019,12 +5466,17 @@
       const bgImage = style.backgroundImage || "";
       if (bgImage && bgImage !== "none") {
         if (/gradient/i.test(bgImage)) {
-          const color = pickWorstContrastColor(textColor, parseGradientColors(bgImage));
-          if (color) return { status: "sampled", color, method: "analytic-gradient" };
+          const color = pickWorstContrastColor(
+            textColor,
+            parseGradientColors(bgImage),
+          );
+          if (color)
+            return { status: "sampled", color, method: "analytic-gradient" };
         }
         if (/url\s*\(/i.test(bgImage)) {
           const img = await loadVisualContrastImage(firstCssUrl(bgImage));
-          if (!img) return { status: "unresolved", reason: "image unavailable" };
+          if (!img)
+            return { status: "unresolved", reason: "image unavailable" };
           const paintedRect = resolvePaintedImageRect(
             rect,
             img,
@@ -5033,14 +5485,19 @@
           );
           const sourcePoint = pointToImageSource(point, paintedRect);
           if (!sourcePoint)
-            return { status: "unresolved", reason: "point outside background image" };
+            return {
+              status: "unresolved",
+              reason: "point outside background image",
+            };
           const sample = sampleDrawablePixel(img, sourcePoint);
-          if (sample.status === "sampled") return { ...sample, method: "canvas-background-image" };
+          if (sample.status === "sampled")
+            return { ...sample, method: "canvas-background-image" };
           return sample;
         }
       }
       const bg = parseRgb(style.backgroundColor);
-      if (bg && bg.a > 0.05) return { status: "sampled", color: bg, method: "solid-background" };
+      if (bg && bg.a > 0.05)
+        return { status: "sampled", color: bg, method: "solid-background" };
       return { status: "unresolved", reason: "no readable background" };
     }
 
@@ -5049,17 +5506,23 @@
       const style = getComputedStyle(img);
       const paintedRect = resolveObjectImageRect(rect, img, style);
       const sourcePoint = pointToImageSource(point, paintedRect);
-      if (!sourcePoint) return { status: "unresolved", reason: "point outside image" };
+      if (!sourcePoint)
+        return { status: "unresolved", reason: "point outside image" };
       const sample = sampleDrawablePixel(img, sourcePoint);
-      if (sample.status === "sampled") return { ...sample, method: "canvas-img-underlay" };
+      if (sample.status === "sampled")
+        return { ...sample, method: "canvas-img-underlay" };
 
       if (img.currentSrc || img.src) {
         const loaded = await loadVisualContrastImage(img.currentSrc || img.src);
         if (loaded) {
           const loadedRect = {
             ...paintedRect,
-            intrinsicWidth: loaded.naturalWidth || loaded.width || paintedRect.intrinsicWidth,
-            intrinsicHeight: loaded.naturalHeight || loaded.height || paintedRect.intrinsicHeight,
+            intrinsicWidth:
+              loaded.naturalWidth || loaded.width || paintedRect.intrinsicWidth,
+            intrinsicHeight:
+              loaded.naturalHeight ||
+              loaded.height ||
+              paintedRect.intrinsicHeight,
           };
           const loadedPoint = pointToImageSource(point, loadedRect);
           if (loadedPoint) {
@@ -5078,22 +5541,40 @@
       const xs =
         rect.width < 28
           ? [rect.left + rect.width / 2]
-          : [rect.left + insetX, rect.left + rect.width / 2, rect.right - insetX];
+          : [
+              rect.left + insetX,
+              rect.left + rect.width / 2,
+              rect.right - insetX,
+            ];
       const ys =
         rect.height < 22
           ? [rect.top + rect.height / 2]
-          : [rect.top + insetY, rect.top + rect.height / 2, rect.bottom - insetY];
+          : [
+              rect.top + insetY,
+              rect.top + rect.height / 2,
+              rect.bottom - insetY,
+            ];
       const points = [];
       for (const y of ys) {
         for (const x of xs) {
-          if (x >= 0 && y >= 0 && x <= window.innerWidth && y <= window.innerHeight)
+          if (
+            x >= 0 &&
+            y >= 0 &&
+            x <= window.innerWidth &&
+            y <= window.innerHeight
+          )
             points.push({ x, y });
         }
       }
       return points;
     }
 
-    async function sampleVisualBackgroundAtPoint(el, point, textColor, depth = 0) {
+    async function sampleVisualBackgroundAtPoint(
+      el,
+      point,
+      textColor,
+      depth = 0,
+    ) {
       if (depth > 8) {
         return { status: "unresolved", reason: "background stack too deep" };
       }
@@ -5101,7 +5582,9 @@
         typeof document.elementsFromPoint === "function"
           ? document.elementsFromPoint(point.x, point.y)
           : [];
-      const selfIndex = stack.findIndex((node) => node === el || el.contains(node));
+      const selfIndex = stack.findIndex(
+        (node) => node === el || el.contains(node),
+      );
       const nodes = selfIndex >= 0 ? stack.slice(selfIndex) : [el, ...stack];
       const unresolved = [];
 
@@ -5132,7 +5615,8 @@
           });
           if (sourcePoint) {
             const sample = sampleDrawablePixel(node, sourcePoint);
-            if (sample.status === "sampled") return { ...sample, method: `canvas-${tag}-underlay` };
+            if (sample.status === "sampled")
+              return { ...sample, method: `canvas-${tag}-underlay` };
             unresolved.push(sample.reason);
           }
           continue;
@@ -5140,7 +5624,8 @@
         const style = getComputedStyle(node);
         const sample = await sampleCssBackground(node, style, point, textColor);
         if (sample.status === "sampled") {
-          if (!sample.color || sample.color.a == null || sample.color.a >= 0.95) return sample;
+          if (!sample.color || sample.color.a == null || sample.color.a >= 0.95)
+            return sample;
           const under = await sampleVisualBackgroundAtPoint(
             node.parentElement || document.body,
             point,
@@ -5172,7 +5657,12 @@
       try {
         el = document.querySelector(candidate.selector);
       } catch {
-        return { ...candidate, status: "unresolved", confidence: "none", reason: "stale selector" };
+        return {
+          ...candidate,
+          status: "unresolved",
+          confidence: "none",
+          reason: "stale selector",
+        };
       }
       if (!el)
         return {
@@ -5182,7 +5672,12 @@
           reason: "missing element",
         };
       if (!isRenderedForBrowserRule(el))
-        return { ...candidate, status: "unresolved", confidence: "none", reason: "hidden element" };
+        return {
+          ...candidate,
+          status: "unresolved",
+          confidence: "none",
+          reason: "hidden element",
+        };
 
       const blockingReason = (candidate.reasons || []).find(
         (reason) =>
@@ -5236,7 +5731,11 @@
       const methods = new Set();
       const unresolved = [];
       for (const point of points) {
-        const sample = await sampleVisualBackgroundAtPoint(el, point, textColor);
+        const sample = await sampleVisualBackgroundAtPoint(
+          el,
+          point,
+          textColor,
+        );
         if (sample.status !== "sampled" || !sample.color) {
           unresolved.push(sample.reason);
           continue;
@@ -5260,7 +5759,12 @@
 
       ratios.sort((a, b) => a - b);
       const pick = (pct) =>
-        ratios[Math.min(ratios.length - 1, Math.max(0, Math.floor((pct / 100) * ratios.length)))];
+        ratios[
+          Math.min(
+            ratios.length - 1,
+            Math.max(0, Math.floor((pct / 100) * ratios.length)),
+          )
+        ];
       const measuredRatio = pick(10);
       const medianRatio = pick(50);
       const status = measuredRatio < candidate.threshold ? "fail" : "pass";
@@ -5275,7 +5779,8 @@
         ratio: measuredRatio,
         medianRatio,
         samples: ratios.length,
-        finding: status === "fail" ? { id: "low-contrast", snippet: detail } : null,
+        finding:
+          status === "fail" ? { id: "low-contrast", snippet: detail } : null,
       };
     }
 
@@ -5293,7 +5798,8 @@
       for (const candidate of candidates) {
         if (
           shouldScrollOffscreen &&
-          (window.scrollX !== restoreScroll.x || window.scrollY !== restoreScroll.y)
+          (window.scrollX !== restoreScroll.x ||
+            window.scrollY !== restoreScroll.y)
         ) {
           window.scrollTo(restoreScroll.x, restoreScroll.y);
           await waitForVisualPaint();
@@ -5311,7 +5817,11 @@
             el = null;
           }
           if (el && typeof el.scrollIntoView === "function") {
-            el.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
+            el.scrollIntoView({
+              block: "center",
+              inline: "nearest",
+              behavior: "instant",
+            });
             await waitForVisualPaint();
             result = await analyzeVisualContrastCandidate(candidate);
           }
@@ -5320,7 +5830,8 @@
       }
       if (
         shouldScrollOffscreen &&
-        (window.scrollX !== restoreScroll.x || window.scrollY !== restoreScroll.y)
+        (window.scrollX !== restoreScroll.x ||
+          window.scrollY !== restoreScroll.y)
       ) {
         window.scrollTo(restoreScroll.x, restoreScroll.y);
       }
@@ -5328,9 +5839,13 @@
     }
 
     function isElementHidden(el) {
-      if (!el || el === document.body || el === document.documentElement) return false;
+      if (!el || el === document.body || el === document.documentElement)
+        return false;
       if (typeof el.checkVisibility === "function")
-        return !el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
+        return !el.checkVisibility({
+          checkOpacity: false,
+          checkVisibilityCSS: true,
+        });
       // Fallback: zero size or no offsetParent (covers display:none and detached subtrees)
       return el.offsetWidth === 0 && el.offsetHeight === 0;
     }
@@ -5340,7 +5855,9 @@
         selector: generateSelector(el),
         tagName: el.tagName?.toLowerCase() || "unknown",
         rect:
-          el !== document.body && el !== document.documentElement && el.getBoundingClientRect
+          el !== document.body &&
+          el !== document.documentElement &&
+          el.getBoundingClientRect
             ? el.getBoundingClientRect().toJSON()
             : null,
         isPageLevel: el === document.body || el === document.documentElement,
@@ -5362,7 +5879,10 @@
 
     const printSummary = function (allFindings) {
       if (allFindings.length === 0) {
-        console.log("%c[impeccable] No anti-patterns found.", "color: #22c55e; font-weight: bold");
+        console.log(
+          "%c[impeccable] No anti-patterns found.",
+          "color: #22c55e; font-weight: bold",
+        );
         return;
       }
       console.group(
@@ -5390,7 +5910,10 @@
     }
 
     function browserFindingsFromMap(groupMap) {
-      return [...groupMap.entries()].map(([el, findings]) => ({ el, findings }));
+      return [...groupMap.entries()].map(([el, findings]) => ({
+        el,
+        findings,
+      }));
     }
 
     const DESIGN_COLOR_TOLERANCE = 6;
@@ -5441,7 +5964,9 @@
             Number.isFinite(color.b),
         )
         .map((color) => ({ r: color.r, g: color.g, b: color.b }));
-      const allowedRadii = (raw.allowedRadii || []).map(Number).filter((px) => Number.isFinite(px));
+      const allowedRadii = (raw.allowedRadii || [])
+        .map(Number)
+        .filter((px) => Number.isFinite(px));
       return {
         present: true,
         hasFonts: raw.hasFonts === true && allowedFonts.size > 0,
@@ -5457,8 +5982,11 @@
     function browserColorsClose(a, b) {
       if (!a || !b) return false;
       return (
-        Math.max(Math.abs(a.r - b.r), Math.abs(a.g - b.g), Math.abs(a.b - b.b)) <=
-        DESIGN_COLOR_TOLERANCE
+        Math.max(
+          Math.abs(a.r - b.r),
+          Math.abs(a.g - b.g),
+          Math.abs(a.b - b.b),
+        ) <= DESIGN_COLOR_TOLERANCE
       );
     }
 
@@ -5479,7 +6007,9 @@
       const parsed = parseAnyColor(text);
       if (!parsed) return true;
       if ((parsed.a ?? 1) <= 0.05) return true;
-      return designSystem.allowedColors.some((color) => browserColorsClose(parsed, color));
+      return designSystem.allowedColors.some((color) =>
+        browserColorsClose(parsed, color),
+      );
     }
 
     function isBrowserTransparentCss(value) {
@@ -5496,11 +6026,22 @@
       const text = String(raw || "")
         .trim()
         .toLowerCase();
-      if (!text || text === "0" || text === "none" || text === "initial" || text === "inherit")
+      if (
+        !text ||
+        text === "0" ||
+        text === "none" ||
+        text === "initial" ||
+        text === "inherit"
+      )
         return true;
       if (text.includes("var(") || text.includes("%")) return true;
       const px = resolveLengthPx(text, 16);
-      if (px == null || !Number.isFinite(px) || px <= DESIGN_RADIUS_TOLERANCE_PX) return true;
+      if (
+        px == null ||
+        !Number.isFinite(px) ||
+        px <= DESIGN_RADIUS_TOLERANCE_PX
+      )
+        return true;
       if (designSystem.hasPillRadius && px >= 99) return true;
       return designSystem.allowedRadii.some(
         (allowed) => Math.abs(allowed - px) <= DESIGN_RADIUS_TOLERANCE_PX,
@@ -5541,7 +6082,11 @@
 
       if (designSystem.hasFonts && browserHasDirectText(el)) {
         const font = browserPrimaryFont(style.fontFamily || "");
-        if (font && !designSystem.allowedFonts.has(font) && !seen.fonts.has(font)) {
+        if (
+          font &&
+          !designSystem.allowedFonts.has(font) &&
+          !seen.fonts.has(font)
+        ) {
           seen.fonts.add(font);
           findings.push({
             type: "design-system-font",
@@ -5553,12 +6098,16 @@
 
       if (designSystem.hasColors) {
         const colorChecks = [];
-        if (browserHasDirectText(el)) colorChecks.push(["text color", style.color]);
+        if (browserHasDirectText(el))
+          colorChecks.push(["text color", style.color]);
         if (!isBrowserTransparentCss(style.backgroundColor))
           colorChecks.push(["background", style.backgroundColor]);
         for (const side of ["Top", "Right", "Bottom", "Left"]) {
           if ((parseFloat(style[`border${side}Width`]) || 0) > 0) {
-            colorChecks.push([`border-${side.toLowerCase()}`, style[`border${side}Color`]]);
+            colorChecks.push([
+              `border-${side.toLowerCase()}`,
+              style[`border${side}Color`],
+            ]);
           }
         }
         if ((parseFloat(style.outlineWidth) || 0) > 0)
@@ -5610,12 +6159,19 @@
     function checkBrowserDesignSystemSources(designSystem, seen) {
       if (!designSystem?.hasFonts) return [];
       const findings = [];
-      for (const link of document.querySelectorAll('link[href*="fonts.googleapis.com/css"]')) {
+      for (const link of document.querySelectorAll(
+        'link[href*="fonts.googleapis.com/css"]',
+      )) {
         const href = link.getAttribute("href") || "";
         for (const match of href.matchAll(/[?&]family=([^&]+)/g)) {
           const display = decodeBrowserGoogleFamily(match[1]);
           const font = normalizeBrowserFontName(display);
-          if (!font || designSystem.allowedFonts.has(font) || seen.fonts.has(font)) continue;
+          if (
+            !font ||
+            designSystem.allowedFonts.has(font) ||
+            seen.fonts.has(font)
+          )
+            continue;
           seen.fonts.add(font);
           findings.push({
             type: "design-system-font",
@@ -5629,10 +6185,16 @@
 
     function collectBrowserFindings() {
       const groupMap = new Map();
-      const _disabled = EXTENSION_MODE ? window.__IMPECCABLE_CONFIG__?.disabledRules || [] : [];
+      const _disabled = EXTENSION_MODE
+        ? window.__IMPECCABLE_CONFIG__?.disabledRules || []
+        : [];
       const _ruleOk = (id) => !_disabled.length || !_disabled.includes(id);
       const designSystem = browserDesignSystemConfig();
-      const designSeen = { fonts: new Set(), colors: new Set(), radii: new Set() };
+      const designSeen = {
+        fonts: new Set(),
+        colors: new Set(),
+        radii: new Set(),
+      };
       // Note: provider-gated rules (--gpt / --gemini) are NOT filtered here. In a
       // real browser env (detector page, live overlay, extension) running every
       // check is free, so we always surface them; the gating is purely a CLI
@@ -5656,18 +6218,54 @@
         if (el === document.body || el === document.documentElement) continue;
 
         const findings = [
-          ...checkElementBordersDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementColorsDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementMotionDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementGlowDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementAIPaletteDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementIconTileDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementItalicSerifDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementQualityDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementOversizedH1DOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementClippedOverflowDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementGptBorderShadowDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
-          ...checkElementTextOverflowDOM(el).map((f) => ({ type: f.id, detail: f.snippet })),
+          ...checkElementBordersDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementColorsDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementMotionDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementGlowDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementAIPaletteDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementIconTileDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementItalicSerifDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementQualityDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementOversizedH1DOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementClippedOverflowDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementGptBorderShadowDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
+          ...checkElementTextOverflowDOM(el).map((f) => ({
+            type: f.id,
+            detail: f.snippet,
+          })),
           ...checkElementDesignSystemDOM(el, designSystem, designSeen),
         ].filter((f) => _ruleOk(f.type));
 
@@ -5679,15 +6277,20 @@
           .map((f) => ({ type: f.id, detail: f.snippet }))
           .filter((f) => _ruleOk(f.type));
         if (eyebrowFindings.length > 0 && el.previousElementSibling) {
-          addBrowserFindings(groupMap, el.previousElementSibling, eyebrowFindings);
+          addBrowserFindings(
+            groupMap,
+            el.previousElementSibling,
+            eyebrowFindings,
+          );
         }
       }
 
       const pageLevelFindings = [];
 
-      const designSourceFindings = checkBrowserDesignSystemSources(designSystem, designSeen).filter(
-        (f) => _ruleOk(f.type),
-      );
+      const designSourceFindings = checkBrowserDesignSystemSources(
+        designSystem,
+        designSeen,
+      ).filter((f) => _ruleOk(f.type));
       if (designSourceFindings.length > 0) {
         pageLevelFindings.push(...designSourceFindings);
         addBrowserFindings(groupMap, document.body, designSourceFindings);
@@ -5710,11 +6313,15 @@
       const layoutFindings = checkLayout().filter((f) => _ruleOk(f.type));
       for (const f of layoutFindings) {
         const el = f.el || document.body;
-        addBrowserFindings(groupMap, el, [{ type: f.type, detail: f.detail || f.snippet }]);
+        addBrowserFindings(groupMap, el, [
+          { type: f.type, detail: f.detail || f.snippet },
+        ]);
       }
 
       // Page-level quality checks (headings, etc.)
-      const qualityFindings = checkPageQualityDOM().filter((f) => _ruleOk(f.type));
+      const qualityFindings = checkPageQualityDOM().filter((f) =>
+        _ruleOk(f.type),
+      );
       if (qualityFindings.length > 0) {
         pageLevelFindings.push(...qualityFindings);
         addBrowserFindings(groupMap, document.body, qualityFindings);
@@ -5733,7 +6340,9 @@
       // regex scan, so the inspector's own inline styles (transitions on top/
       // left/width/height, etc.) don't register as page anti-patterns.
       const docClone = document.documentElement.cloneNode(true);
-      for (const node of docClone.querySelectorAll('[id^="impeccable-live-"]')) {
+      for (const node of docClone.querySelectorAll(
+        '[id^="impeccable-live-"]',
+      )) {
         node.remove();
       }
       const htmlPatternFindings = checkHtmlPatterns(docClone.outerHTML);
@@ -5754,7 +6363,8 @@
 
     function shouldRunVisualContrast(options = {}) {
       return (
-        options.visualContrast === true || window.__IMPECCABLE_CONFIG__?.visualContrast === true
+        options.visualContrast === true ||
+        window.__IMPECCABLE_CONFIG__?.visualContrast === true
       );
     }
 
@@ -5792,7 +6402,9 @@
         lastVisualContrastAnalyses.push(result);
         return;
       }
-      const idx = lastVisualContrastAnalyses.findIndex((item) => item.selector === result.selector);
+      const idx = lastVisualContrastAnalyses.findIndex(
+        (item) => item.selector === result.selector,
+      );
       if (idx >= 0) lastVisualContrastAnalyses[idx] = result;
       else lastVisualContrastAnalyses.push(result);
     }
@@ -5806,7 +6418,8 @@
     }
 
     function addVisualContrastResult(groupMap, result, options = {}) {
-      if (result.status !== "fail" || !result.finding || !result.selector) return false;
+      if (result.status !== "fail" || !result.finding || !result.selector)
+        return false;
       let el = null;
       try {
         el = document.querySelector(result.selector);
@@ -5814,7 +6427,8 @@
         el = null;
       }
       if (!el) return false;
-      const findingType = result.finding.type || result.finding.id || "low-contrast";
+      const findingType =
+        result.finding.type || result.finding.id || "low-contrast";
       const existing = groupMap.get(el) || [];
       if (existing.some((f) => (f.type || f.id) === findingType)) return false;
       addBrowserFindings(groupMap, el, [
@@ -5823,7 +6437,11 @@
           detail: result.finding.detail || result.finding.snippet,
         },
       ]);
-      if (options.decorate && el !== document.body && el !== document.documentElement) {
+      if (
+        options.decorate &&
+        el !== document.body &&
+        el !== document.documentElement
+      ) {
         highlight(el, groupMap.get(el) || []);
       }
       return true;
@@ -5876,9 +6494,18 @@
       }
     }
 
-    function scheduleLazyVisualContrast(groupMap, analyses, options = {}, runtime = {}) {
+    function scheduleLazyVisualContrast(
+      groupMap,
+      analyses,
+      options = {},
+      runtime = {},
+    ) {
       disconnectLazyVisualContrastObserver();
-      if (options.visualContrastLazy === false || options.scrollOffscreen !== false) return;
+      if (
+        options.visualContrastLazy === false ||
+        options.scrollOffscreen !== false
+      )
+        return;
       if (typeof IntersectionObserver === "undefined") return;
       const unresolved = (analyses || []).filter(
         (result) =>
@@ -5904,7 +6531,9 @@
               .then((result) => {
                 if (generation !== scanGeneration) return;
                 rememberVisualContrastAnalysis(result);
-                const added = addVisualContrastResult(groupMap, result, { decorate: true });
+                const added = addVisualContrastResult(groupMap, result, {
+                  decorate: true,
+                });
                 if (added) {
                   postSerializedFindings(groupMap, options);
                   window.dispatchEvent(
@@ -5919,7 +6548,9 @@
                 }
               })
               .catch((err) => {
-                reportVisualContrastError(err, { selector: candidate.selector });
+                reportVisualContrastError(err, {
+                  selector: candidate.selector,
+                });
               })
               .finally(() => {
                 lazyVisualContrastResolving.delete(el);
@@ -5942,7 +6573,11 @@
       }
     }
 
-    async function addVisualContrastFindings(groupMap, options = {}, runtime = {}) {
+    async function addVisualContrastFindings(
+      groupMap,
+      options = {},
+      runtime = {},
+    ) {
       if (!shouldRunVisualContrast(options)) {
         lastVisualContrastAnalyses = [];
         disconnectLazyVisualContrastObserver();
@@ -5950,13 +6585,21 @@
       }
       const resolvedOptions = visualContrastOptions(options);
       const analyses = await analyzeVisualContrast(resolvedOptions);
-      if (runtime.generation && runtime.generation !== scanGeneration) return analyses;
+      if (runtime.generation && runtime.generation !== scanGeneration)
+        return analyses;
       lastVisualContrastAnalyses = analyses;
       for (const result of analyses) {
-        addVisualContrastResult(groupMap, result, { decorate: runtime.decorate });
+        addVisualContrastResult(groupMap, result, {
+          decorate: runtime.decorate,
+        });
       }
       if (runtime.decorate || runtime.scheduleLazy)
-        scheduleLazyVisualContrast(groupMap, analyses, resolvedOptions, runtime);
+        scheduleLazyVisualContrast(
+          groupMap,
+          analyses,
+          resolvedOptions,
+          runtime,
+        );
       return analyses;
     }
 
@@ -6021,9 +6664,13 @@
       const collected = collectBrowserFindings();
       const allFindings = renderBrowserFindings(collected, options);
       if (shouldRunVisualContrast(options)) {
-        addVisualContrastFindings(collected.groupMap, options, { decorate: true, generation })
+        addVisualContrastFindings(collected.groupMap, options, {
+          decorate: true,
+          generation,
+        })
           .then(() => {
-            if (generation === scanGeneration) postSerializedFindings(collected.groupMap, options);
+            if (generation === scanGeneration)
+              postSerializedFindings(collected.groupMap, options);
           })
           .catch((err) => {
             reportVisualContrastError(err);
@@ -6050,23 +6697,34 @@
     const detect = function (options = {}) {
       lastVisualContrastAnalyses = [];
       const { allFindings } = collectBrowserFindings();
-      return options.serialize === false ? allFindings : serializeFindings(allFindings);
+      return options.serialize === false
+        ? allFindings
+        : serializeFindings(allFindings);
     };
 
     const detectAsync = async function (options = {}) {
       if (shouldRunVisualContrast(options)) {
         const { allFindings } = await collectBrowserFindingsAsync(options);
-        return options.serialize === false ? allFindings : serializeFindings(allFindings);
+        return options.serialize === false
+          ? allFindings
+          : serializeFindings(allFindings);
       }
       lastVisualContrastAnalyses = [];
       const { allFindings } = collectBrowserFindings();
-      return options.serialize === false ? allFindings : serializeFindings(allFindings);
+      return options.serialize === false
+        ? allFindings
+        : serializeFindings(allFindings);
     };
 
     if (EXTENSION_MODE) {
       // Extension mode: listen for commands, don't auto-scan
       window.addEventListener("message", (e) => {
-        if (e.source !== window || !e.data || e.data.source !== "impeccable-command") return;
+        if (
+          e.source !== window ||
+          !e.data ||
+          e.data.source !== "impeccable-command"
+        )
+          return;
         if (e.data.action === "scan") {
           if (e.data.config) window.__IMPECCABLE_CONFIG__ = e.data.config;
           try {
@@ -6076,9 +6734,13 @@
           }
         }
         if (e.data.action === "toggle-overlays") {
-          const visible = !document.body.classList.contains("impeccable-hidden");
+          const visible =
+            !document.body.classList.contains("impeccable-hidden");
           document.body.classList.toggle("impeccable-hidden", visible);
-          window.postMessage({ source: "impeccable-overlays-toggled", visible: !visible }, "*");
+          window.postMessage(
+            { source: "impeccable-overlays-toggled", visible: !visible },
+            "*",
+          );
         }
         if (e.data.action === "remove") {
           clearOverlays();
@@ -6091,7 +6753,9 @@
         }
         if (e.data.action === "highlight") {
           try {
-            const target = e.data.selector ? document.querySelector(e.data.selector) : null;
+            const target = e.data.selector
+              ? document.querySelector(e.data.selector)
+              : null;
             if (target) {
               // Scroll first so positionOverlay reads the post-scroll rect
               if (!isInViewport(target) && target.scrollIntoView) {
@@ -6136,7 +6800,9 @@
           }
         };
         if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", () => setTimeout(runAutoScan, 100));
+          document.addEventListener("DOMContentLoaded", () =>
+            setTimeout(runAutoScan, 100),
+          );
         } else {
           setTimeout(runAutoScan, 100);
         }
@@ -6147,8 +6813,10 @@
     window.impeccableDetectAsync = detectAsync;
     window.impeccableScan = scan;
     window.impeccableScanAsync = scanAsync;
-    window.impeccableCollectVisualContrastCandidates = collectVisualContrastCandidates;
+    window.impeccableCollectVisualContrastCandidates =
+      collectVisualContrastCandidates;
     window.impeccableAnalyzeVisualContrast = analyzeVisualContrast;
-    window.impeccableGetLastVisualContrastAnalyses = () => lastVisualContrastAnalyses.slice();
+    window.impeccableGetLastVisualContrastAnalyses = () =>
+      lastVisualContrastAnalyses.slice();
   }
 })();

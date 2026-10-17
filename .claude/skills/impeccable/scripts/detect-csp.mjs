@@ -42,8 +42,24 @@ const SKIP_DIRS = new Set([
   ".vercel",
 ]);
 
-const SCAN_EXTS = new Set([".js", ".mjs", ".cjs", ".ts", ".mts", ".cts", ".tsx", ".jsx"]);
-const LAYOUT_EXTS = new Set([".tsx", ".jsx", ".astro", ".vue", ".svelte", ".html"]);
+const SCAN_EXTS = new Set([
+  ".js",
+  ".mjs",
+  ".cjs",
+  ".ts",
+  ".mts",
+  ".cts",
+  ".tsx",
+  ".jsx",
+]);
+const LAYOUT_EXTS = new Set([
+  ".tsx",
+  ".jsx",
+  ".astro",
+  ".vue",
+  ".svelte",
+  ".html",
+]);
 const MAX_DEPTH = 6;
 const MAX_READ_BYTES = 64 * 1024;
 
@@ -56,7 +72,10 @@ const MONOREPO_HELPER_SIGNALS = [
   /\bcreateBaseNextConfig\b/,
 ];
 const SVELTEKIT_CSP_SIGNALS = [/\bkit\s*:/, /\bcsp\s*:/, /\bdirectives\s*:/];
-const NUXT_SECURITY_SIGNALS = [/['"]nuxt-security['"]/, /\bcontentSecurityPolicy\b/];
+const NUXT_SECURITY_SIGNALS = [
+  /['"]nuxt-security['"]/,
+  /\bcontentSecurityPolicy\b/,
+];
 
 // append-string signals: CSP written as a literal value string
 const INLINE_HEADER_SIGNALS = [
@@ -64,7 +83,11 @@ const INLINE_HEADER_SIGNALS = [
   /\bscript-src\b/,
   /\bconnect-src\b/,
 ];
-const NUXT_ROUTE_RULES_SIGNALS = [/\brouteRules\b/, /Content-Security-Policy/i, /\bscript-src\b/];
+const NUXT_ROUTE_RULES_SIGNALS = [
+  /\brouteRules\b/,
+  /Content-Security-Policy/i,
+  /\bscript-src\b/,
+];
 
 const MIDDLEWARE_HINT = /headers\.set\(\s*["']Content-Security-Policy["']/i;
 const META_TAG_HINT = /http-equiv\s*=\s*["']Content-Security-Policy["']/i;
@@ -74,12 +97,18 @@ const META_TAG_HINT = /http-equiv\s*=\s*["']Content-Security-Policy["']/i;
  * @returns {{ shape: string|null, signals: string[] }}
  */
 export function detectCsp(cwd = process.cwd()) {
-  const hits = { appendArrays: [], appendString: [], middleware: [], metaTag: [] };
+  const hits = {
+    appendArrays: [],
+    appendString: [],
+    middleware: [],
+    metaTag: [],
+  };
 
   walk(cwd, cwd, 0, (absPath, relPath, body) => {
     const ext = path.extname(absPath);
     const base = path.basename(absPath).toLowerCase();
-    const isConfig = (name) => new RegExp("(^|/)" + name + "\\.config\\.").test(relPath);
+    const isConfig = (name) =>
+      new RegExp("(^|/)" + name + "\\.config\\.").test(relPath);
 
     // === append-arrays candidates ===
 
@@ -132,7 +161,9 @@ export function detectCsp(cwd = process.cwd()) {
     // === detect-only shapes ===
 
     if (
-      (base === "middleware.ts" || base === "middleware.js" || base === "middleware.mjs") &&
+      (base === "middleware.ts" ||
+        base === "middleware.js" ||
+        base === "middleware.mjs") &&
       MIDDLEWARE_HINT.test(body)
     ) {
       hits.middleware.push(relPath);
@@ -199,7 +230,10 @@ function walk(root, dir, depth, visit) {
 
 // CLI mode
 const _running = process.argv[1];
-if (_running?.endsWith("detect-csp.mjs") || _running?.endsWith("detect-csp.mjs/")) {
+if (
+  _running?.endsWith("detect-csp.mjs") ||
+  _running?.endsWith("detect-csp.mjs/")
+) {
   const result = detectCsp(process.cwd());
   console.log(JSON.stringify(result, null, 2));
 }

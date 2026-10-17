@@ -1,28 +1,39 @@
-import { Router } from 'express'
-import { requireAuth, requireRole } from '../../common/auth/rbac.js'
-import { sendSuccess } from '../../common/http/response.js'
+import { Router } from "express";
+import { requireAuth, requireRole } from "../../common/auth/rbac.js";
+import {
+  validateParams,
+  uuidParamSchema,
+} from "../../common/validation/validate.js";
+import { NotImplementedError } from "../../common/errors/app-error.js";
 
-export const capacityRouter = Router()
+export const capacityRouter = Router();
 
-capacityRouter.use(requireAuth())
+capacityRouter.use(requireAuth());
 
-capacityRouter.get('/', requireRole('ADMIN', 'RESOURCE_MANAGER', 'PROJECT_MANAGER'), async (_req, res, next) => {
-  try {
-    // TODO: Implement capacity timeline query in Sprint (PIC: Saiful & Jundy)
-    return sendSuccess(res, [])
-  } catch (err) {
-    next(err)
-  }
-})
+capacityRouter.get(
+  "/",
+  requireRole("ADMIN", "RESOURCE_MANAGER", "PROJECT_MANAGER"),
+  async (_req, _res, next) => {
+    try {
+      throw new NotImplementedError(
+        "Capacity timeline query is not implemented in Sprint 1.",
+      );
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
-capacityRouter.get('/employees/:id', async (req, res, next) => {
-  try {
-    // TODO: Implement single employee capacity timeline in Sprint (PIC: Saiful & Jundy)
-    return sendSuccess(res, {
-      employeeId: req.params.id,
-      timeline: [],
-    })
-  } catch (err) {
-    next(err)
-  }
-})
+capacityRouter.get(
+  "/employees/:id",
+  validateParams(uuidParamSchema),
+  async (_req, _res, next) => {
+    try {
+      throw new NotImplementedError(
+        "Single employee capacity timeline is not implemented in Sprint 1.",
+      );
+    } catch (err) {
+      next(err);
+    }
+  },
+);

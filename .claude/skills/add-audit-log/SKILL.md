@@ -10,12 +10,14 @@ Per TSD 9.4 & 14.2, Staffora uses embedded audit fields on mutable business tabl
 ## Audit Metadata Baseline
 
 Every mutable business table (`employees`, `projects`, `staffing_requirements`, `allocations`, `skills`) stores:
+
 - `created_at`: UTC timestamp (`timestamptz`).
 - `created_by`: UUID of the authenticated creator.
 - `updated_at`: UTC timestamp (`timestamptz`).
 - `updated_by`: UUID of the authenticated updater.
 
 `allocations` additionally store lifecycle metadata:
+
 - `cancelled_at`: UTC timestamp when cancelled.
 - `cancelled_by`: UUID of the user who cancelled the allocation.
 

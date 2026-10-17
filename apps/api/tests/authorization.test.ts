@@ -1,8 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import type { Request, Response } from "express";
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/common/database/prisma.js";
+import { postLogin } from "./support/auth-login.js";
+
 import {
   ROLES,
   ROLE_VALUES,
@@ -73,32 +76,30 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
 
   beforeAll(async () => {
     // 1. Authenticate seeded users
-    const adminRes = await request(app)
-      .post("/api/v1/auth/login")
-      .send({
-        email: "admin@staffora.internal",
-        password: "StafforaAdmin2026!",
-      });
+    const adminRes = await postLogin(app, {
+      email: "admin@staffora.internal",
+      password: "StafforaAdmin2026!",
+    });
     adminCookie = adminRes.headers["set-cookie"]?.[0] ?? "";
     adminCsrf = adminRes.body.data.csrfToken;
 
-    const pmRes = await request(app)
-      .post("/api/v1/auth/login")
-      .send({ email: "pm@staffora.internal", password: "StafforaPM2026!" });
+    const pmRes = await postLogin(app, {
+      email: "pm@staffora.internal",
+      password: "StafforaPM2026!",
+    });
     pmCookie = pmRes.headers["set-cookie"]?.[0] ?? "";
     pmCsrf = pmRes.body.data.csrfToken;
 
-    const rmRes = await request(app)
-      .post("/api/v1/auth/login")
-      .send({ email: "rm@staffora.internal", password: "StafforaRM2026!" });
+    const rmRes = await postLogin(app, {
+      email: "rm@staffora.internal",
+      password: "StafforaRM2026!",
+    });
     rmCookie = rmRes.headers["set-cookie"]?.[0] ?? "";
 
-    const empRes = await request(app)
-      .post("/api/v1/auth/login")
-      .send({
-        email: "employee@staffora.internal",
-        password: "StafforaEmp2026!",
-      });
+    const empRes = await postLogin(app, {
+      email: "employee@staffora.internal",
+      password: "StafforaEmp2026!",
+    });
     employeeCookie = empRes.headers["set-cookie"]?.[0] ?? "";
     employeeCsrf = empRes.body.data.csrfToken;
     employeeOwnId = empRes.body.data.user.employeeId;
@@ -275,26 +276,27 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
     it("rejects request from inactive user session", async () => {
       // Create temporary inactive user
       const pw = await hashPassword("TempInactivePass123!");
+      const email = `temp.inactive.${randomUUID()}@staffora.internal`;
       const inactiveUser = await prisma.user.create({
         data: {
-          normalizedEmail: "temp.inactive@staffora.internal",
+          normalizedEmail: email,
           passwordHash: pw,
           role: "EMPLOYEE",
           isActive: false,
         },
       });
 
-      // Attempting to authenticate returns 401
-      const loginRes = await request(app)
-        .post("/api/v1/auth/login")
-        .send({
-          email: "temp.inactive@staffora.internal",
+      try {
+        // Attempting to authenticate returns 401
+        const loginRes = await postLogin(app, {
+          email,
           password: "TempInactivePass123!",
         });
-      expect(loginRes.status).toBe(401);
-      expect(loginRes.body.code).toBe("UNAUTHORIZED");
-
-      await prisma.user.delete({ where: { id: inactiveUser.id } });
+        expect(loginRes.status).toBe(401);
+        expect(loginRes.body.code).toBe("UNAUTHORIZED");
+      } finally {
+        await prisma.user.delete({ where: { id: inactiveUser.id } });
+      }
     });
   });
 
@@ -1512,12 +1514,12 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       expect(nextError).toBeDefined();
 
       // User not found in database branch (valid UUID that does not exist in DB)
-      let sessionDestroyed = false;
+      let sessionRegenerated = false;
       const mockReqNotFound = {
         session: {
           userId: "00000000-0000-0000-0000-000000000000",
-          destroy: (cb: () => void) => {
-            sessionDestroyed = true;
+          regenerate: (cb: () => void) => {
+            sessionRegenerated = true;
             cb();
           },
         },
@@ -1527,7 +1529,118 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
         notFoundError = err;
       });
       expect(notFoundError).toBeUndefined();
-      expect(sessionDestroyed).toBe(true);
+      expect(sessionRegenerated).toBe(true);
+    });
+  });
+
+  describe("10. Sprint 1 Not Implemented Endpoints & Parameter Validation (F15, F22)", () => {
+    it("returns 501 Not Implemented for GET /dashboard", async () => {
+      const res = await request(app)
+        .get("/api/v1/dashboard")
+        .set("Cookie", adminCookie);
+      expect(res.status).toBe(501);
+      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+    });
+
+    it("returns 501 Not Implemented for GET /me", async () => {
+      const res = await request(app)
+        .get("/api/v1/me")
+        .set("Cookie", employeeCookie);
+      expect(res.status).toBe(501);
+      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+    });
+
+    it("returns 501 Not Implemented for GET /skills", async () => {
+      const res = await request(app)
+        .get("/api/v1/skills")
+        .set("Cookie", adminCookie);
+      expect(res.status).toBe(501);
+      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+    });
+
+    it("returns 501 Not Implemented for POST /skills with valid payload", async () => {
+      const res = await request(app)
+        .post("/api/v1/skills")
+        .set("Cookie", adminCookie)
+        .set("X-CSRF-Token", adminCsrf)
+        .send({ name: "TypeScript", category: "TECHNICAL" });
+      expect(res.status).toBe(501);
+      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+    });
+
+    it("returns 501 Not Implemented for PATCH /employees/:id/skills/:skillId with valid UUIDs", async () => {
+      const validSkillId = randomUUID();
+      const res = await request(app)
+        .patch(`/api/v1/employees/${employeeOwnId}/skills/${validSkillId}`)
+        .set("Cookie", adminCookie)
+        .set("X-CSRF-Token", adminCsrf)
+        .send({ proficiencyLevel: 4 });
+      expect(res.status).toBe(501);
+      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+    });
+
+    it("returns 501 Not Implemented for GET /capacity", async () => {
+      const res = await request(app)
+        .get("/api/v1/capacity")
+        .set("Cookie", adminCookie);
+      expect(res.status).toBe(501);
+      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+    });
+
+    it("returns 501 Not Implemented for GET /capacity/employees/:id with valid UUID", async () => {
+      const res = await request(app)
+        .get(`/api/v1/capacity/employees/${employeeOwnId}`)
+        .set("Cookie", adminCookie);
+      expect(res.status).toBe(501);
+      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+    });
+
+    it("returns 501 Not Implemented for GET /resource-finder with valid query", async () => {
+      const res = await request(app)
+        .get("/api/v1/resource-finder?startDate=2026-11-01&endDate=2026-11-30")
+        .set("Cookie", adminCookie);
+      expect(res.status).toBe(501);
+      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+    });
+
+    it("returns 422 for invalid UUID :id parameters (F22)", async () => {
+      const invalidId = "not-a-valid-uuid";
+
+      const endpoints = [
+        `/api/v1/employees/${invalidId}`,
+        `/api/v1/projects/${invalidId}`,
+        `/api/v1/allocations/${invalidId}`,
+        `/api/v1/capacity/employees/${invalidId}`,
+        `/api/v1/employees/${invalidId}/skills`,
+        `/api/v1/projects/${invalidId}/staffing-requirements`,
+      ];
+
+      for (const endpoint of endpoints) {
+        const res = await request(app).get(endpoint).set("Cookie", adminCookie);
+        expect(res.status).toBe(422);
+        expect(res.body.code).toBe("UNPROCESSABLE_ENTITY");
+        expect(res.body.errors?.id).toContain("Invalid UUID format.");
+      }
+    });
+
+    it("returns 422 for invalid UUID :skillId parameter (F22)", async () => {
+      const invalidSkillId = "not-a-valid-uuid";
+      const patchRes = await request(app)
+        .patch(`/api/v1/employees/${employeeOwnId}/skills/${invalidSkillId}`)
+        .set("Cookie", adminCookie)
+        .set("X-CSRF-Token", adminCsrf)
+        .send({ proficiencyLevel: 3 });
+      expect(patchRes.status).toBe(422);
+      expect(patchRes.body.code).toBe("UNPROCESSABLE_ENTITY");
+      expect(patchRes.body.errors?.skillId).toContain("Invalid UUID format.");
+
+      const deleteRes = await request(app)
+        .delete(`/api/v1/employees/${employeeOwnId}/skills/${invalidSkillId}`)
+        .set("Cookie", adminCookie)
+        .set("X-CSRF-Token", adminCsrf);
+      expect(deleteRes.status).toBe(422);
+      expect(deleteRes.body.code).toBe("UNPROCESSABLE_ENTITY");
+      expect(deleteRes.body.errors?.skillId).toContain("Invalid UUID format.");
     });
   });
 });

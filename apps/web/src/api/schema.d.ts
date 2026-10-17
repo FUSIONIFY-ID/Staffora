@@ -112,7 +112,14 @@ export interface paths {
         put?: never;
         /**
          * Sign in user
-         * @description Authenticates user credentials, rotates session ID, and establishes an HTTP-only session cookie.
+         * @description Authenticates user credentials, rotates the session ID (session fixation protection), and
+         *     establishes the `staffora.sid` session cookie (HttpOnly, SameSite=Lax, Path=/, Secure in
+         *     staging/production, 8-hour rolling inactivity timeout).
+         *     Requires the `X-CSRF-Token` header like every other state-changing request: call
+         *     `GET /auth/csrf-token` first to get a token on the anonymous session, then send it here.
+         *     A successful login rotates the session and returns a new token in `data.csrfToken`.
+         *     Unknown email and wrong password return the same generic 401 response.
+         *     Limited to 5 attempts per 15 minutes per IP address and email.
          */
         post: {
             parameters: {
@@ -129,7 +136,10 @@ export interface paths {
                          * @example admin@staffora.internal
                          */
                         email: string;
-                        /** @example SuperSecret123! */
+                        /**
+                         * @description Not checked against the 12-character creation policy, so the policy is never disclosed on sign-in.
+                         * @example SuperSecret123!
+                         */
                         password: string;
                     };
                 };
@@ -138,16 +148,36 @@ export interface paths {
                 /** @description Login successful */
                 200: {
                     headers: {
+                        /** @description New `staffora.sid` session cookie. */
+                        "Set-Cookie"?: string;
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            data?: components["schemas"]["UserIdentity"];
+                            data: components["schemas"]["LoginResult"];
                         };
                     };
                 };
-                /** @description Invalid credentials */
+                /** @description Invalid credentials (generic message) or inactive account */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid CSRF token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Request body validation failed */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -183,7 +213,7 @@ export interface paths {
         put?: never;
         /**
          * Sign out user
-         * @description Destroys current session and clears the session cookie.
+         * @description Destroys the server-side session row (immediate revocation) and clears the session cookie.
          */
         post: {
             parameters: {
@@ -200,6 +230,24 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+                /** @description Unauthenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid CSRF token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
                 };
             };
         };
@@ -218,7 +266,7 @@ export interface paths {
         };
         /**
          * Current authenticated identity
-         * @description Retrieves the currently logged-in user profile, role, and linked employee details.
+         * @description Retrieves the currently logged-in user profile, role, and linked employee details. Sessions of deactivated accounts are destroyed and receive 401.
          */
         get: {
             parameters: {
@@ -268,7 +316,10 @@ export interface paths {
         };
         /**
          * Retrieve CSRF token
-         * @description Returns the active synchronizer CSRF token stored in the current session.
+         * @description Returns the synchronizer CSRF token stored in the current session, issuing one first if the
+         *     session has none. Works without a login session: an anonymous session is created and its
+         *     cookie returned, so the token can protect `POST /auth/login`. Send the token as
+         *     `X-CSRF-Token` on every POST, PUT, PATCH, and DELETE request.
          */
         get: {
             parameters: {
@@ -282,12 +333,14 @@ export interface paths {
                 /** @description CSRF token value */
                 200: {
                     headers: {
+                        /** @description `staffora.sid` cookie of the anonymous session, when the request had none. */
+                        "Set-Cookie"?: string;
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
                             data?: {
-                                csrfToken?: string;
+                                csrfToken: string;
                             };
                         };
                     };
@@ -300,6 +353,130 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List users (Admin only) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of users */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserListResponse"];
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+            };
+        };
+        put?: never;
+        /** Create user (Admin only) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateUserInput"];
+                };
+            };
+            responses: {
+                /** @description User created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["UserIdentity"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                /** @description User email already exists or employee already linked */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                422: components["responses"]["ValidationErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update user (Admin only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateUserInput"];
+                };
+            };
+            responses: {
+                /** @description User updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["UserIdentity"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+            };
+        };
         trace?: never;
     };
     "/departments": {
@@ -328,6 +505,8 @@ export interface paths {
                         "application/json": components["schemas"]["DepartmentListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -358,6 +537,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
@@ -392,6 +575,8 @@ export interface paths {
                         "application/json": components["schemas"]["JobRoleListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -422,6 +607,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
@@ -463,6 +652,9 @@ export interface paths {
                         "application/json": components["schemas"]["EmployeeListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -491,6 +683,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
@@ -532,6 +728,11 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -566,6 +767,11 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         trace?: never;
@@ -596,6 +802,8 @@ export interface paths {
                         "application/json": components["schemas"]["SkillListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -626,6 +834,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
@@ -664,6 +876,9 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -698,12 +913,92 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/employees/{id}/skills/{skillId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove skill from employee */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    skillId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Skill removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update employee skill proficiency */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    skillId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        proficiencyLevel: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Proficiency updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["EmployeeSkill"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
+            };
+        };
         trace?: never;
     };
     "/projects": {
@@ -738,6 +1033,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProjectListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -766,6 +1063,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
@@ -804,6 +1105,9 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
             };
         };
         put?: never;
@@ -838,6 +1142,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
             };
         };
         trace?: never;
@@ -872,6 +1180,9 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
             };
         };
         put?: never;
@@ -902,6 +1213,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
             };
         };
         delete?: never;
@@ -935,6 +1250,9 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
                 /** @description Not Implemented (pending soft-delete design in US03) */
                 501: {
                     headers: {
@@ -978,6 +1296,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
             };
         };
         trace?: never;
@@ -1013,6 +1335,8 @@ export interface paths {
                         "application/json": components["schemas"]["AllocationListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
                 /** @description Not Implemented (pending full implementation in US04) */
                 501: {
                     headers: {
@@ -1053,6 +1377,8 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
                 /** @description Capacity conflict or validation conflict */
                 409: {
                     headers: {
@@ -1062,6 +1388,7 @@ export interface paths {
                         "application/json": components["schemas"]["CapacityConflictResponse"];
                     };
                 };
+                422: components["responses"]["ValidationErrorResponse"];
                 /** @description Not Implemented (pending full implementation in US04) */
                 501: {
                     headers: {
@@ -1086,7 +1413,36 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get allocation detail */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Allocation detail */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["Allocation"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
+            };
+        };
         put?: never;
         post?: never;
         delete?: never;
@@ -1119,6 +1475,9 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
                 /** @description Capacity conflict */
                 409: {
                     headers: {
@@ -1128,6 +1487,7 @@ export interface paths {
                         "application/json": components["schemas"]["CapacityConflictResponse"];
                     };
                 };
+                422: components["responses"]["ValidationErrorResponse"];
                 /** @description Not Implemented (pending full implementation in US04) */
                 501: {
                     headers: {
@@ -1180,6 +1540,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
                 /** @description Not Implemented (pending full implementation in US04) */
                 501: {
                     headers: {
@@ -1229,6 +1593,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
                 /** @description Not Implemented (pending full implementation in US04) */
                 501: {
                     headers: {
@@ -1280,6 +1648,10 @@ export interface paths {
                         "application/json": components["schemas"]["ResourceFinderResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -1320,6 +1692,57 @@ export interface paths {
                         "application/json": components["schemas"]["OrganizationCapacityResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                501: components["responses"]["NotImplementedResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capacity/employees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Single employee capacity timeline */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Employee capacity timeline */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: {
+                                /** Format: uuid */
+                                employeeId?: string;
+                                timeline?: Record<string, never>[];
+                            };
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -1361,6 +1784,8 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -1402,6 +1827,8 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -1467,9 +1894,37 @@ export interface components {
                 employeeCode?: string;
                 fullName?: string;
                 workEmail?: string;
+                /** Format: uuid */
+                departmentId?: string;
                 departmentName?: string;
+                /** Format: uuid */
+                jobRoleId?: string;
                 jobRoleTitle?: string;
             } | null;
+        };
+        LoginResult: {
+            user: components["schemas"]["UserIdentity"];
+            /** @description Synchronizer token for the new session; send as `X-CSRF-Token` on state-changing requests. */
+            csrfToken: string;
+        };
+        CreateUserInput: {
+            /** Format: email */
+            email: string;
+            password: string;
+            /** @enum {string} */
+            role: "ADMIN" | "PROJECT_MANAGER" | "RESOURCE_MANAGER" | "EMPLOYEE";
+            /** Format: uuid */
+            employeeId?: string | null;
+        };
+        UpdateUserInput: {
+            /** @enum {string} */
+            role?: "ADMIN" | "PROJECT_MANAGER" | "RESOURCE_MANAGER" | "EMPLOYEE";
+            isActive?: boolean;
+            /** Format: uuid */
+            employeeId?: string | null;
+        };
+        UserListResponse: {
+            data: components["schemas"]["UserIdentity"][];
         };
         Department: {
             /** Format: uuid */
@@ -1788,7 +2243,53 @@ export interface components {
             totalPages: number;
         };
     };
-    responses: never;
+    responses: {
+        /** @description Authentication required or session expired */
+        UnauthorizedResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Access forbidden (RBAC or CSRF violation) */
+        ForbiddenResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Resource not found */
+        NotFoundResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Validation failed for request parameters or body */
+        ValidationErrorResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Feature not implemented in Sprint 1 */
+        NotImplementedResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;

@@ -34,6 +34,7 @@ git log -1 --oneline --decorate
 ```
 
 Then:
+
 1. Implementation must NEVER happen directly on `dev` or `main`.
 2. Sync and rebase from `dev`:
    ```powershell
@@ -52,6 +53,7 @@ Every branch MUST strictly follow the pattern:
 ```
 
 Examples:
+
 - `FE-S1-US01-login-screen`
 - `BE-S1-US01-session-auth-endpoints`
 - `DB-S1-US01-user-sessions-schema`
@@ -64,6 +66,7 @@ Examples:
 ## 4. Analysis Handoff
 
 Before writing implementation code, report:
+
 - Current branch, base rebase state (`origin/dev`), and dirty files status.
 - Task ID, layer (`FE`/`BE`/`DB`/`QA`), PIC, User Story (`USxx.xx`), and AC (`ACxx.xx`).
 - Planned files, tests, and API/database contracts involved.

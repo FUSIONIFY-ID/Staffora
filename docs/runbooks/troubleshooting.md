@@ -32,7 +32,7 @@ Panduan diagnosa dan penanganan insiden operasional Staffora.
 - **Gejala**: Request form menghasilkan error 403 `Forbidden: Invalid CSRF Token`.
 - **Penyebab**: Frontend tidak menyertakan header `X-CSRF-Token` pada request mutasi (POST, PUT, PATCH, DELETE), atau cookie `staffora.sid` kadaluarsa.
 - **Solusi**:
-  1. Pastikan frontend memanggil `GET /api/v1/auth/csrf-token` setelah login berhasil.
+  1. Pastikan frontend memanggil `GET /api/v1/auth/csrf-token` **sebelum login** (login juga wajib membawa `X-CSRF-Token`) dan memakai `data.csrfToken` baru yang dikembalikan login setelahnya. Di tes backend, gunakan helper `postLogin` dari `apps/api/tests/support/auth-login.ts`.
   2. Pastikan `credentials: "include"` disetel pada setiap `fetch` call agar cookie `staffora.sid` terkirim.
   3. Cek tabel `user_sessions` di database untuk memastikan session record aktif dan belum melewati masa timeout (8 jam).
 

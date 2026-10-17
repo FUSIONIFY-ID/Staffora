@@ -1,4 +1,4 @@
-import { prisma } from '../../common/database/prisma.js'
+import { prisma } from "../../common/database/prisma.js";
 
 export const workforceRepository = {
   // Database helper methods for workforce module
@@ -6,6 +6,6 @@ export const workforceRepository = {
   async findEmployeeById(id: string) {
     return prisma.employee.findUnique({
       where: { id },
-    })
+    });
   },
-}
+};

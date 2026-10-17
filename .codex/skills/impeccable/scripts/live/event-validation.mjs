@@ -25,12 +25,17 @@ function isValidVariantId(v) {
 
 function validateManualEditText(newText) {
   if (typeof newText !== "string") return null;
-  const hits = FORBIDDEN_MANUAL_EDIT_TEXT_CHARS.filter((char) => newText.includes(char));
+  const hits = FORBIDDEN_MANUAL_EDIT_TEXT_CHARS.filter((char) =>
+    newText.includes(char),
+  );
   return hits.length > 0 ? hits : null;
 }
 
 function validateAnnotationFields(msg) {
-  if (msg.screenshotPath !== undefined && typeof msg.screenshotPath !== "string") {
+  if (
+    msg.screenshotPath !== undefined &&
+    typeof msg.screenshotPath !== "string"
+  ) {
     return "generate: screenshotPath must be string";
   }
   if (msg.comments !== undefined && !Array.isArray(msg.comments)) {
@@ -48,7 +53,8 @@ function validateInsertGenerate(msg) {
   if (!INSERT_POSITIONS.has(msg.insert.position))
     return "generate: insert.position must be before or after";
   const anchor = msg.insert.anchor;
-  if (!anchor || typeof anchor !== "object") return "generate: insert.anchor required";
+  if (!anchor || typeof anchor !== "object")
+    return "generate: insert.anchor required";
   if (
     !anchor.tagName &&
     !anchor.outerHTML &&
@@ -58,7 +64,10 @@ function validateInsertGenerate(msg) {
   }
   if (!msg.placeholder || typeof msg.placeholder !== "object")
     return "generate: insert mode requires placeholder dimensions";
-  if (!Number.isFinite(msg.placeholder.width) || !Number.isFinite(msg.placeholder.height)) {
+  if (
+    !Number.isFinite(msg.placeholder.width) ||
+    !Number.isFinite(msg.placeholder.height)
+  ) {
     return "generate: placeholder width and height must be numbers";
   }
   if (
@@ -74,22 +83,27 @@ function validateInsertGenerate(msg) {
 }
 
 function validateReplaceGenerate(msg) {
-  if (!msg.action || !VISUAL_ACTIONS.includes(msg.action)) return "generate: invalid action";
-  if (!msg.element || !msg.element.outerHTML) return "generate: missing element context";
+  if (!msg.action || !VISUAL_ACTIONS.includes(msg.action))
+    return "generate: invalid action";
+  if (!msg.element || !msg.element.outerHTML)
+    return "generate: missing element context";
   return validateAnnotationFields(msg);
 }
 
 function validateManualEditEvent(msg, label) {
   if (!isValidId(msg.id)) return label + ": missing or malformed id";
-  if (!msg.pageUrl || typeof msg.pageUrl !== "string") return label + ": missing pageUrl";
-  if (!msg.element || typeof msg.element !== "object") return label + ": missing element";
+  if (!msg.pageUrl || typeof msg.pageUrl !== "string")
+    return label + ": missing pageUrl";
+  if (!msg.element || typeof msg.element !== "object")
+    return label + ": missing element";
   if (!Array.isArray(msg.ops) || msg.ops.length === 0)
     return label + ": ops must be non-empty array";
   if (msg.ops.length > 100) return label + ": too many ops (max 100)";
   for (const op of msg.ops) {
     if (typeof op.ref !== "string") return label + ": op.ref required";
     if (typeof op.tag !== "string") return label + ": op.tag required";
-    if (typeof op.originalText !== "string") return label + ": op.originalText required";
+    if (typeof op.originalText !== "string")
+      return label + ": op.originalText required";
     if (op.deleted !== true && typeof op.newText !== "string") {
       return label + ": text op requires newText";
     }
@@ -112,7 +126,8 @@ function validateManualEditEvent(msg, label) {
 }
 
 export function validateEvent(msg) {
-  if (!msg || typeof msg !== "object" || !msg.type) return "Missing or invalid message";
+  if (!msg || typeof msg !== "object" || !msg.type)
+    return "Missing or invalid message";
   switch (msg.type) {
     case "generate":
       if (!isValidId(msg.id)) return "generate: missing or malformed id";
@@ -122,7 +137,8 @@ export function validateEvent(msg) {
       return validateReplaceGenerate(msg);
     case "accept":
       if (!isValidId(msg.id)) return "accept: missing or malformed id";
-      if (!isValidVariantId(msg.variantId)) return "accept: missing or malformed variantId";
+      if (!isValidVariantId(msg.variantId))
+        return "accept: missing or malformed variantId";
       if (msg.paramValues !== undefined) {
         if (
           typeof msg.paramValues !== "object" ||
@@ -151,13 +167,15 @@ export function validateEvent(msg) {
     case "exit":
       return null;
     case "prefetch":
-      if (!msg.pageUrl || typeof msg.pageUrl !== "string") return "prefetch: missing pageUrl";
+      if (!msg.pageUrl || typeof msg.pageUrl !== "string")
+        return "prefetch: missing pageUrl";
       return null;
     case "manual_edits":
       return validateManualEditEvent(msg, "manual_edits");
     case "steer":
       if (!isValidId(msg.id)) return "steer: missing or malformed id";
-      if (typeof msg.message !== "string" || !msg.message.trim()) return "steer: message required";
+      if (typeof msg.message !== "string" || !msg.message.trim())
+        return "steer: message required";
       if (msg.message.length > 4000) return "steer: message too long";
       if (msg.pageUrl !== undefined && typeof msg.pageUrl !== "string")
         return "steer: pageUrl must be string";

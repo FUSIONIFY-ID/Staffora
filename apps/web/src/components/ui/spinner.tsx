@@ -1,14 +1,14 @@
-import React from 'react'
+import React from "react";
 
-export const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: string }> = ({
-  size = 'md',
-  className = '',
-}) => {
+export const Spinner: React.FC<{
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}> = ({ size = "md", className = "" }) => {
   const sizeMap = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12',
-  }[size]
+    sm: "h-4 w-4",
+    md: "h-8 w-8",
+    lg: "h-12 w-12",
+  }[size];
 
   return (
     <div className={`flex justify-center items-center p-4 ${className}`}>
@@ -18,7 +18,14 @@ export const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: string }
         fill="none"
         viewBox="0 0 24 24"
       >
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
         <path
           className="opacity-75"
           fill="currentColor"
@@ -26,5 +33,5 @@ export const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: string }
         />
       </svg>
     </div>
-  )
-}
+  );
+};

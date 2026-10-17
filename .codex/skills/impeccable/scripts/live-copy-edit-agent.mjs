@@ -88,7 +88,11 @@ export function buildCopyEditBatchPrompt(batch, { cwd = process.cwd() } = {}) {
 
 export function parseCopyEditBatchResult(text) {
   const parsed = parseCopyEditAgentResult(text);
-  if (parsed?.status === "done" || parsed?.status === "partial" || parsed?.status === "error") {
+  if (
+    parsed?.status === "done" ||
+    parsed?.status === "partial" ||
+    parsed?.status === "error"
+  ) {
     return normalizeBatchResult(parsed);
   }
   return null;
@@ -97,17 +101,22 @@ export function parseCopyEditBatchResult(text) {
 export async function runCopyEditBatchAgent(batch, opts = {}) {
   const cwd = opts.cwd || process.cwd();
   const env = opts.env || process.env;
-  const provider = opts.provider || chooseCopyEditAgent({ env, chatAvailable: opts.chatAvailable });
+  const provider =
+    opts.provider ||
+    chooseCopyEditAgent({ env, chatAvailable: opts.chatAvailable });
   if (provider === "mock") {
     const delayMs = Number(env.IMPECCABLE_LIVE_COPY_AGENT_MOCK_DELAY_MS || 0);
-    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    if (delayMs > 0)
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     return mockBatchResult(batch, env, cwd);
   }
   if (provider === "chat") {
     if (typeof opts.applyBatchToSource !== "function") {
       throw new Error("chat provider requires applyBatchToSource callback");
     }
-    const raw = await opts.applyBatchToSource(batch, { repair: batch?.repair || null });
+    const raw = await opts.applyBatchToSource(batch, {
+      repair: batch?.repair || null,
+    });
     return normalizeBatchResult(raw || {});
   }
   if (!provider) {
@@ -115,46 +124,77 @@ export async function runCopyEditBatchAgent(batch, opts = {}) {
   }
 
   const prompt = buildCopyEditBatchPrompt(batch, { cwd });
-  const outDir = opts.outDir || fs.mkdtempSync(path.join(os.tmpdir(), "impeccable-copy-batch-"));
+  const outDir =
+    opts.outDir ||
+    fs.mkdtempSync(path.join(os.tmpdir(), "impeccable-copy-batch-"));
   fs.mkdirSync(outDir, { recursive: true });
   const resultPath = path.join(outDir, "result.json");
   const logPath = path.join(outDir, "agent.log");
 
   if (provider === "codex") {
-    await runCodex(prompt, { cwd, env, resultPath, logPath, timeoutMs: opts.timeoutMs });
+    await runCodex(prompt, {
+      cwd,
+      env,
+      resultPath,
+      logPath,
+      timeoutMs: opts.timeoutMs,
+    });
   } else if (provider === "claude") {
-    await runClaude(prompt, { cwd, env, resultPath, logPath, timeoutMs: opts.timeoutMs });
+    await runClaude(prompt, {
+      cwd,
+      env,
+      resultPath,
+      logPath,
+      timeoutMs: opts.timeoutMs,
+    });
   } else {
     throw new Error(`Unsupported live copy-edit AI runner: ${provider}`);
   }
 
-  const output = fs.existsSync(resultPath) ? fs.readFileSync(resultPath, "utf-8") : "";
+  const output = fs.existsSync(resultPath)
+    ? fs.readFileSync(resultPath, "utf-8")
+    : "";
   const parsed = parseCopyEditBatchResult(output);
   if (parsed) return parsed;
 
   const tail = fs.existsSync(logPath)
     ? fs.readFileSync(logPath, "utf-8").slice(-1200)
     : output.slice(-1200);
-  throw new Error("AI copy-edit batch did not return a valid completion payload. " + tail.trim());
+  throw new Error(
+    "AI copy-edit batch did not return a valid completion payload. " +
+      tail.trim(),
+  );
 }
 
-export function runCopyEditPostApplyChecks({ cwd = process.cwd(), files = [] } = {}) {
+export function runCopyEditPostApplyChecks({
+  cwd = process.cwd(),
+  files = [],
+} = {}) {
   const failures = [];
   const warnings = [];
   const uniqueFiles = [
-    ...new Set((files || []).filter((file) => typeof file === "string" && file.trim())),
+    ...new Set(
+      (files || []).filter((file) => typeof file === "string" && file.trim()),
+    ),
   ];
   for (const relativeFile of uniqueFiles) {
     const file = path.resolve(cwd, relativeFile);
     if (!isPathInsideOrEqual(cwd, file) || !fs.existsSync(file)) {
-      warnings.push({ file: relativeFile, reason: "file_missing_or_outside_cwd" });
+      warnings.push({
+        file: relativeFile,
+        reason: "file_missing_or_outside_cwd",
+      });
       continue;
     }
     let content = "";
     try {
       content = fs.readFileSync(file, "utf-8");
     } catch (err) {
-      failures.push({ file: relativeFile, reason: "read_failed", message: err.message });
+      failures.push({
+        file: relativeFile,
+        reason: "read_failed",
+        message: err.message,
+      });
       continue;
     }
     const markerMatch = findLeftoverImpeccableMarker(content);
@@ -179,7 +219,10 @@ export function runCopyEditPostApplyChecks({ cwd = process.cwd(), files = [] } =
     if (syntaxCheck?.failure) failures.push(syntaxCheck.failure);
     if (syntaxCheck?.warning) warnings.push(syntaxCheck.warning);
     if (/\.(mjs|cjs|js)$/.test(relativeFile)) {
-      const check = spawnSync(process.execPath, ["--check", file], { cwd, encoding: "utf-8" });
+      const check = spawnSync(process.execPath, ["--check", file], {
+        cwd,
+        encoding: "utf-8",
+      });
       if (check.status !== 0) {
         failures.push({
           file: relativeFile,
@@ -201,7 +244,9 @@ function checkFrameworkSourceSyntax(relativeFile, content) {
   try {
     parser = require("@babel/parser");
   } catch {
-    return { warning: { file: relativeFile, reason: "syntax_parser_unavailable" } };
+    return {
+      warning: { file: relativeFile, reason: "syntax_parser_unavailable" },
+    };
   }
   const plugins = ["jsx"];
   if (/\.(ts|tsx)$/.test(relativeFile)) plugins.push("typescript");
@@ -229,7 +274,8 @@ function findLeftoverImpeccableMarker(content) {
   );
   if (commentMarker) return commentMarker[0];
 
-  const attrPattern = /\bdata-impeccable-(?:variants?|original-text|editable|text-wrap)\s*=/g;
+  const attrPattern =
+    /\bdata-impeccable-(?:variants?|original-text|editable|text-wrap)\s*=/g;
   for (const line of content.split(/\r?\n/)) {
     attrPattern.lastIndex = 0;
     let match;
@@ -285,7 +331,10 @@ function runManualEditValidationScript(cwd) {
       failure: {
         file: "package.json",
         reason: "manual_edit_validation_failed",
-        message: [validation.stderr, validation.stdout].filter(Boolean).join("\n").trim(),
+        message: [validation.stderr, validation.stdout]
+          .filter(Boolean)
+          .join("\n")
+          .trim(),
       },
     };
   }
@@ -336,7 +385,9 @@ function compactBatchOp(op) {
       ? op.nearbyEditableTexts.slice(0, 8)
       : [],
     container: compactContextForBatch(op.container),
-    contextHints: Array.isArray(op.contextHints) ? op.contextHints.slice(0, 12) : [],
+    contextHints: Array.isArray(op.contextHints)
+      ? op.contextHints.slice(0, 12)
+      : [],
   };
 }
 
@@ -368,7 +419,11 @@ function stripLiveRuntimeHtml(html) {
 
 function normalizeBatchResult(result) {
   const status =
-    result.status === "partial" ? "partial" : result.status === "error" ? "error" : "done";
+    result.status === "partial"
+      ? "partial"
+      : result.status === "error"
+        ? "error"
+        : "done";
   const appliedEntryIds = Array.isArray(result.appliedEntryIds)
     ? result.appliedEntryIds.filter((id) => typeof id === "string")
     : [];
@@ -388,7 +443,9 @@ function normalizeBatchResult(result) {
   const warnings = Array.isArray(result.warnings)
     ? result.warnings
         .filter(Boolean)
-        .map((warning) => (typeof warning === "string" ? { message: warning } : warning))
+        .map((warning) =>
+          typeof warning === "string" ? { message: warning } : warning,
+        )
         .filter((warning) => warning && typeof warning === "object")
     : [];
   return {
@@ -412,7 +469,9 @@ function mockBatchResult(batch, env, cwd = process.cwd()) {
   }
   return {
     status: "done",
-    appliedEntryIds: (batch?.entries || []).map((entry) => entry.id).filter(Boolean),
+    appliedEntryIds: (batch?.entries || [])
+      .map((entry) => entry.id)
+      .filter(Boolean),
     failed: [],
     files: [],
     notes: ["mock copy-edit batch result"],
@@ -427,7 +486,8 @@ function applyMockWrites(env, cwd) {
     throw new Error("Invalid IMPECCABLE_LIVE_COPY_AGENT_MOCK_WRITES JSON");
   }
   for (const [relativeFile, content] of Object.entries(writes)) {
-    if (typeof relativeFile !== "string" || typeof content !== "string") continue;
+    if (typeof relativeFile !== "string" || typeof content !== "string")
+      continue;
     const absolute = path.resolve(cwd, relativeFile);
     if (!isPathInsideOrEqual(cwd, absolute)) continue;
     fs.mkdirSync(path.dirname(absolute), { recursive: true });
@@ -456,7 +516,11 @@ export function parseCopyEditAgentResult(text) {
   const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
   if (!jsonMatch) return null;
   const parsed = tryParseJson(jsonMatch[0]);
-  if (parsed?.status === "done" || parsed?.status === "partial" || parsed?.status === "error")
+  if (
+    parsed?.status === "done" ||
+    parsed?.status === "partial" ||
+    parsed?.status === "error"
+  )
     return parsed;
   return null;
 }
@@ -467,7 +531,8 @@ export function chooseCopyEditAgent({
   chatAvailable = () => false,
 } = {}) {
   const mode = (env.IMPECCABLE_LIVE_COPY_AGENT || "auto").trim().toLowerCase();
-  if (mode === "0" || mode === "false" || mode === "off" || mode === "none") return null;
+  if (mode === "0" || mode === "false" || mode === "off" || mode === "none")
+    return null;
   if (mode === "mock") return "mock";
   if (mode === "chat") return chatAvailable() ? "chat" : null;
   if (mode === "codex") return commandExists("codex") ? "codex" : null;
@@ -479,7 +544,10 @@ export function chooseCopyEditAgent({
   return null;
 }
 
-function runCodex(prompt, { cwd, env, resultPath, logPath, timeoutMs = DEFAULT_TIMEOUT_MS }) {
+function runCodex(
+  prompt,
+  { cwd, env, resultPath, logPath, timeoutMs = DEFAULT_TIMEOUT_MS },
+) {
   const args = [
     "exec",
     "--cd",
@@ -495,11 +563,25 @@ function runCodex(prompt, { cwd, env, resultPath, logPath, timeoutMs = DEFAULT_T
     args.push("--model", env.IMPECCABLE_LIVE_COPY_AGENT_MODEL);
   }
   args.push("-");
-  return runAgentProcess("codex", args, prompt, { cwd, env, logPath, timeoutMs });
+  return runAgentProcess("codex", args, prompt, {
+    cwd,
+    env,
+    logPath,
+    timeoutMs,
+  });
 }
 
-function runClaude(prompt, { cwd, env, resultPath, logPath, timeoutMs = DEFAULT_TIMEOUT_MS }) {
-  const args = ["--print", "--permission-mode", "bypassPermissions", "--output-format", "json"];
+function runClaude(
+  prompt,
+  { cwd, env, resultPath, logPath, timeoutMs = DEFAULT_TIMEOUT_MS },
+) {
+  const args = [
+    "--print",
+    "--permission-mode",
+    "bypassPermissions",
+    "--output-format",
+    "json",
+  ];
   if (env.IMPECCABLE_LIVE_COPY_AGENT_MODEL) {
     args.push("--model", env.IMPECCABLE_LIVE_COPY_AGENT_MODEL);
   }
@@ -517,7 +599,12 @@ function runClaude(prompt, { cwd, env, resultPath, logPath, timeoutMs = DEFAULT_
   });
 }
 
-function runAgentProcess(command, args, stdin, { cwd, env, logPath, timeoutMs, mirrorOutputPath }) {
+function runAgentProcess(
+  command,
+  args,
+  stdin,
+  { cwd, env, logPath, timeoutMs, mirrorOutputPath },
+) {
   return new Promise((resolve, reject) => {
     const log = fs.createWriteStream(logPath, { flags: "a" });
     const child = spawn(command, args, {
@@ -529,7 +616,9 @@ function runAgentProcess(command, args, stdin, { cwd, env, logPath, timeoutMs, m
     let settled = false;
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
-      rejectOnce(new Error(`AI copy-edit worker timed out after ${timeoutMs}ms`));
+      rejectOnce(
+        new Error(`AI copy-edit worker timed out after ${timeoutMs}ms`),
+      );
     }, timeoutMs);
 
     const rejectOnce = (err) => {
@@ -566,7 +655,9 @@ function runAgentProcess(command, args, stdin, { cwd, env, logPath, timeoutMs, m
         resolveOnce();
       } else {
         const hint = extractRunnerErrorMessage(output, command);
-        rejectOnce(new Error(hint || `${command} exited with ${signal || code}`));
+        rejectOnce(
+          new Error(hint || `${command} exited with ${signal || code}`),
+        );
       }
     });
     if (stdin) child.stdin.end(stdin);
@@ -576,7 +667,10 @@ function runAgentProcess(command, args, stdin, { cwd, env, logPath, timeoutMs, m
 
 function isPathInsideOrEqual(cwd, file) {
   const relative = path.relative(path.resolve(cwd), path.resolve(file));
-  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+  return (
+    relative === "" ||
+    (!relative.startsWith("..") && !path.isAbsolute(relative))
+  );
 }
 
 function tryParseJson(text) {
@@ -644,7 +738,9 @@ export function describeNoProviderError({
       "  • Chat: no Impeccable live session is currently polling on this server. Start Impeccable live in your chat to route Apply through the chat agent.",
     );
   }
-  lines.push("Fix one of the above, or set IMPECCABLE_LIVE_COPY_AGENT=mock for tests.");
+  lines.push(
+    "Fix one of the above, or set IMPECCABLE_LIVE_COPY_AGENT=mock for tests.",
+  );
   return lines.join("\n");
 }
 
@@ -671,7 +767,11 @@ export function extractRunnerErrorMessage(output, command) {
   }
   for (const parsed of candidates) {
     if (!parsed || typeof parsed !== "object") continue;
-    if (parsed.is_error === true && typeof parsed.result === "string" && parsed.result.trim()) {
+    if (
+      parsed.is_error === true &&
+      typeof parsed.result === "string" &&
+      parsed.result.trim()
+    ) {
       return `${command} CLI: ${parsed.result.trim()}`;
     }
     if (typeof parsed.message === "string" && parsed.message.trim()) {
@@ -720,11 +820,15 @@ function computeCommandAuthed(command) {
   if (command !== "claude") return false;
   let result;
   try {
-    result = spawnSync("claude", ["--print", "--output-format", "json", "ping"], {
-      encoding: "utf-8",
-      timeout: 10000,
-      env: process.env,
-    });
+    result = spawnSync(
+      "claude",
+      ["--print", "--output-format", "json", "ping"],
+      {
+        encoding: "utf-8",
+        timeout: 10000,
+        env: process.env,
+      },
+    );
   } catch {
     return false;
   }
@@ -735,7 +839,9 @@ function computeCommandAuthed(command) {
     return false;
   }
   if (!stdout) return true;
-  const parsed = tryParseJson(stdout) || tryParseJson(stdout.match(/\{[\s\S]*\}\s*$/)?.[0] || "");
+  const parsed =
+    tryParseJson(stdout) ||
+    tryParseJson(stdout.match(/\{[\s\S]*\}\s*$/)?.[0] || "");
   if (parsed && parsed.is_error === true) return false;
   return true;
 }

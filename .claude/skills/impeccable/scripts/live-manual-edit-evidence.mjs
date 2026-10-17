@@ -57,7 +57,10 @@ const SKIP_DIRS = new Set([
   "coverage",
 ]);
 
-export function buildManualEditEvidence({ cwd = process.cwd(), pageUrl = null } = {}) {
+export function buildManualEditEvidence({
+  cwd = process.cwd(),
+  pageUrl = null,
+} = {}) {
   const buffer = readBuffer(cwd);
   const entries = pageUrl
     ? buffer.entries.filter((entry) => entry.pageUrl === pageUrl)
@@ -76,7 +79,9 @@ export function buildManualEditEvidence({ cwd = process.cwd(), pageUrl = null } 
 
   const searchFiles = collectSearchFiles(cwd);
   const ops = flattenOps(entries);
-  const candidates = ops.map((op) => buildCandidatesForOp(op, cwd, searchFiles));
+  const candidates = ops.map((op) =>
+    buildCandidatesForOp(op, cwd, searchFiles),
+  );
   return {
     version: EVIDENCE_VERSION,
     pageUrl: pageUrl || null,
@@ -95,7 +100,8 @@ export function buildManualEditEvidence({ cwd = process.cwd(), pageUrl = null } 
 
 function countOps(entries) {
   let count = 0;
-  for (const entry of entries) count += Array.isArray(entry.ops) ? entry.ops.length : 0;
+  for (const entry of entries)
+    count += Array.isArray(entry.ops) ? entry.ops.length : 0;
   return count;
 }
 
@@ -117,7 +123,9 @@ function flattenOps(entries) {
         deleted: op.deleted === true,
         sourceHint: op.sourceHint || null,
         leaf: op.leaf || null,
-        nearbyEditableTexts: Array.isArray(op.nearbyEditableTexts) ? op.nearbyEditableTexts : [],
+        nearbyEditableTexts: Array.isArray(op.nearbyEditableTexts)
+          ? op.nearbyEditableTexts
+          : [],
         container: op.container || null,
         contextHints: contextHintsByRef.get(op.ref) || [],
       });
@@ -133,17 +141,28 @@ function buildContextHintsByRef(entry) {
     const add = (value) => {
       const text = normalizeText(decodeBasicHtml(String(value || "")));
       if (text.length < 3 || text.length > 160) return;
-      if (text === normalizeText(op.originalText) || text === normalizeText(op.newText)) return;
+      if (
+        text === normalizeText(op.originalText) ||
+        text === normalizeText(op.newText)
+      )
+        return;
       hints.add(text);
     };
 
     for (const item of op.nearbyEditableTexts || []) {
       add(typeof item === "string" ? item : item?.text);
     }
-    const outer = typeof entry.element?.outerHTML === "string" ? entry.element.outerHTML : "";
-    for (const match of outer.matchAll(/data-impeccable-original-text="([^"]*)"/g)) add(match[1]);
+    const outer =
+      typeof entry.element?.outerHTML === "string"
+        ? entry.element.outerHTML
+        : "";
+    for (const match of outer.matchAll(
+      /data-impeccable-original-text="([^"]*)"/g,
+    ))
+      add(match[1]);
     if (typeof entry.element?.textContent === "string") {
-      for (const chunk of entry.element.textContent.split(/\s{2,}|\n|\t/)) add(chunk);
+      for (const chunk of entry.element.textContent.split(/\s{2,}|\n|\t/))
+        add(chunk);
     }
     map.set(op.ref, [...hints].slice(0, 16));
   }
@@ -159,12 +178,18 @@ function buildCandidatesForOp(op, cwd, searchFiles) {
     originalText,
     sourceHint: analyzeSourceHint(op, cwd),
     textMatches: originalText
-      ? findLiteralMatches(searchFiles, originalText, { max: literalMatchLimit(originalText) })
+      ? findLiteralMatches(searchFiles, originalText, {
+          max: literalMatchLimit(originalText),
+        })
       : [],
     objectKeyMatches: originalText
-      ? findObjectKeyMatches(searchFiles, originalText, { max: OBJECT_KEY_MATCH_LIMIT })
+      ? findObjectKeyMatches(searchFiles, originalText, {
+          max: OBJECT_KEY_MATCH_LIMIT,
+        })
       : [],
-    locatorMatches: findLocatorMatches(searchFiles, op, { max: LOCATOR_MATCH_LIMIT }),
+    locatorMatches: findLocatorMatches(searchFiles, op, {
+      max: LOCATOR_MATCH_LIMIT,
+    }),
     contextTextMatches: findContextMatches(searchFiles, contextNeedles, {
       maxPerHint: CONTEXT_MATCH_PER_HINT,
       max: CONTEXT_MATCH_LIMIT,
@@ -173,7 +198,9 @@ function buildCandidatesForOp(op, cwd, searchFiles) {
 }
 
 function literalMatchLimit(text) {
-  return isWeakSourceNeedle(text) ? WEAK_LITERAL_MATCH_LIMIT : STRONG_LITERAL_MATCH_LIMIT;
+  return isWeakSourceNeedle(text)
+    ? WEAK_LITERAL_MATCH_LIMIT
+    : STRONG_LITERAL_MATCH_LIMIT;
 }
 
 function isWeakSourceNeedle(text) {
@@ -218,7 +245,9 @@ function analyzeSourceHint(op, cwd) {
 function normalizeSourceHint(hint) {
   if (!hint || typeof hint !== "object") return {};
   let line = Number.isFinite(Number(hint.line)) ? Number(hint.line) : null;
-  let column = Number.isFinite(Number(hint.column)) ? Number(hint.column) : null;
+  let column = Number.isFinite(Number(hint.column))
+    ? Number(hint.column)
+    : null;
   if ((!line || !column) && typeof hint.loc === "string") {
     const match = hint.loc.match(/^(\d+)(?::(\d+))?/);
     if (match) {
@@ -269,7 +298,11 @@ function scanDir(dir, cwd, seenDirs, seenFiles, out, depth) {
       scanDir(fullPath, cwd, seenDirs, seenFiles, out, depth + 1);
       continue;
     }
-    if (!entry.isFile() || !TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
+    if (
+      !entry.isFile() ||
+      !TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase())
+    )
+      continue;
     maybeAddSearchFile(fullPath, cwd, seenFiles, out);
   }
 }
@@ -282,7 +315,11 @@ function scanRootFiles(cwd, seenFiles, out) {
     return;
   }
   for (const entry of entries) {
-    if (!entry.isFile() || !TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
+    if (
+      !entry.isFile() ||
+      !TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase())
+    )
+      continue;
     maybeAddSearchFile(path.join(cwd, entry.name), cwd, seenFiles, out);
   }
 }
@@ -303,7 +340,12 @@ function maybeAddSearchFile(file, cwd, seenFiles, out) {
   } catch {
     return;
   }
-  out.push({ file, relativeFile: path.relative(cwd, file), content, lines: content.split("\n") });
+  out.push({
+    file,
+    relativeFile: path.relative(cwd, file),
+    content,
+    lines: content.split("\n"),
+  });
 }
 
 function findLiteralMatches(searchFiles, needle, { max }) {
@@ -311,7 +353,10 @@ function findLiteralMatches(searchFiles, needle, { max }) {
 }
 
 function findObjectKeyMatches(searchFiles, text, { max }) {
-  const re = new RegExp("([\"\\'`])" + escapeRegExp(text) + "\\1(?=\\s*:)", "g");
+  const re = new RegExp(
+    "([\"\\'`])" + escapeRegExp(text) + "\\1(?=\\s*:)",
+    "g",
+  );
   const out = [];
   for (const file of searchFiles) {
     for (const match of file.content.matchAll(re)) {
@@ -348,7 +393,10 @@ function findContextMatches(searchFiles, hints, { maxPerHint, max }) {
   const out = [];
   const seen = new Set();
   for (const hint of hints || []) {
-    for (const match of findMatches(searchFiles, hint, { kind: "context", max: maxPerHint })) {
+    for (const match of findMatches(searchFiles, hint, {
+      kind: "context",
+      max: maxPerHint,
+    })) {
       const key = match.file + ":" + match.line + ":" + hint;
       if (seen.has(key)) continue;
       seen.add(key);

@@ -85,11 +85,16 @@ Output (JSON):
 
   // Find the file containing this session's markers
   const found = findSessionFile(id, process.cwd());
-  const svelteComponentManifest = found ? null : findSvelteComponentManifest(id, process.cwd());
+  const svelteComponentManifest = found
+    ? null
+    : findSvelteComponentManifest(id, process.cwd());
 
   if (!found && !svelteComponentManifest) {
     console.log(
-      JSON.stringify({ handled: false, error: "Session markers not found for id: " + id }),
+      JSON.stringify({
+        handled: false,
+        error: "Session markers not found for id: " + id,
+      }),
     );
     process.exit(0);
   }
@@ -133,14 +138,18 @@ Output (JSON):
         result.file +
         '. See reference/live.md "Required after accept".';
     }
-    console.log(JSON.stringify({ handled: result.handled !== false, ...result }));
+    console.log(
+      JSON.stringify({ handled: result.handled !== false, ...result }),
+    );
     return;
   }
 
   const { file: targetFile, content, lines } = found;
   const relFile = path.relative(process.cwd(), targetFile);
   const previewBlock = findMarkerBlock(id, lines);
-  const sourceShadowPreview = previewBlock ? readSourceShadowPreviewMeta(content, id) : null;
+  const sourceShadowPreview = previewBlock
+    ? readSourceShadowPreviewMeta(content, id)
+    : null;
 
   if (sourceShadowPreview) {
     console.log(
@@ -167,7 +176,14 @@ Output (JSON):
 
   if (isDiscard) {
     const result = handleDiscard(id, lines, targetFile);
-    console.log(JSON.stringify({ handled: true, file: relFile, carbonize: false, ...result }));
+    console.log(
+      JSON.stringify({
+        handled: true,
+        file: relFile,
+        carbonize: false,
+        ...result,
+      }),
+    );
   } else {
     const result = handleAccept(id, variantNum, lines, targetFile, paramValues);
     const acceptedOriginalText = result.acceptedOriginalText || "";
@@ -186,7 +202,11 @@ Output (JSON):
     // buffer-aware), so only those scoped ops are redundant.
     if (result.handled !== false) {
       try {
-        scrubManualEditsAgainstOriginalBlock(acceptedOriginalText, process.cwd(), pageUrl);
+        scrubManualEditsAgainstOriginalBlock(
+          acceptedOriginalText,
+          process.cwd(),
+          pageUrl,
+        );
       } catch {
         // Non-fatal; the buffer stays as-is and the user can discard later.
       }
@@ -231,13 +251,17 @@ function manualEditOpAppearsInBlock(op, originalBlock) {
   const candidates = [op?.newText, op?.originalText].filter(
     (text) => typeof text === "string" && text.length > 0,
   );
-  return candidates.some((text) => originalBlockHasExactManualText(originalBlock, text));
+  return candidates.some((text) =>
+    originalBlockHasExactManualText(originalBlock, text),
+  );
 }
 
 function originalBlockHasExactManualText(originalBlock, text) {
   const needle = normalizeManualEditText(text);
   if (!needle) return false;
-  return manualEditTextSegments(originalBlock).some((segment) => segment === needle);
+  return manualEditTextSegments(originalBlock).some(
+    (segment) => segment === needle,
+  );
 }
 
 function manualEditTextSegments(source) {
@@ -323,7 +347,9 @@ function buildCarbonizeReplacement({
     return lines;
   }
 
-  const variantStyleAttr = isJsx ? "style={{ display: 'contents' }}" : 'style="display: contents"';
+  const variantStyleAttr = isJsx
+    ? "style={{ display: 'contents' }}"
+    : 'style="display: contents"';
 
   const pushCarbonizeBody = (bodyIndent) => {
     const bodyRestored = reindentContent(restored, indent, bodyIndent + "  ");
@@ -335,7 +361,13 @@ function buildCarbonizeReplacement({
         " " +
         commentSyntax.close,
     );
-    lines.push(bodyIndent + '<style data-impeccable-css="' + id + '">' + (isJsx ? "{`" : ""));
+    lines.push(
+      bodyIndent +
+        '<style data-impeccable-css="' +
+        id +
+        '">' +
+        (isJsx ? "{`" : ""),
+    );
     for (const cssLine of cssContent) {
       lines.push(bodyIndent + cssLine.trimStart());
     }
@@ -361,7 +393,12 @@ function buildCarbonizeReplacement({
         commentSyntax.close,
     );
     lines.push(
-      bodyIndent + '<div data-impeccable-variant="' + variantNum + '" ' + variantStyleAttr + ">",
+      bodyIndent +
+        '<div data-impeccable-variant="' +
+        variantNum +
+        '" ' +
+        variantStyleAttr +
+        ">",
     );
     lines.push(...bodyRestored);
     lines.push(bodyIndent + "</div>");
@@ -369,7 +406,14 @@ function buildCarbonizeReplacement({
 
   if (isJsx) {
     const wrapperStyle = 'style={{ display: "contents" }}';
-    lines.push(indent + '<div data-impeccable-carbonize="' + id + '" ' + wrapperStyle + ">");
+    lines.push(
+      indent +
+        '<div data-impeccable-carbonize="' +
+        id +
+        '" ' +
+        wrapperStyle +
+        ">",
+    );
     pushCarbonizeBody(indent + "  ");
     lines.push(indent + "</div>");
   } else {
@@ -382,7 +426,8 @@ function buildCarbonizeReplacement({
 function reindentContent(contentLines, fromIndent, toIndent) {
   return contentLines.map((line) => {
     if (line.trim() === "") return "";
-    if (line.startsWith(fromIndent)) return toIndent + line.slice(fromIndent.length);
+    if (line.startsWith(fromIndent))
+      return toIndent + line.slice(fromIndent.length);
     return toIndent + line.trimStart();
   });
 }
@@ -402,7 +447,8 @@ function handleAccept(id, variantNum, lines, targetFile, paramValues) {
 
   // Extract the chosen variant's inner content
   const variantContent = extractVariant(lines, block, variantNum);
-  if (!variantContent) return { handled: false, error: "Variant " + variantNum + " not found" };
+  if (!variantContent)
+    return { handled: false, error: "Variant " + variantNum + " not found" };
   const originalContent = extractOriginal(lines, block);
 
   // Extract CSS block if present
@@ -434,20 +480,32 @@ function handleAccept(id, variantNum, lines, targetFile, paramValues) {
   ];
   fs.writeFileSync(targetFile, newLines.join("\n"), "utf-8");
 
-  return { carbonize: needsCarbonize, acceptedOriginalText: originalContent.join("\n") };
+  return {
+    carbonize: needsCarbonize,
+    acceptedOriginalText: originalContent.join("\n"),
+  };
 }
 
 function readSourceShadowPreviewMeta(content, id) {
   const escaped = escapeRegExp(id);
-  const wrapperRe = new RegExp("<[^>]+data-impeccable-variants=([\"'])" + escaped + "\\1[^>]*>");
+  const wrapperRe = new RegExp(
+    "<[^>]+data-impeccable-variants=([\"'])" + escaped + "\\1[^>]*>",
+  );
   const match = String(content || "").match(wrapperRe);
   if (!match) return null;
   const tag = match[0];
-  if (readHtmlAttr(tag, "data-impeccable-preview") !== "source-shadow") return null;
+  if (readHtmlAttr(tag, "data-impeccable-preview") !== "source-shadow")
+    return null;
   const sourceFile = readHtmlAttr(tag, "data-impeccable-source-file");
-  const sourceStartLine = Number(readHtmlAttr(tag, "data-impeccable-source-start"));
+  const sourceStartLine = Number(
+    readHtmlAttr(tag, "data-impeccable-source-start"),
+  );
   const sourceEndLine = Number(readHtmlAttr(tag, "data-impeccable-source-end"));
-  if (!sourceFile || !Number.isFinite(sourceStartLine) || !Number.isFinite(sourceEndLine))
+  if (
+    !sourceFile ||
+    !Number.isFinite(sourceStartLine) ||
+    !Number.isFinite(sourceEndLine)
+  )
     return null;
   return { sourceFile, sourceStartLine, sourceEndLine };
 }
@@ -554,7 +612,8 @@ function expandReplaceRange(block, lines, isJsx) {
     else if (!isSelfClose) depth++;
     if (depth <= 0) {
       // m.index is offset within `joined`; convert back to a file line.
-      const linesBefore = joined.slice(0, m.index + m[0].length).split("\n").length - 1;
+      const linesBefore =
+        joined.slice(0, m.index + m[0].length).split("\n").length - 1;
       const candidateEnd = start + linesBefore;
       if (candidateEnd >= end) {
         end = candidateEnd;
@@ -571,9 +630,9 @@ function escapeRegExp(value) {
 }
 
 function isVariantEndMarkerLine(line, id) {
-  return new RegExp("impeccable-variants-end\\s+" + escapeRegExp(id) + "(?:\\s|--|\\*/|$)").test(
-    line,
-  );
+  return new RegExp(
+    "impeccable-variants-end\\s+" + escapeRegExp(id) + "(?:\\s|--|\\*/|$)",
+  ).test(line);
 }
 
 function hasVariantWrapperAttr(line, id) {
@@ -633,7 +692,9 @@ function stripStyleAndJoin(lines, block) {
  * Returns the inner string (may be empty), or null if not found.
  */
 function extractInnerByAttr(text, attrMatch) {
-  const openerRe = new RegExp("<([A-Za-z][A-Za-z0-9]*)\\b[^>]*" + attrMatch + "[^>]*>");
+  const openerRe = new RegExp(
+    "<([A-Za-z][A-Za-z0-9]*)\\b[^>]*" + attrMatch + "[^>]*>",
+  );
   const openMatch = text.match(openerRe);
   if (!openMatch) return null;
 
@@ -677,12 +738,16 @@ function extractOriginal(lines, block) {
  */
 function extractVariant(lines, block, variantNum) {
   const text = stripStyleAndJoin(lines, block);
-  const inner = extractInnerByAttr(text, 'data-impeccable-variant="' + variantNum + '"');
+  const inner = extractInnerByAttr(
+    text,
+    'data-impeccable-variant="' + variantNum + '"',
+  );
   if (inner === null) return null;
   const result = inner.split("\n");
   // Collapse a lone empty leading/trailing line (common after string splice).
   while (result.length > 1 && result[0].trim() === "") result.shift();
-  while (result.length > 1 && result[result.length - 1].trim() === "") result.pop();
+  while (result.length > 1 && result[result.length - 1].trim() === "")
+    result.pop();
   return result.length > 0 ? result : null;
 }
 
@@ -819,7 +884,16 @@ function detectCommentSyntax(filePath) {
 
 function findSessionFile(id, cwd) {
   const marker = "impeccable-variants-start " + id;
-  const searchDirs = ["src", "app", "pages", "components", "public", "views", "templates", "."];
+  const searchDirs = [
+    "src",
+    "app",
+    "pages",
+    "components",
+    "public",
+    "views",
+    "templates",
+    ".",
+  ];
   const seen = new Set();
 
   for (const dir of searchDirs) {
@@ -866,8 +940,14 @@ function searchDir(dir, query, seen, depth) {
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    if (["node_modules", ".git", "dist", "build"].includes(entry.name)) continue;
-    const result = searchDir(path.join(dir, entry.name), query, seen, depth + 1);
+    if (["node_modules", ".git", "dist", "build"].includes(entry.name))
+      continue;
+    const result = searchDir(
+      path.join(dir, entry.name),
+      query,
+      seen,
+      depth + 1,
+    );
     if (result) return result;
   }
 
@@ -885,7 +965,10 @@ function argVal(args, flag) {
 
 // Auto-execute when run directly
 const _running = process.argv[1];
-if (_running?.endsWith("live-accept.mjs") || _running?.endsWith("live-accept.mjs/")) {
+if (
+  _running?.endsWith("live-accept.mjs") ||
+  _running?.endsWith("live-accept.mjs/")
+) {
   acceptCli();
 }
 
