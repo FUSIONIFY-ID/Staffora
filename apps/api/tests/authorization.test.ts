@@ -353,12 +353,11 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
   });
 
   describe("5. Own Employee Profile Access Policy", () => {
-    it("allows EMPLOYEE to reach their own profile endpoint (HTTP 501 Not Implemented)", async () => {
+    it("allows EMPLOYEE to reach their own profile endpoint", async () => {
       const res = await request(app)
         .get(`/api/v1/employees/${employeeOwnId}`)
         .set("Cookie", employeeCookie);
-      expect(res.status).toBe(501);
-      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+      expect(res.status).toBe(200);
     });
 
     it("disallows EMPLOYEE from viewing another employee profile via non-disclosure (HTTP 404)", async () => {
@@ -378,24 +377,21 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       expect(res.body.code).toBe("NOT_FOUND");
     });
 
-    it("allows ADMIN, RM, and PM to reach any employee profile endpoint (HTTP 501 Not Implemented)", async () => {
+    it("allows ADMIN, RM, and PM to reach any employee profile endpoint", async () => {
       const adminRes = await request(app)
         .get(`/api/v1/employees/${otherEmployeeId}`)
         .set("Cookie", adminCookie);
-      expect(adminRes.status).toBe(501);
-      expect(adminRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(adminRes.status).toBe(200);
 
       const rmRes = await request(app)
         .get(`/api/v1/employees/${otherEmployeeId}`)
         .set("Cookie", rmCookie);
-      expect(rmRes.status).toBe(501);
-      expect(rmRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(rmRes.status).toBe(200);
 
       const pmRes = await request(app)
         .get(`/api/v1/employees/${otherEmployeeId}`)
         .set("Cookie", pmCookie);
-      expect(pmRes.status).toBe(501);
-      expect(pmRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(pmRes.status).toBe(200);
     });
   });
 
@@ -1122,7 +1118,7 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       ).not.toThrow();
       expect(() =>
         workforcePolicy.assertCanViewEmployee(userEmp, "emp-1"),
-      ).toThrowError("Employee not found");
+      ).toThrowError("Employee profile was not found.");
 
       // staffingPolicy module helpers
       expect(staffingPolicy.canManage(userPM, "emp-1")).toBe(true);
@@ -1218,50 +1214,44 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
   });
 
   describe("8. Workforce RBAC & Controller Protection", () => {
-    it("allows ADMIN to reach list and create departments (HTTP 501)", async () => {
+    it("allows ADMIN to reach list and create departments", async () => {
       const listRes = await request(app)
         .get("/api/v1/departments")
         .set("Cookie", adminCookie);
-      expect(listRes.status).toBe(501);
-      expect(listRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(listRes.status).toBe(200);
 
       const createRes = await request(app)
         .post("/api/v1/departments")
         .set("Cookie", adminCookie)
         .set("X-CSRF-Token", adminCsrf)
-        .send({ code: `D-${Date.now()}`, name: `Dept ${Date.now()}` });
-      expect(createRes.status).toBe(501);
-      expect(createRes.body.code).toBe("NOT_IMPLEMENTED");
+        .send({ name: `Dept ${Date.now()}` });
+      expect(createRes.status).toBe(201);
     });
 
-    it("allows ADMIN to reach list and create job roles (HTTP 501)", async () => {
+    it("allows ADMIN to reach list and create job roles", async () => {
       const listRes = await request(app)
         .get("/api/v1/job-roles")
         .set("Cookie", adminCookie);
-      expect(listRes.status).toBe(501);
-      expect(listRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(listRes.status).toBe(200);
 
       const createRes = await request(app)
         .post("/api/v1/job-roles")
         .set("Cookie", adminCookie)
         .set("X-CSRF-Token", adminCsrf)
-        .send({ departmentId: deptId, name: `Role-${Date.now()}` });
-      expect(createRes.status).toBe(501);
-      expect(createRes.body.code).toBe("NOT_IMPLEMENTED");
+        .send({ name: `Role ${Date.now()}` });
+      expect(createRes.status).toBe(201);
     });
 
-    it("allows ADMIN and RM to list employees (HTTP 501), but rejects EMPLOYEE (RBAC 403)", async () => {
+    it("allows ADMIN and RM to list employees, but rejects EMPLOYEE (RBAC 403)", async () => {
       const adminRes = await request(app)
         .get("/api/v1/employees")
         .set("Cookie", adminCookie);
-      expect(adminRes.status).toBe(501);
-      expect(adminRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(adminRes.status).toBe(200);
 
       const rmRes = await request(app)
         .get("/api/v1/employees")
         .set("Cookie", rmCookie);
-      expect(rmRes.status).toBe(501);
-      expect(rmRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(rmRes.status).toBe(200);
 
       const empRes = await request(app)
         .get("/api/v1/employees")
@@ -1270,14 +1260,13 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       expect(empRes.body.code).toBe("FORBIDDEN");
     });
 
-    it("allows ADMIN to reach update employee (HTTP 501), but rejects EMPLOYEE (RBAC 403)", async () => {
+    it("allows ADMIN to reach update employee, but rejects EMPLOYEE (RBAC 403)", async () => {
       const adminRes = await request(app)
         .patch(`/api/v1/employees/${otherEmployeeId}`)
         .set("Cookie", adminCookie)
         .set("X-CSRF-Token", adminCsrf)
         .send({ fullName: "Updated Full Name" });
-      expect(adminRes.status).toBe(501);
-      expect(adminRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(adminRes.status).toBe(200);
 
       const empRes = await request(app)
         .patch(`/api/v1/employees/${otherEmployeeId}`)
@@ -1287,7 +1276,7 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       expect(empRes.status).toBe(403);
     });
 
-    it("allows ADMIN to reach create employee with valid CSRF (HTTP 501)", async () => {
+    it("allows ADMIN to reach create employee with valid CSRF", async () => {
       const createRes = await request(app)
         .post("/api/v1/employees")
         .set("Cookie", adminCookie)
@@ -1298,9 +1287,9 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
           workEmail: `test.${Date.now()}@staffora.internal`,
           departmentId: deptId,
           jobRoleId: rolePMId,
+          status: "ACTIVE",
         });
-      expect(createRes.status).toBe(501);
-      expect(createRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(createRes.status).toBe(201);
     });
 
     it("covers workforce controller catch blocks and optional req.user branch", async () => {
@@ -1308,6 +1297,7 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       let errorPassedToNext: unknown = null;
       const mockReqNoUser = {
         params: { id: otherEmployeeId },
+        query: {},
       } as unknown as Request;
       const mockRes = {
         status: () => mockRes,

@@ -1,19 +1,17 @@
 import { Router } from "express";
 import { workforceController } from "./workforce.controller.js";
+import { requireAuth, requireRole } from "../../common/auth/rbac.js";
 import {
   validateBody,
-  validateQuery,
   validateParams,
-  uuidParamSchema,
 } from "../../common/validation/validate.js";
 import {
   createDepartmentSchema,
-  createJobRoleSchema,
   createEmployeeSchema,
+  createJobRoleSchema,
+  employeeIdParamsSchema,
   updateEmployeeSchema,
-  queryEmployeesSchema,
 } from "./workforce.schema.js";
-import { requireAuth, requireRole } from "../../common/auth/rbac.js";
 
 // Departments Router
 export const departmentsRouter = Router();
@@ -43,7 +41,6 @@ employeesRouter.use(requireAuth());
 employeesRouter.get(
   "/",
   requireRole("ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"),
-  validateQuery(queryEmployeesSchema),
   workforceController.getEmployees,
 );
 employeesRouter.post(
@@ -55,13 +52,13 @@ employeesRouter.post(
 employeesRouter.get(
   "/:id",
   requireRole("ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER", "EMPLOYEE"),
-  validateParams(uuidParamSchema),
+  validateParams(employeeIdParamsSchema),
   workforceController.getEmployeeDetail,
 );
 employeesRouter.patch(
   "/:id",
   requireRole("ADMIN", "RESOURCE_MANAGER"),
-  validateParams(uuidParamSchema),
+  validateParams(employeeIdParamsSchema),
   validateBody(updateEmployeeSchema),
   workforceController.updateEmployee,
 );

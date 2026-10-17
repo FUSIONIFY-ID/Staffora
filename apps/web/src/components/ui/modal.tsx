@@ -39,17 +39,17 @@ export const Modal: React.FC<ModalProps> = ({
   }[size];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim backdrop-blur-sm animate-fadeIn">
       <div
-        className={`w-full ${sizeClasses} rounded-2xl border border-slate-800 bg-slate-900/95 p-6 shadow-2xl transition-all`}
+        className={`w-full ${sizeClasses} rounded-[10px] border border-line bg-surface-white p-6 shadow-lg transition-all`}
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <h3 className="text-lg font-bold text-slate-100">{title}</h3>
+        <div className="flex items-center justify-between pb-4 border-b border-line">
+          <h3 className="text-lg font-bold text-ink">{title}</h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-800"
+            className="text-ink-dim hover:text-ink transition-colors p-1 rounded-lg hover:bg-surface-chip"
             aria-label="Close"
           >
             ✕

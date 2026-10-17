@@ -538,9 +538,33 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                403: components["responses"]["ForbiddenResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
+                /** @description Insufficient role. Only ADMIN may create master data. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description A department with this name already exists. The name is compared on a normalised, case-insensitive basis, so "IT" and "it" collide. Code is DUPLICATE_DEPARTMENT_NAME. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed body */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -608,9 +632,33 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                403: components["responses"]["ForbiddenResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
+                /** @description Insufficient role. Only ADMIN may create master data. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description A job role with this title already exists, compared on a normalised, case-insensitive basis. Code is DUPLICATE_JOB_ROLE_NAME. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed body */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -653,9 +701,24 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                403: components["responses"]["ForbiddenResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
+                /** @description Insufficient role. The directory is readable by ADMIN, PROJECT_MANAGER and RESOURCE_MANAGER; an EMPLOYEE receives 403 here. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed query parameters, for example an unknown status value */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -685,9 +748,33 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                403: components["responses"]["ForbiddenResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
+                /** @description Insufficient role. Only ADMIN and RESOURCE_MANAGER may create. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The employee code or work email already exists. Code is DUPLICATE_EMPLOYEE_CODE or DUPLICATE_WORK_EMAIL. The check is not atomic, so two concurrent creates with the same code resolve to one 201 and one 409 carrying the same specific code. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed body, or a departmentId / jobRoleId that does not exist */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -703,11 +790,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get employee detail */
+        /**
+         * Get employee detail
+         * @description Returns the employee profile with department, job role, skills, allocations, and the capacity evaluation for the requested window. An EMPLOYEE may only read their own record.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description First day of the capacity evaluation window (US02.01 - AC04.04). Defaults to today, taken as the current UTC calendar date; the window is a range of calendar days, not instants. When only startDate is given the window is that single day. */
                     startDate?: string;
+                    /** @description Last day of the capacity evaluation window, inclusive. Defaults to startDate, or to today (UTC) when startDate is also absent. Must not be before the effective startDate: a past endDate with no startDate is rejected with 422 on `endDate`, because the default startDate of today would otherwise sit after it. */
                     endDate?: string;
                 };
                 header?: never;
@@ -731,9 +823,24 @@ export interface paths {
                 };
                 401: components["responses"]["UnauthorizedResponse"];
                 403: components["responses"]["ForbiddenResponse"];
-                404: components["responses"]["NotFoundResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
+                /** @description Employee not found, or a record the caller may not see. An EMPLOYEE requesting another employee's profile receives the same 404 as an unknown id, so the response cannot be used to enumerate employee ids. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed employee id, or an invalid capacity date range */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -769,10 +876,42 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                403: components["responses"]["ForbiddenResponse"];
-                404: components["responses"]["NotFoundResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
+                /** @description Insufficient role */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Employee not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The update collides with an existing unique value. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed employee id or body, an empty body, or a departmentId / jobRoleId that does not exist */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         trace?: never;
@@ -1961,6 +2100,7 @@ export interface components {
             /** Format: uuid */
             skillId: string;
             skillName: string;
+            skillIsActive?: boolean;
             proficiencyLevel: number;
         };
         CreateEmployeeInput: {
@@ -1993,29 +2133,35 @@ export interface components {
             employeeCode: string;
             fullName: string;
             workEmail: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            /** @description Peak concurrent allocation effective today, computed by the shared sweep-line capacity engine over the single-day window [today, today]: allocations that are not cancelled and whose inclusive start and end dates contain today. Because it is a peak and not a sum, sequential allocations that do not overlap are never added together (TSD 10.3 / BR-G17). This is the figure behind the current availability indicator required by US02.01 - AC01.03. */
+            currentAllocation?: number;
+            /** @description 100 minus currentAllocation, floored at 0. */
+            currentRemainingCapacity?: number;
+            /**
+             * @description Current availability for US02.01 - AC01.03, derived from currentRemainingCapacity. NOT_ASSIGNABLE is reported for INACTIVE employees per US05.01 - AC03.04. AVAILABLE, PARTIAL and FULLY_ALLOCATED follow US05.01 - AC03.01 to AC03.03.
+             * @enum {string}
+             */
+            availability: "AVAILABLE" | "PARTIAL" | "FULLY_ALLOCATED" | "NOT_ASSIGNABLE";
             /** Format: uuid */
             departmentId: string;
             departmentName?: string;
             /** Format: uuid */
             jobRoleId: string;
             jobRoleTitle?: string;
-            /** @enum {string} */
-            status: "ACTIVE" | "INACTIVE";
-            /** @default 0 */
-            currentAllocation: number;
-            /** @default 100 */
-            currentRemainingCapacity: number;
         };
         EmployeeDetail: components["schemas"]["Employee"] & {
             skills?: components["schemas"]["EmployeeSkill"][];
             allocations?: components["schemas"]["Allocation"][];
+            /** @description Capacity window result (US02.01 - AC04.04). peakConcurrentAllocation is the highest simultaneous allocation inside the window, computed by the shared sweep-line engine, and remainingCapacity is 100 minus that peak. Allocations that overlap the window without overlapping each other are never summed (TSD 10.3 / BR-G17). */
             evaluatedPeriod?: {
                 /** Format: date */
-                startDate?: string;
+                startDate: string;
                 /** Format: date */
-                endDate?: string;
-                peakConcurrentAllocation?: number;
-                remainingCapacity?: number;
+                endDate: string;
+                peakConcurrentAllocation: number;
+                remainingCapacity: number;
             };
         };
         EmployeeListResponse: {
@@ -2213,7 +2359,10 @@ export interface components {
                 departmentName?: string;
                 peakConcurrentAllocation?: number;
                 remainingCapacity?: number;
-                /** @enum {string} */
+                /**
+                 * @description Availability as used by the capacity and resource-finder views. It is a different vocabulary from `Employee.availability`, which reports AVAILABLE / PARTIAL / FULLY_ALLOCATED / NOT_ASSIGNABLE: this enum has no inactive case, and names the free states differently. Both describe the same underlying figure, `remainingCapacity`, so a future revision should collapse them into one shared enum. It is left as is here because no card has implemented the resource-finder or capacity response yet, and the workforce module does not own those contracts.
+                 * @enum {string}
+                 */
                 availabilityStatus?: "FULLY_AVAILABLE" | "PARTIALLY_AVAILABLE" | "FULLY_ALLOCATED";
             }[];
         };

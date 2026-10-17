@@ -33,20 +33,28 @@ describe("LoginPage (AC01 - Login Form)", () => {
     expect(submitButton).toBeInTheDocument();
   });
 
-  it("allows filling credentials and shows quick test hints", () => {
+  it("accepts typed credentials and renders no seeded-account shortcut", () => {
     render(
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>,
     );
 
-    const emailInput = screen.getByLabelText(/Work Email/i) as HTMLInputElement;
+    const emailInput = screen.getByLabelText(/Work Email/i);
     fireEvent.change(emailInput, {
-      target: { value: "admin@staffora.internal" },
+      target: { value: "someone@staffora.internal" },
     });
-    expect(emailInput.value).toBe("admin@staffora.internal");
+    expect(emailInput).toHaveValue("someone@staffora.internal");
 
-    expect(screen.getByText(/Quick Sign-in/i)).toBeInTheDocument();
+    // No quick sign-in control, and therefore no seeded password in the source
+    // that the production bundle could ship. Asserted from behaviour — the form
+    // offers exactly one control that submits — rather than by naming a
+    // credential in the test file.
+    expect(screen.queryByText(/Quick Sign-in/i)).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: /Sign In/i }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -81,7 +89,7 @@ describe("AppLayout (AC02 - Role-based navigation)", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Resources" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Skills" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Projects" })).toBeInTheDocument();
@@ -90,9 +98,11 @@ describe("AppLayout (AC02 - Role-based navigation)", () => {
       screen.getByRole("link", { name: "Allocations" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Users" })).toBeInTheDocument(); // Admin only
+    // PRD §2.2 grants self-view only in the Employee column, so the Admin menu
+    // must not offer My Profile.
     expect(
       screen.queryByRole("link", { name: "My Profile" }),
-    ).not.toBeInTheDocument(); // Employee only
+    ).not.toBeInTheDocument();
   });
 
   it("renders Employee navigation with My Profile and assigned Projects only", () => {

@@ -33,7 +33,7 @@ describe("App root integration", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: /Sign in to Staffora/i }),
+      screen.getByRole("heading", { name: /Welcome back/i }),
     ).toBeInTheDocument();
   });
 });

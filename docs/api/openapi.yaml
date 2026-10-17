@@ -320,11 +320,26 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedResponse"
         "403":
-          $ref: "#/components/responses/ForbiddenResponse"
+          description: Insufficient role. Only ADMIN may create master data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: >-
+            A department with this name already exists. The name is compared on a
+            normalised, case-insensitive basis, so "IT" and "it" collide. Code is
+            DUPLICATE_DEPARTMENT_NAME.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "422":
-          $ref: "#/components/responses/ValidationErrorResponse"
-        "501":
-          $ref: "#/components/responses/NotImplementedResponse"
+          description: Malformed body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /job-roles:
     get:
@@ -367,11 +382,25 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedResponse"
         "403":
-          $ref: "#/components/responses/ForbiddenResponse"
+          description: Insufficient role. Only ADMIN may create master data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: >-
+            A job role with this title already exists, compared on a normalised,
+            case-insensitive basis. Code is DUPLICATE_JOB_ROLE_NAME.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "422":
-          $ref: "#/components/responses/ValidationErrorResponse"
-        "501":
-          $ref: "#/components/responses/NotImplementedResponse"
+          description: Malformed body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /employees:
     get:
@@ -405,11 +434,19 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedResponse"
         "403":
-          $ref: "#/components/responses/ForbiddenResponse"
+          description: >-
+            Insufficient role. The directory is readable by ADMIN, PROJECT_MANAGER
+            and RESOURCE_MANAGER; an EMPLOYEE receives 403 here.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "422":
-          $ref: "#/components/responses/ValidationErrorResponse"
-        "501":
-          $ref: "#/components/responses/NotImplementedResponse"
+          description: Malformed query parameters, for example an unknown status value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       summary: Create employee profile
       security:
@@ -434,15 +471,33 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedResponse"
         "403":
-          $ref: "#/components/responses/ForbiddenResponse"
+          description: Insufficient role. Only ADMIN and RESOURCE_MANAGER may create.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: >-
+            The employee code or work email already exists. Code is
+            DUPLICATE_EMPLOYEE_CODE or DUPLICATE_WORK_EMAIL. The check is not
+            atomic, so two concurrent creates with the same code resolve to one 201
+            and one 409 carrying the same specific code.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "422":
-          $ref: "#/components/responses/ValidationErrorResponse"
-        "501":
-          $ref: "#/components/responses/NotImplementedResponse"
+          description: >-
+            Malformed body, or a departmentId / jobRoleId that does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /employees/{id}:
     get:
       summary: Get employee detail
+      description: Returns the employee profile with department, job role, skills, allocations, and the capacity evaluation for the requested window. An EMPLOYEE may only read their own record.
       parameters:
         - name: id
           in: path
@@ -450,10 +505,21 @@ paths:
           schema: { type: string, format: uuid }
         - name: startDate
           in: query
+          required: false
           schema: { type: string, format: date }
+          description: >-
+            First day of the capacity evaluation window (US02.01 - AC04.04). Defaults to
+            today, taken as the current UTC calendar date; the window is a range of calendar
+            days, not instants. When only startDate is given the window is that single day.
         - name: endDate
           in: query
+          required: false
           schema: { type: string, format: date }
+          description: >-
+            Last day of the capacity evaluation window, inclusive. Defaults to startDate, or
+            to today (UTC) when startDate is also absent. Must not be before the effective
+            startDate: a past endDate with no startDate is rejected with 422 on `endDate`,
+            because the default startDate of today would otherwise sit after it.
       responses:
         "200":
           description: Employee detail with skills, allocations, and capacity
@@ -469,11 +535,20 @@ paths:
         "403":
           $ref: "#/components/responses/ForbiddenResponse"
         "404":
-          $ref: "#/components/responses/NotFoundResponse"
+          description: >-
+            Employee not found, or a record the caller may not see. An EMPLOYEE requesting
+            another employee's profile receives the same 404 as an unknown id, so the
+            response cannot be used to enumerate employee ids.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "422":
-          $ref: "#/components/responses/ValidationErrorResponse"
-        "501":
-          $ref: "#/components/responses/NotImplementedResponse"
+          description: Malformed employee id, or an invalid capacity date range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     patch:
       summary: Update employee profile
       security:
@@ -503,13 +578,31 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedResponse"
         "403":
-          $ref: "#/components/responses/ForbiddenResponse"
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundResponse"
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: The update collides with an existing unique value.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "422":
-          $ref: "#/components/responses/ValidationErrorResponse"
-        "501":
-          $ref: "#/components/responses/NotImplementedResponse"
+          description: >-
+            Malformed employee id or body, an empty body, or a departmentId /
+            jobRoleId that does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /skills:
     get:
@@ -1536,6 +1629,7 @@ components:
         id: { type: string, format: uuid }
         skillId: { type: string, format: uuid }
         skillName: { type: string }
+        skillIsActive: { type: boolean }
         proficiencyLevel: { type: integer, minimum: 1, maximum: 5 }
 
     CreateEmployeeInput:
@@ -1561,19 +1655,46 @@ components:
     Employee:
       type: object
       required:
-        [id, employeeCode, fullName, workEmail, departmentId, jobRoleId, status]
+        [
+          id,
+          employeeCode,
+          fullName,
+          workEmail,
+          departmentId,
+          jobRoleId,
+          status,
+          availability,
+        ]
       properties:
         id: { type: string, format: uuid }
         employeeCode: { type: string }
         fullName: { type: string }
         workEmail: { type: string }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        currentAllocation:
+          type: integer
+          description: >-
+            Peak concurrent allocation effective today, computed by the shared sweep-line
+            capacity engine over the single-day window [today, today]: allocations that are
+            not cancelled and whose inclusive start and end dates contain today. Because it
+            is a peak and not a sum, sequential allocations that do not overlap are never
+            added together (TSD 10.3 / BR-G17). This is the figure behind the current
+            availability indicator required by US02.01 - AC01.03.
+        currentRemainingCapacity:
+          type: integer
+          description: 100 minus currentAllocation, floored at 0.
+        availability:
+          type: string
+          enum: [AVAILABLE, PARTIAL, FULLY_ALLOCATED, NOT_ASSIGNABLE]
+          description: >-
+            Current availability for US02.01 - AC01.03, derived from
+            currentRemainingCapacity. NOT_ASSIGNABLE is reported for INACTIVE employees
+            per US05.01 - AC03.04. AVAILABLE, PARTIAL and FULLY_ALLOCATED follow
+            US05.01 - AC03.01 to AC03.03.
         departmentId: { type: string, format: uuid }
         departmentName: { type: string }
         jobRoleId: { type: string, format: uuid }
         jobRoleTitle: { type: string }
-        status: { type: string, enum: [ACTIVE, INACTIVE] }
-        currentAllocation: { type: integer, default: 0 }
-        currentRemainingCapacity: { type: integer, default: 100 }
 
     EmployeeDetail:
       allOf:
@@ -1590,6 +1711,19 @@ components:
                 $ref: "#/components/schemas/Allocation"
             evaluatedPeriod:
               type: object
+              description: >-
+                Capacity window result (US02.01 - AC04.04). peakConcurrentAllocation is the
+                highest simultaneous allocation inside the window, computed by the shared
+                sweep-line engine, and remainingCapacity is 100 minus that peak. Allocations
+                that overlap the window without overlapping each other are never summed
+                (TSD 10.3 / BR-G17).
+              required:
+                [
+                  startDate,
+                  endDate,
+                  peakConcurrentAllocation,
+                  remainingCapacity,
+                ]
               properties:
                 startDate: { type: string, format: date }
                 endDate: { type: string, format: date }
@@ -1883,10 +2017,17 @@ components:
               peakConcurrentAllocation: { type: integer }
               remainingCapacity: { type: integer }
               availabilityStatus:
-                {
-                  type: string,
-                  enum: [FULLY_AVAILABLE, PARTIALLY_AVAILABLE, FULLY_ALLOCATED],
-                }
+                type: string
+                enum: [FULLY_AVAILABLE, PARTIALLY_AVAILABLE, FULLY_ALLOCATED]
+                description: >-
+                  Availability as used by the capacity and resource-finder views. It is a
+                  different vocabulary from `Employee.availability`, which reports
+                  AVAILABLE / PARTIAL / FULLY_ALLOCATED / NOT_ASSIGNABLE: this enum has no
+                  inactive case, and names the free states differently. Both describe the
+                  same underlying figure, `remainingCapacity`, so a future revision should
+                  collapse them into one shared enum. It is left as is here because no card
+                  has implemented the resource-finder or capacity response yet, and the
+                  workforce module does not own those contracts.
 
     DashboardData:
       type: object

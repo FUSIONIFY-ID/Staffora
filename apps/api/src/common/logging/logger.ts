@@ -10,6 +10,9 @@ export const logger = pino({
       "req.headers.authorization",
       'req.headers["x-csrf-token"]',
       'res.headers["set-cookie"]',
+      // Workforce directory search takes a person's name; app.ts also strips the
+      // query string from the logged URL so it cannot leak through either field.
+      "req.query.search",
       "session",
       "csrfToken",
       "*.password",

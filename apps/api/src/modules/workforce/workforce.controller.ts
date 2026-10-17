@@ -1,19 +1,43 @@
 import type { Request, Response, NextFunction } from "express";
+import {
+  sendCreated,
+  sendList,
+  sendSuccess,
+} from "../../common/http/response.js";
+import { UnauthorizedError } from "../../common/errors/app-error.js";
 import { getParam } from "../../common/http/params.js";
-import { assertAuth } from "../../common/auth/policy.js";
-import { sendSuccess, sendList } from "../../common/http/response.js";
+import type { AuthenticatedUser } from "../../common/auth/types.js";
 import { workforceService } from "./workforce.service.js";
-import { workforcePolicy } from "./workforce.policy.js";
+import {
+  parseEmployeeDetailQuery,
+  parseEmployeeListQuery,
+} from "./workforce.query.js";
 
+/**
+ * `requireAuth()` on every workforce route guarantees an authenticated user.
+ * The narrowing lives here so the service can take a non-optional user and
+ * keep authorization decisions in workforce.policy.ts.
+ */
+function requireUser(req: Request): AuthenticatedUser {
+  if (!req.user) {
+    throw new UnauthorizedError();
+  }
+  return req.user;
+}
+
+/**
+ * Body and path parameters arrive already parsed by the `validateBody` and
+ * `validateParams` middleware on the route. Query strings are the exception
+ * while `validateQuery` is unusable (see workforce.query.ts).
+ */
 export const workforceController = {
   async getDepartments(
     _req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const items = await workforceService.getDepartments();
-      return sendSuccess(res, items);
+      sendSuccess(res, await workforceService.getDepartments());
     } catch (err) {
       next(err);
     }
@@ -23,27 +47,25 @@ export const workforceController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const item = await workforceService.createDepartment(req.body);
-      return res.status(201).json({ data: item });
+      const item = await workforceService.createDepartment(
+        req.body,
+        requireUser(req).id,
+      );
+      sendCreated(res, item);
     } catch (err) {
       next(err);
     }
   },
 
   async getJobRoles(
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const departmentId =
-        typeof req.query.departmentId === "string"
-          ? req.query.departmentId
-          : undefined;
-      const items = await workforceService.getJobRoles(departmentId);
-      return sendSuccess(res, items);
+      sendSuccess(res, await workforceService.getJobRoles());
     } catch (err) {
       next(err);
     }
@@ -53,10 +75,13 @@ export const workforceController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const item = await workforceService.createJobRole(req.body);
-      return res.status(201).json({ data: item });
+      const item = await workforceService.createJobRole(
+        req.body,
+        requireUser(req).id,
+      );
+      sendCreated(res, item);
     } catch (err) {
       next(err);
     }
@@ -66,10 +91,11 @@ export const workforceController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const result = await workforceService.getEmployees(req.query);
-      return sendList(res, result.data, {
+      const query = parseEmployeeListQuery(req.query);
+      const result = await workforceService.getEmployees(query);
+      sendList(res, result.data, {
         page: result.page,
         pageSize: result.pageSize,
         total: result.total,
@@ -83,10 +109,13 @@ export const workforceController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const item = await workforceService.createEmployee(req.body);
-      return res.status(201).json({ data: item });
+      const item = await workforceService.createEmployee(
+        req.body,
+        requireUser(req).id,
+      );
+      sendCreated(res, item);
     } catch (err) {
       next(err);
     }
@@ -96,13 +125,15 @@ export const workforceController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const employeeId = getParam(req.params.id);
-      assertAuth(req.user);
-      workforcePolicy.assertCanViewEmployee(req.user, employeeId);
-      const item = await workforceService.getEmployeeDetail(employeeId);
-      return sendSuccess(res, item);
+      const query = parseEmployeeDetailQuery(req.query);
+      const item = await workforceService.getEmployeeDetail(
+        getParam(req.params.id),
+        query,
+        requireUser(req),
+      );
+      sendSuccess(res, item);
     } catch (err) {
       next(err);
     }
@@ -112,11 +143,14 @@ export const workforceController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const employeeId = getParam(req.params.id);
-      const item = await workforceService.updateEmployee(employeeId, req.body);
-      return sendSuccess(res, item);
+      const item = await workforceService.updateEmployee(
+        getParam(req.params.id),
+        req.body,
+        requireUser(req).id,
+      );
+      sendSuccess(res, item);
     } catch (err) {
       next(err);
     }
