@@ -1,14 +1,24 @@
 import { Router } from 'express'
 import { workforceController } from './workforce.controller.js'
-import { validateBody, validateQuery } from '../../common/validation/validate.js'
+import { requireAuth, requireRole } from '../../common/auth/rbac.js'
+import { validateBody, validateParams } from '../../common/validation/validate.js'
 import {
   createDepartmentSchema,
-  createJobRoleSchema,
   createEmployeeSchema,
+  createJobRoleSchema,
+  employeeIdParamsSchema,
   updateEmployeeSchema,
-  queryEmployeesSchema,
 } from './workforce.schema.js'
-import { requireAuth, requireRole } from '../../common/auth/rbac.js'
+
+/**
+ * Body and path-parameter validation runs as middleware, per CODING_STANDARD
+ * 3.3. Query strings are the one exception: the shared `validateQuery` assigns
+ * to `req.query`, which Express 5 exposes as getter-only, so any request whose
+ * schema parses successfully would fail with a 500. PR #6 replaces that
+ * assignment with Object.defineProperty; until it merges, the two list/detail
+ * routes parse their query in the controller through workforce.query.ts. The
+ * schemas are already the shared ones, so switching over is a one-line change.
+ */
 
 // Departments Router
 export const departmentsRouter = Router()
@@ -38,7 +48,6 @@ employeesRouter.use(requireAuth())
 employeesRouter.get(
   '/',
   requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'),
-  validateQuery(queryEmployeesSchema),
   workforceController.getEmployees,
 )
 employeesRouter.post(
@@ -50,11 +59,13 @@ employeesRouter.post(
 employeesRouter.get(
   '/:id',
   requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE'),
+  validateParams(employeeIdParamsSchema),
   workforceController.getEmployeeDetail,
 )
 employeesRouter.patch(
   '/:id',
   requireRole('ADMIN', 'RESOURCE_MANAGER'),
+  validateParams(employeeIdParamsSchema),
   validateBody(updateEmployeeSchema),
   workforceController.updateEmployee,
 )
