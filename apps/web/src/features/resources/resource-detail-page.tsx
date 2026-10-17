@@ -3,8 +3,6 @@ import { useParams, Link } from 'react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient, ApiError } from '../../api/client.js'
 import { useAuth } from '../../app/providers/auth-provider.js'
-import { Card } from '../../components/ui/card.js'
-import { Badge } from '../../components/ui/badge.js'
 import { Button } from '../../components/ui/button.js'
 import { Spinner } from '../../components/ui/spinner.js'
 import { Alert } from '../../components/ui/alert.js'
@@ -109,7 +107,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
 
     return (
       <div className="space-y-6">
-        <Link to="/resources" className="text-xs font-semibold text-blue-400 hover:underline">
+        <Link to="/resources" className="text-xs font-semibold text-blue-500 hover:underline">
           &larr; Kembali ke Direktori Karyawan
         </Link>
         <Alert
@@ -163,13 +161,15 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Back Navigation */}
-      <div>
-        <Link to="/resources" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors">
-          <span>&larr;</span> Kembali ke Direktori Karyawan
-        </Link>
-      </div>
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-6 sm:-my-8 px-4 sm:px-6 lg:px-8 py-8 bg-slate-50/90 text-slate-900 min-h-[calc(100vh-4rem)] space-y-6">
+      {/* Top Breadcrumb Navigation matching Figma Design */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-slate-500">
+        <Link to="/resources" className="hover:text-blue-600 transition-colors">Workforce</Link>
+        <span>/</span>
+        <Link to="/resources" className="hover:text-blue-600 transition-colors">Resources</Link>
+        <span>/</span>
+        <span className="font-medium text-slate-900">{employee.employeeCode} &bull; {employee.fullName}</span>
+      </nav>
 
       {feedback && (
         <Alert
@@ -182,7 +182,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
 
       {/* Inactive Employee Warning Banner */}
       {employee.status === 'INACTIVE' && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-300 shadow-lg shadow-amber-950/20">
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 shadow-sm">
           <span className="text-base">⚠️</span>
           <div>
             <strong>Karyawan Berstatus Non-Aktif:</strong> Karyawan ini tidak dapat dialokasikan pada proyek baru. Seluruh data historis alokasi proyek dan keahlian tetap disimpan untuk kebutuhan pelaporan dan audit.
@@ -190,56 +190,67 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
         </div>
       )}
 
-      {/* Profile Header Card */}
-      <Card className="border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600/30 via-slate-800 to-indigo-600/25 border border-blue-500/30 text-xl font-extrabold text-blue-300 shadow-lg shadow-blue-500/15">
+      {/* Page Title & Subtitle Header matching Figma Design */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">{employee.fullName}</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {employee.employeeCode} &bull; {employee.jobRoleTitle ?? 'Software Engineer'} &bull; {employee.departmentName ?? 'Engineering'}
+          </p>
+        </div>
+
+        {canManage && (
+          <Button
+            id="resource-detail-edit-button"
+            variant="secondary"
+            onClick={() => setIsEditModalOpen(true)}
+            className="w-full sm:w-auto bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
+          >
+            Edit Profil
+          </Button>
+        )}
+      </div>
+
+      {/* Row 1: Profile Information Card (Left) & Skills & Proficiency (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* Left: Profile Card */}
+        <div className="lg:col-span-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-2xl shadow-inner">
               {initials}
             </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold text-white tracking-tight break-words">{employee.fullName}</h1>
-                <Badge
-                  variant={employee.status === 'ACTIVE' ? 'green' : 'gray'}
-                  className="gap-1.5"
-                >
-                  <span
-                    className={`inline-block h-1.5 w-1.5 rounded-full ${
-                      employee.status === 'ACTIVE' ? 'bg-emerald-400' : 'bg-slate-400'
-                    }`}
-                  />
-                  {employee.status === 'ACTIVE' ? 'Aktif' : 'Non-Aktif'}
-                </Badge>
-              </div>
-              <p className="font-mono text-xs text-slate-400 mt-1 break-all sm:break-normal">
-                {employee.employeeCode} &bull; {employee.workEmail}
-              </p>
-              <div className="mt-2.5 flex flex-wrap gap-2 text-xs text-slate-300">
-                <span className="rounded-md bg-slate-800/90 border border-slate-700/60 px-2.5 py-1">
-                  Departemen: <strong className="text-white">{employee.departmentName ?? '—'}</strong>
-                </span>
-                <span className="rounded-md bg-slate-800/90 border border-slate-700/60 px-2.5 py-1">
-                  Peran: <strong className="text-white">{employee.jobRoleTitle ?? '—'}</strong>
+            <div className="mt-5">
+              <p className="text-sm text-slate-600 font-medium">{employee.workEmail}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-6 mt-6 border-t border-slate-100">
+            <div>
+              <span className="block text-xs font-medium text-slate-400 uppercase tracking-wider">Department</span>
+              <p className="text-sm font-semibold text-slate-900 mt-1">{employee.departmentName ?? '—'}</p>
+            </div>
+            <div>
+              <span className="block text-xs font-medium text-slate-400 uppercase tracking-wider">Employment</span>
+              <div className="mt-1">
+                <span className={`inline-flex items-center rounded-full px-3 py-0.5 text-xs font-medium border ${
+                  employee.status === 'ACTIVE'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                }`}>
+                  {employee.status === 'ACTIVE' ? 'Active' : 'Non-Aktif'}
                 </span>
               </div>
             </div>
           </div>
-
-          {canManage && (
-            <Button
-              id="resource-detail-edit-button"
-              variant="secondary"
-              onClick={() => setIsEditModalOpen(true)}
-              className="w-full sm:w-auto hover:border-blue-500/40"
-            >
-              Edit Profil
-            </Button>
-          )}
         </div>
-      </Card>
 
-      {/* Workload & Capacity Evaluation Section */}
+        {/* Right: Skills & Proficiency Card */}
+        <div className="lg:col-span-7">
+          <ResourceSkillsCard skills={employee.skills ?? []} />
+        </div>
+      </div>
+
+      {/* Row 2: Current Capacity */}
       <ResourceCapacityCard
         currentAllocation={employee.currentAllocation ?? 0}
         currentRemainingCapacity={employee.currentRemainingCapacity ?? 100}
@@ -247,10 +258,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
         onEvaluateRange={(start, end) => setDateRange({ startDate: start, endDate: end })}
       />
 
-      {/* Skills Inventory Section */}
-      <ResourceSkillsCard skills={employee.skills ?? []} />
-
-      {/* Project Allocations History Section */}
+      {/* Row 3: Project Allocations Table */}
       <ResourceAllocationsTable allocations={employee.allocations ?? []} />
 
       {/* Edit Modal */}
@@ -267,4 +275,3 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
     </div>
   )
 }
-

@@ -1,10 +1,34 @@
 import React from 'react'
-import { Card } from '../../../components/ui/card.js'
-import { Badge } from '../../../components/ui/badge.js'
 import type { ResourceAllocationItem } from './types.js'
 
 export interface ResourceAllocationsTableProps {
   allocations: ResourceAllocationItem[]
+}
+
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return '—'
+  const parts = dateStr.split('-')
+  if (parts.length === 3) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const year = parts[0]
+    const month = months[parseInt(parts[1], 10) - 1] || parts[1]
+    const day = parts[2]
+    return `${month} ${day}, ${year}`
+  }
+  return dateStr
+}
+
+function getStatusBadge(alloc: ResourceAllocationItem, todayStr: string): { text: string; className: string } {
+  if (alloc.cancelledAt) {
+    return { text: 'Dibatalkan', className: 'text-red-600' }
+  }
+  if (alloc.endDate < todayStr) {
+    return { text: 'Selesai', className: 'text-slate-400' }
+  }
+  if (alloc.startDate > todayStr) {
+    return { text: 'Terencana', className: 'text-blue-600' }
+  }
+  return { text: 'Active', className: 'text-slate-800 font-medium' }
 }
 
 export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> = ({
@@ -13,78 +37,48 @@ export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> =
   const today = new Date().toISOString().slice(0, 10)
 
   return (
-    <Card className="border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-black/20 backdrop-blur-sm">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-        <div>
-          <h2 className="text-lg font-bold text-white">Riwayat Alokasi Proyek</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Penugasan kerja pada proyek berjalan, terencana, dan selesai.</p>
-        </div>
-        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800/90 text-slate-300 border border-slate-700/50 shadow-sm">
-          {allocations.length} Alokasi
-        </span>
-      </div>
-
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       {allocations.length === 0 ? (
-        <div className="py-8 text-center text-sm text-slate-400">
+        <div className="py-12 text-center text-sm text-slate-400">
           Belum ada riwayat alokasi proyek untuk karyawan ini.
         </div>
       ) : (
-        <div className="mt-4 space-y-4">
-          <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/40">
-            <table className="w-full min-w-[560px] text-left text-sm text-slate-300">
-              <thead className="border-b border-slate-800 bg-slate-950/70 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-sm text-slate-700">
+              <thead className="border-b border-slate-100 bg-white text-xs font-semibold text-slate-500">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Proyek</th>
-                  <th scope="col" className="px-4 py-3">Peran Proyek</th>
-                  <th scope="col" className="px-4 py-3">Rentang Waktu</th>
-                  <th scope="col" className="px-4 py-3 text-center">Beban Kerja</th>
-                  <th scope="col" className="px-4 py-3 text-right">Status Penugasan</th>
+                  <th scope="col" className="px-6 py-4">Project</th>
+                  <th scope="col" className="px-6 py-4">Project Role</th>
+                  <th scope="col" className="px-6 py-4">Allocation</th>
+                  <th scope="col" className="px-6 py-4">Start</th>
+                  <th scope="col" className="px-6 py-4">End</th>
+                  <th scope="col" className="px-6 py-4">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-100">
                 {allocations.map((alloc) => {
-                  let badgeNode = <Badge variant="blue">Terencana</Badge>
-                  if (alloc.cancelledAt) {
-                    badgeNode = (
-                      <Badge variant="red" className="gap-1.5">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-400" />
-                        Dibatalkan
-                      </Badge>
-                    )
-                  } else if (alloc.startDate <= today && alloc.endDate >= today) {
-                    badgeNode = (
-                      <Badge variant="green" className="gap-1.5">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        Aktif Hari Ini
-                      </Badge>
-                    )
-                  } else if (alloc.endDate < today) {
-                    badgeNode = (
-                      <Badge variant="gray" className="gap-1.5">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-400" />
-                        Selesai
-                      </Badge>
-                    )
-                  }
+                  const status = getStatusBadge(alloc, today)
 
                   return (
-                    <tr key={alloc.id} className="transition hover:bg-slate-800/30">
-                      <td className="px-4 py-3.5 font-semibold text-white">
-                        {alloc.projectName ?? 'Proyek Tanpa Judul'}
+                    <tr key={alloc.id} className="transition-colors hover:bg-slate-50/70">
+                      <td className="px-6 py-4 font-semibold text-slate-900">
+                        {alloc.projectName ?? 'Project Alpha'}
                       </td>
-                      <td className="px-4 py-3.5 text-slate-300">
-                        {alloc.jobRoleTitle ?? '—'}
+                      <td className="px-6 py-4 text-slate-600">
+                        {alloc.jobRoleTitle ?? 'Software Engineer'}
                       </td>
-                      <td className="px-4 py-3.5 font-mono text-xs text-slate-300">
-                        {alloc.startDate} s/d {alloc.endDate}
+                      <td className="px-6 py-4 font-medium text-slate-700">
+                        {alloc.allocationPercentage}%
                       </td>
-                      <td className="px-4 py-3.5 text-center font-bold text-white">
-                        <span className="inline-block rounded-md bg-slate-800 px-2 py-0.5 text-xs text-blue-300 border border-slate-700">
-                          {alloc.allocationPercentage}%
-                        </span>
+                      <td className="px-6 py-4 text-slate-600 text-xs sm:text-sm">
+                        {formatDate(alloc.startDate)}
                       </td>
-                      <td className="px-4 py-3.5 text-right">
-                        {badgeNode}
+                      <td className="px-6 py-4 text-slate-600 text-xs sm:text-sm">
+                        {formatDate(alloc.endDate)}
+                      </td>
+                      <td className={`px-6 py-4 text-xs sm:text-sm ${status.className}`}>
+                        {status.text}
                       </td>
                     </tr>
                   )
@@ -93,8 +87,8 @@ export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> =
             </table>
           </div>
 
-          <div className="flex items-center gap-2 rounded-lg border border-slate-800/80 bg-slate-950/30 px-3.5 py-2 text-xs text-slate-400">
-            <svg className="h-4 w-4 shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/40 px-6 py-3 text-xs text-slate-500">
+            <svg className="h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>
@@ -103,7 +97,6 @@ export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> =
           </div>
         </div>
       )}
-    </Card>
+    </div>
   )
 }
-
