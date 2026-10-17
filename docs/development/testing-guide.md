@@ -44,6 +44,7 @@ Modul kalkulasi kapasitas (`apps/api/src/modules/capacity/capacity.service.ts`) 
 ## 3. Mandatory Authorization Matrix (TSD 15.4)
 
 Setiap capability API diuji terhadap:
+
 - Role yang diizinkan (Allowed role).
 - Role yang dilarang (Disallowed role) -> HTTP 403.
 - Project Manager pada proyek miliknya (Allowed).

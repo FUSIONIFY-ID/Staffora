@@ -1,36 +1,60 @@
-import React from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router'
-import { useAuth } from '../providers/auth-provider.js'
-import { Badge } from '../../components/ui/badge.js'
-import { Button } from '../../components/ui/button.js'
+import React from "react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router";
+import { useAuth } from "../providers/auth-provider.js";
+import { Badge } from "../../components/ui/badge.js";
+import { Button } from "../../components/ui/button.js";
 
 export const AppLayout: React.FC = () => {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
+    await logout();
+    navigate("/login");
+  };
 
   // Navigation filtering per PRD 2.2 Permission Matrix
   const navItems = [
-    { label: 'Dashboard', path: '/dashboard', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
-    { label: 'Resources', path: '/resources', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
-    { label: 'Skills', path: '/skills', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
-    { label: 'Capacity', path: '/capacity', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
-    { label: 'Projects', path: '/projects', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'EMPLOYEE'] },
-    { label: 'Allocations', path: '/allocations', roles: ['ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'] },
-    { label: 'My Profile', path: '/my-profile', roles: ['EMPLOYEE'] },
-    { label: 'Users', path: '/admin/users', roles: ['ADMIN'] },
-  ].filter((item) => user && item.roles.includes(user.role))
+    {
+      label: "Dashboard",
+      path: "/dashboard",
+      roles: ["ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"],
+    },
+    {
+      label: "Resources",
+      path: "/resources",
+      roles: ["ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"],
+    },
+    {
+      label: "Skills",
+      path: "/skills",
+      roles: ["ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"],
+    },
+    {
+      label: "Capacity",
+      path: "/capacity",
+      roles: ["ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"],
+    },
+    {
+      label: "Projects",
+      path: "/projects",
+      roles: ["ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER", "EMPLOYEE"],
+    },
+    {
+      label: "Allocations",
+      path: "/allocations",
+      roles: ["ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"],
+    },
+    { label: "My Profile", path: "/my-profile", roles: ["EMPLOYEE"] },
+    { label: "Users", path: "/admin/users", roles: ["ADMIN"] },
+  ].filter((item) => user && item.roles.includes(user.role));
 
   const roleBadgeVariant = {
-    ADMIN: 'purple',
-    PROJECT_MANAGER: 'blue',
-    RESOURCE_MANAGER: 'amber',
-    EMPLOYEE: 'green',
-  }[user?.role || 'EMPLOYEE'] as 'purple' | 'blue' | 'amber' | 'green'
+    ADMIN: "purple",
+    PROJECT_MANAGER: "blue",
+    RESOURCE_MANAGER: "amber",
+    EMPLOYEE: "green",
+  }[user?.role || "EMPLOYEE"] as "purple" | "blue" | "amber" | "green";
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
@@ -46,14 +70,15 @@ export const AppLayout: React.FC = () => {
                 className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
                 onError={(e) => {
                   // Fallback to text if image not accessible in dev
-                  const target = e.currentTarget
-                  target.style.display = 'none'
-                  const parent = target.parentElement
-                  if (parent && !parent.querySelector('.brand-fallback')) {
-                    const span = document.createElement('span')
-                    span.className = 'brand-fallback text-xl font-extrabold text-blue-500'
-                    span.innerText = '◆ Staffora'
-                    parent.appendChild(span)
+                  const target = e.currentTarget;
+                  target.style.display = "none";
+                  const parent = target.parentElement;
+                  if (parent && !parent.querySelector(".brand-fallback")) {
+                    const span = document.createElement("span");
+                    span.className =
+                      "brand-fallback text-xl font-extrabold text-blue-500";
+                    span.innerText = "◆ Staffora";
+                    parent.appendChild(span);
                   }
                 }}
               />
@@ -67,8 +92,8 @@ export const AppLayout: React.FC = () => {
                   className={({ isActive }) =>
                     `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                       isActive
-                        ? 'bg-blue-600/15 text-blue-400 font-semibold'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        ? "bg-blue-600/15 text-blue-400 font-semibold"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                     }`
                   }
                 >
@@ -87,7 +112,9 @@ export const AppLayout: React.FC = () => {
                     {user.employee?.fullName || user.email}
                   </div>
                   <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                    <Badge variant={roleBadgeVariant}>{user.role.replace('_', ' ')}</Badge>
+                    <Badge variant={roleBadgeVariant}>
+                      {user.role.replace("_", " ")}
+                    </Badge>
                   </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -110,8 +137,9 @@ export const AppLayout: React.FC = () => {
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-        Staffora MVP v1.0 &middot; Project Resource Allocation & Workforce Planning System
+        Staffora MVP v1.0 &middot; Project Resource Allocation & Workforce
+        Planning System
       </footer>
     </div>
-  )
-}
+  );
+};

@@ -176,12 +176,16 @@ export function readConfig(cwd) {
 // The hook settings subtree of a unified config.json / config.local.json.
 function hookSection(raw) {
   if (!raw || typeof raw !== "object") return null;
-  return raw.hook && typeof raw.hook === "object" && !Array.isArray(raw.hook) ? raw.hook : null;
+  return raw.hook && typeof raw.hook === "object" && !Array.isArray(raw.hook)
+    ? raw.hook
+    : null;
 }
 
 function detectorSection(raw) {
   if (!raw || typeof raw !== "object") return null;
-  return raw.detector && typeof raw.detector === "object" && !Array.isArray(raw.detector)
+  return raw.detector &&
+    typeof raw.detector === "object" &&
+    !Array.isArray(raw.detector)
     ? raw.detector
     : null;
 }
@@ -214,13 +218,22 @@ function applyDetectorConfigSource(config, raw) {
     };
   }
   if (Array.isArray(raw.ignoreRules)) {
-    config.ignoreRules = uniqueStrings([...config.ignoreRules, ...raw.ignoreRules]);
+    config.ignoreRules = uniqueStrings([
+      ...config.ignoreRules,
+      ...raw.ignoreRules,
+    ]);
   }
   if (Array.isArray(raw.ignoreFiles)) {
-    config.ignoreFiles = uniqueStrings([...config.ignoreFiles, ...raw.ignoreFiles]);
+    config.ignoreFiles = uniqueStrings([
+      ...config.ignoreFiles,
+      ...raw.ignoreFiles,
+    ]);
   }
   if (Array.isArray(raw.ignoreValues)) {
-    config.ignoreValues = mergeIgnoreValues(config.ignoreValues, raw.ignoreValues);
+    config.ignoreValues = mergeIgnoreValues(
+      config.ignoreValues,
+      raw.ignoreValues,
+    );
   }
   return config;
 }
@@ -438,9 +451,13 @@ export function normalizeIgnoreValueEntries(entries) {
     if (!rule || !value) continue;
     const normalized = { rule, value };
     const files = uniqueStrings([
-      ...(typeof entry.file === "string" && entry.file.trim() ? [entry.file.trim()] : []),
+      ...(typeof entry.file === "string" && entry.file.trim()
+        ? [entry.file.trim()]
+        : []),
       ...(Array.isArray(entry.files)
-        ? entry.files.filter((v) => typeof v === "string" && v.trim()).map((v) => v.trim())
+        ? entry.files
+            .filter((v) => typeof v === "string" && v.trim())
+            .map((v) => v.trim())
         : []),
     ]);
     if (files.length > 0) normalized.files = files;
@@ -458,10 +475,16 @@ export function normalizeIgnoreValueEntries(entries) {
 function mergeIgnoreValues(existing, incoming) {
   const map = new Map();
   for (const entry of normalizeIgnoreValueEntries(existing)) {
-    map.set(`${entry.rule}\0${entry.value}\0${ignoreValueFilesKey(entry.files)}`, entry);
+    map.set(
+      `${entry.rule}\0${entry.value}\0${ignoreValueFilesKey(entry.files)}`,
+      entry,
+    );
   }
   for (const entry of normalizeIgnoreValueEntries(incoming)) {
-    map.set(`${entry.rule}\0${entry.value}\0${ignoreValueFilesKey(entry.files)}`, entry);
+    map.set(
+      `${entry.rule}\0${entry.value}\0${ignoreValueFilesKey(entry.files)}`,
+      entry,
+    );
   }
   return Array.from(map.values());
 }
@@ -477,7 +500,8 @@ export function readCache(cwd) {
   }
   return {
     version: 1,
-    sessions: raw.sessions && typeof raw.sessions === "object" ? raw.sessions : {},
+    sessions:
+      raw.sessions && typeof raw.sessions === "object" ? raw.sessions : {},
   };
 }
 
@@ -509,16 +533,24 @@ export function ensureHookGitExcludes(cwd = process.cwd()) {
   try {
     const target = resolveHookGitExcludeTarget(cwd);
     if (!target) {
-      return { mode: "none", changed: false, patterns: [...HOOK_LOCAL_IGNORE_PATTERNS] };
+      return {
+        mode: "none",
+        changed: false,
+        patterns: [...HOOK_LOCAL_IGNORE_PATTERNS],
+      };
     }
 
     const patterns = target.patternPrefix
-      ? HOOK_LOCAL_IGNORE_PATTERNS.map((pattern) => `${target.patternPrefix}/${pattern}`)
+      ? HOOK_LOCAL_IGNORE_PATTERNS.map(
+          (pattern) => `${target.patternPrefix}/${pattern}`,
+        )
       : [...HOOK_LOCAL_IGNORE_PATTERNS];
     const markerSuffix = target.patternPrefix || ".";
     const markerOpen = `${HOOK_IGNORE_MARKER_OPEN} ${markerSuffix}`;
     const markerClose = `${HOOK_IGNORE_MARKER_CLOSE} ${markerSuffix}`;
-    const existing = fs.existsSync(target.path) ? fs.readFileSync(target.path, "utf-8") : "";
+    const existing = fs.existsSync(target.path)
+      ? fs.readFileSync(target.path, "utf-8")
+      : "";
     const block = [markerOpen, ...patterns, markerClose].join("\n");
     const markerRe = new RegExp(
       `${escapeRegExp(markerOpen)}[\\s\\S]*?${escapeRegExp(markerClose)}`,
@@ -529,7 +561,11 @@ export function ensureHookGitExcludes(cwd = process.cwd()) {
       updated = existing.replace(markerRe, block);
     } else {
       const prefix =
-        existing.length === 0 ? "" : existing.endsWith("\n") ? existing : `${existing}\n`;
+        existing.length === 0
+          ? ""
+          : existing.endsWith("\n")
+            ? existing
+            : `${existing}\n`;
       updated = `${prefix}${prefix.endsWith("\n\n") || prefix === "" ? "" : "\n"}${block}\n`;
     }
 
@@ -540,12 +576,19 @@ export function ensureHookGitExcludes(cwd = process.cwd()) {
 
     return {
       mode: "git-info-exclude",
-      file: path.relative(path.resolve(cwd), target.path).split(path.sep).join("/"),
+      file: path
+        .relative(path.resolve(cwd), target.path)
+        .split(path.sep)
+        .join("/"),
       changed: updated !== existing,
       patterns,
     };
   } catch {
-    return { mode: "error", changed: false, patterns: [...HOOK_LOCAL_IGNORE_PATTERNS] };
+    return {
+      mode: "error",
+      changed: false,
+      patterns: [...HOOK_LOCAL_IGNORE_PATTERNS],
+    };
   }
 }
 
@@ -577,7 +620,9 @@ function resolveGitDir(dotGit, worktreeDir) {
   const body = fs.readFileSync(dotGit, "utf-8").trim();
   const match = body.match(/^gitdir:\s*(.+)$/i);
   if (!match) return null;
-  return path.isAbsolute(match[1]) ? match[1] : path.resolve(worktreeDir, match[1]);
+  return path.isAbsolute(match[1])
+    ? match[1]
+    : path.resolve(worktreeDir, match[1]);
 }
 
 function escapeRegExp(value) {
@@ -673,7 +718,9 @@ export function matchesAnyGlob(filePath, globs) {
 
 export function filterFindings(findings, _content, _ext, config) {
   if (!Array.isArray(findings) || findings.length === 0) return [];
-  const ignoreRules = new Set((config.ignoreRules || []).map((rule) => normalizeIgnoreRule(rule)));
+  const ignoreRules = new Set(
+    (config.ignoreRules || []).map((rule) => normalizeIgnoreRule(rule)),
+  );
   const ignoreValues = normalizeIgnoreValueEntries(config.ignoreValues || []);
   return findings.filter((f) => {
     if (!f || typeof f !== "object") return false;
@@ -690,9 +737,13 @@ function isIgnoredFindingValue(finding, ignoreValues) {
   if (!rule || !value) return false;
   return ignoreValues.some((entry) => {
     const wildcardValue = entry.value === "*";
-    if (entry.rule !== rule || (!wildcardValue && !ignoreValueMatches(rule, entry.value, value)))
+    if (
+      entry.rule !== rule ||
+      (!wildcardValue && !ignoreValueMatches(rule, entry.value, value))
+    )
       return false;
-    if (!Array.isArray(entry.files) || entry.files.length === 0) return !wildcardValue;
+    if (!Array.isArray(entry.files) || entry.files.length === 0)
+      return !wildcardValue;
     return findingMatchesScopedIgnoreFile(finding, entry.files);
   });
 }
@@ -725,11 +776,18 @@ export function extractFindingIgnoreValue(finding) {
   return normalizeIgnoreValue(extractFindingIgnoreValueRaw(finding, rule));
 }
 
-function extractFindingIgnoreValueRaw(finding, rule = normalizeIgnoreRule(finding?.antipattern)) {
-  const direct = cleanIgnoreValueDisplay(finding.ignoreValue || finding.value || "");
+function extractFindingIgnoreValueRaw(
+  finding,
+  rule = normalizeIgnoreRule(finding?.antipattern),
+) {
+  const direct = cleanIgnoreValueDisplay(
+    finding.ignoreValue || finding.value || "",
+  );
   if (direct) return direct;
 
-  const candidates = [finding.detail, finding.snippet].filter((v) => typeof v === "string" && v);
+  const candidates = [finding.detail, finding.snippet].filter(
+    (v) => typeof v === "string" && v,
+  );
   for (const text of candidates) {
     if (rule === "bounce-easing") {
       const motion = extractMotionIgnoreValue(text);
@@ -813,14 +871,22 @@ function findingCacheKey(finding) {
   const snippet = String(finding?.snippet || "")
     .trim()
     .slice(0, 80);
-  return snippet ? `${finding.antipattern}:0:${snippet}` : `${finding.antipattern}:0`;
+  return snippet
+    ? `${finding.antipattern}:0:${snippet}`
+    : `${finding.antipattern}:0`;
 }
 
 export function renderTemplate(findings, filePath, config, opts = {}) {
   if (!Array.isArray(findings) || findings.length === 0) return "";
   const limits = config?.limits || DEFAULT_CONFIG.limits;
-  const cap = Math.max(1, limits.maxFindings || DEFAULT_CONFIG.limits.maxFindings);
-  const maxChars = Math.max(500, limits.maxChars || DEFAULT_CONFIG.limits.maxChars);
+  const cap = Math.max(
+    1,
+    limits.maxFindings || DEFAULT_CONFIG.limits.maxFindings,
+  );
+  const maxChars = Math.max(
+    500,
+    limits.maxChars || DEFAULT_CONFIG.limits.maxChars,
+  );
 
   const cwd = opts.cwd || process.cwd();
   const display = relativize(filePath, cwd);
@@ -830,7 +896,8 @@ export function renderTemplate(findings, filePath, config, opts = {}) {
 
   const header = `${ENVELOPE_PREFIX} Design hook findings requiring review in ${display} (${total} issue(s)):`;
   const lines = shown.map((f) => formatFindingLine(f));
-  const more = remaining > 0 ? `... and ${remaining} more (see /impeccable audit).` : null;
+  const more =
+    remaining > 0 ? `... and ${remaining} more (see /impeccable audit).` : null;
   const footer = directiveFooter(display);
 
   const blocks = [header, ...lines];
@@ -856,10 +923,19 @@ function renderGroupedTemplate(groups, config, opts = {}) {
   }
 
   const limits = config?.limits || DEFAULT_CONFIG.limits;
-  const cap = Math.max(1, limits.maxFindings || DEFAULT_CONFIG.limits.maxFindings);
-  const maxChars = Math.max(500, limits.maxChars || DEFAULT_CONFIG.limits.maxChars);
+  const cap = Math.max(
+    1,
+    limits.maxFindings || DEFAULT_CONFIG.limits.maxFindings,
+  );
+  const maxChars = Math.max(
+    500,
+    limits.maxChars || DEFAULT_CONFIG.limits.maxChars,
+  );
   const cwd = opts.cwd || process.cwd();
-  const total = realGroups.reduce((sum, group) => sum + group.findings.length, 0);
+  const total = realGroups.reduce(
+    (sum, group) => sum + group.findings.length,
+    0,
+  );
   const header = `${ENVELOPE_PREFIX} Design hook findings requiring review across ${realGroups.length} files (${total} issue(s)):`;
   const lines = [];
   let shownCount = 0;
@@ -1004,8 +1080,13 @@ export function resolveTargetFiles(event, projectCwd) {
     if (!out.includes(filePath)) out.push(filePath);
   };
 
-  if (event?.tool_name === "apply_patch" && ti && typeof ti.command === "string") {
-    for (const filePath of parseApplyPatchPaths(ti.command, projectCwd)) add(filePath);
+  if (
+    event?.tool_name === "apply_patch" &&
+    ti &&
+    typeof ti.command === "string"
+  ) {
+    for (const filePath of parseApplyPatchPaths(ti.command, projectCwd))
+      add(filePath);
   }
   if (ti && typeof ti.file_path === "string" && ti.file_path) {
     add(ti.file_path);
@@ -1036,7 +1117,8 @@ export function resolveHarness(env = {}, event = null) {
   ) {
     return "github";
   }
-  if (typeof event?.conversation_id === "string" && event.conversation_id) return "cursor";
+  if (typeof event?.conversation_id === "string" && event.conversation_id)
+    return "cursor";
   return "claude";
 }
 
@@ -1050,11 +1132,14 @@ export function resolveHarness(env = {}, event = null) {
 // normalizeGitHubEvent). The detector reads the file from disk after the tool
 // ran, so only the path (not the proposed content) is needed here.
 export function parseGitHubToolArgs(toolArgs) {
-  if (toolArgs && typeof toolArgs === "object" && !Array.isArray(toolArgs)) return toolArgs;
+  if (toolArgs && typeof toolArgs === "object" && !Array.isArray(toolArgs))
+    return toolArgs;
   if (typeof toolArgs === "string" && toolArgs.trim()) {
     try {
       const parsed = JSON.parse(toolArgs);
-      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed
+        : {};
     } catch {
       return {};
     }
@@ -1070,10 +1155,12 @@ export function parseGitHubToolArgs(toolArgs) {
 //   *** End Patch
 // The `view`/`edit`/`create` tools (seen in `copilot -p` runs) instead send a
 // JSON string with the path under `path`. Both must map onto the internal shape.
-const APPLY_PATCH_MARKER = /\*\*\* (?:Begin Patch|Add File:|Update File:|Delete File:)/;
+const APPLY_PATCH_MARKER =
+  /\*\*\* (?:Begin Patch|Add File:|Update File:|Delete File:)/;
 
 function looksLikeApplyPatch(rawArgs) {
-  if (typeof rawArgs !== "string" || !APPLY_PATCH_MARKER.test(rawArgs)) return false;
+  if (typeof rawArgs !== "string" || !APPLY_PATCH_MARKER.test(rawArgs))
+    return false;
   // Guard against an edit/create payload whose edited *content* happens to
   // contain patch markers: that payload is a JSON object string, whereas a real
   // apply_patch payload is a raw patch string that does not parse as JSON. Only
@@ -1106,7 +1193,9 @@ function normalizeGitHubEvent(event, projectCwd) {
   const sessionId = event.sessionId || event.session_id || "unknown";
   const toolName = event.toolName || event.tool_name || null;
   const toolInput =
-    event.tool_input && typeof event.tool_input === "object" ? { ...event.tool_input } : {};
+    event.tool_input && typeof event.tool_input === "object"
+      ? { ...event.tool_input }
+      : {};
   const rawArgs = event.toolArgs;
 
   let normalizedToolName = toolName;
@@ -1121,8 +1210,10 @@ function normalizeGitHubEvent(event, projectCwd) {
     }
   } else {
     const args = parseGitHubToolArgs(rawArgs);
-    const filePath = args.path || args.file_path || args.filePath || args.target_file;
-    if (typeof filePath === "string" && filePath) toolInput.file_path = filePath;
+    const filePath =
+      args.path || args.file_path || args.filePath || args.target_file;
+    if (typeof filePath === "string" && filePath)
+      toolInput.file_path = filePath;
   }
 
   return {
@@ -1146,7 +1237,10 @@ export function normalizeHookEvent(event, projectCwd, harness = "claude") {
     projectCwd;
   const sessionId = event.session_id || event.conversation_id || "unknown";
 
-  const ti = event.tool_input && typeof event.tool_input === "object" ? event.tool_input : {};
+  const ti =
+    event.tool_input && typeof event.tool_input === "object"
+      ? event.tool_input
+      : {};
   const filePath = ti.file_path || ti.path || event.file_path;
   if (filePath) {
     return {
@@ -1161,7 +1255,10 @@ export function normalizeHookEvent(event, projectCwd, harness = "claude") {
 }
 
 function envProjectDir(fallback) {
-  if (typeof process.env.CURSOR_PROJECT_DIR === "string" && process.env.CURSOR_PROJECT_DIR) {
+  if (
+    typeof process.env.CURSOR_PROJECT_DIR === "string" &&
+    process.env.CURSOR_PROJECT_DIR
+  ) {
     return process.env.CURSOR_PROJECT_DIR;
   }
   return fallback;
@@ -1274,7 +1371,11 @@ export function expandScanTargets(primaryTargets, projectCwd) {
   const baseCwd = projectCwd || process.cwd();
   const add = (p) => {
     if (ordered.length >= MAX_SCAN_TARGETS) return;
-    const abs = hasPathTraversal(p) ? p : path.isAbsolute(p) ? p : path.resolve(baseCwd, p);
+    const abs = hasPathTraversal(p)
+      ? p
+      : path.isAbsolute(p)
+        ? p
+        : path.resolve(baseCwd, p);
     if (seen.has(abs)) return;
     seen.add(abs);
     ordered.push(abs);
@@ -1314,7 +1415,8 @@ export function writeAuditLog(env, entry, cwd = process.cwd()) {
   // The event's project root (entry.cwd) when present, else the passed cwd. Both
   // config reads and relative log paths resolve against this, since the hook
   // process cwd can differ from the project being edited.
-  const baseCwd = entry && typeof entry.cwd === "string" && entry.cwd ? entry.cwd : cwd;
+  const baseCwd =
+    entry && typeof entry.cwd === "string" && entry.cwd ? entry.cwd : cwd;
   // Env wins; otherwise fall back to the unified config's hook.auditLog path.
   let target = env?.IMPECCABLE_HOOK_LOG;
   if (!target || typeof target !== "string") {
@@ -1328,14 +1430,18 @@ export function writeAuditLog(env, entry, cwd = process.cwd()) {
   try {
     let expanded;
     if (target.startsWith("~/")) {
-      expanded = path.join(process.env.HOME || process.env.USERPROFILE || ".", target.slice(2));
+      expanded = path.join(
+        process.env.HOME || process.env.USERPROFILE || ".",
+        target.slice(2),
+      );
     } else if (path.isAbsolute(target)) {
       expanded = target;
     } else {
       expanded = path.resolve(baseCwd, target);
     }
     fs.mkdirSync(path.dirname(expanded), { recursive: true });
-    const line = JSON.stringify({ ts: new Date().toISOString(), ...entry }) + "\n";
+    const line =
+      JSON.stringify({ ts: new Date().toISOString(), ...entry }) + "\n";
     fs.appendFileSync(expanded, line);
     return true;
   } catch {
@@ -1346,7 +1452,15 @@ export function writeAuditLog(env, entry, cwd = process.cwd()) {
 const DETECTOR_CANDIDATES = [
   path.join(__dirname, "detector", "detect-antipatterns.mjs"),
   path.join(__dirname, "..", "..", "cli", "engine", "detect-antipatterns.mjs"),
-  path.join(__dirname, "..", "..", "..", "cli", "engine", "detect-antipatterns.mjs"),
+  path.join(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "cli",
+    "engine",
+    "detect-antipatterns.mjs",
+  ),
 ];
 
 let detectorCache = null;
@@ -1419,7 +1533,8 @@ export function shouldEmitAckForFile(filePath) {
 
 export function designSystemOptions(config, detector, projectCwd) {
   if (config?.designSystem?.enabled === false) return {};
-  if (!detector || typeof detector.loadDesignSystemForCwd !== "function") return {};
+  if (!detector || typeof detector.loadDesignSystemForCwd !== "function")
+    return {};
   try {
     const designSystem = detector.loadDesignSystemForCwd(projectCwd);
     return designSystem ? { designSystem } : {};
@@ -1474,11 +1589,18 @@ export async function runHook({
   detector,
 } = {}) {
   const audit = { ts: new Date(now()).toISOString(), event: "PostToolUse" };
-  const result = (extra) => ({ exitCode: 0, stdout: "", audit: { ...audit, ...extra } });
+  const result = (extra) => ({
+    exitCode: 0,
+    stdout: "",
+    audit: { ...audit, ...extra },
+  });
 
   try {
     // Re-entrancy guard.
-    if (depthIsSet(env.IMPECCABLE_HOOK_DEPTH) || depthIsSet(env.CLAUDE_HOOK_DEPTH)) {
+    if (
+      depthIsSet(env.IMPECCABLE_HOOK_DEPTH) ||
+      depthIsSet(env.CLAUDE_HOOK_DEPTH)
+    ) {
       return result({ reentrant: true, durationMs: 0 });
     }
 
@@ -1492,10 +1614,16 @@ export async function runHook({
     try {
       event = typeof stdinJson === "string" ? JSON.parse(stdinJson) : stdinJson;
     } catch {
-      return result({ skipped: "stdin-malformed", durationMs: Date.now() - started });
+      return result({
+        skipped: "stdin-malformed",
+        durationMs: Date.now() - started,
+      });
     }
     if (!event || typeof event !== "object") {
-      return result({ skipped: "stdin-empty", durationMs: Date.now() - started });
+      return result({
+        skipped: "stdin-empty",
+        durationMs: Date.now() - started,
+      });
     }
 
     const harness = resolveHarness(env, event);
@@ -1504,19 +1632,28 @@ export async function runHook({
 
     const projectCwd = event.cwd || cwd;
     audit.cwd = projectCwd;
-    const primaryFiles = normalizeScanTargets(resolveTargetFiles(event, projectCwd), projectCwd);
+    const primaryFiles = normalizeScanTargets(
+      resolveTargetFiles(event, projectCwd),
+      projectCwd,
+    );
     const primaryFileSet = new Set(primaryFiles);
     const targetFiles = expandScanTargets(primaryFiles, projectCwd);
     audit.session = event.session_id || null;
     if (event.tool_name) audit.tool = event.tool_name;
 
     if (targetFiles.length === 0) {
-      return result({ skipped: "no-file-path", durationMs: Date.now() - started });
+      return result({
+        skipped: "no-file-path",
+        durationMs: Date.now() - started,
+      });
     }
 
     const config = readConfig(projectCwd);
     if (config.enabled === false) {
-      return result({ skipped: "config-disabled", durationMs: Date.now() - started });
+      return result({
+        skipped: "config-disabled",
+        durationMs: Date.now() - started,
+      });
     }
 
     const cache = readCache(projectCwd);
@@ -1524,7 +1661,10 @@ export async function runHook({
     const det = detector || (await loadDetector());
     if (!det || typeof det.detectText !== "function") {
       persistCache(projectCwd, cache);
-      return result({ skipped: "detector-missing", durationMs: Date.now() - started });
+      return result({
+        skipped: "detector-missing",
+        durationMs: Date.now() - started,
+      });
     }
     const scanOptions = designSystemOptions(config, det, projectCwd);
 
@@ -1586,7 +1726,10 @@ export async function runHook({
       const content = fs.readFileSync(filePath, "utf-8");
       let findings;
       let detectorThrew = false;
-      if ((ext === ".html" || ext === ".htm") && typeof det.detectHtml === "function") {
+      if (
+        (ext === ".html" || ext === ".htm") &&
+        typeof det.detectHtml === "function"
+      ) {
         try {
           findings = await det.detectHtml(filePath, scanOptions);
         } catch {
@@ -1619,7 +1762,9 @@ export async function runHook({
       }
 
       if (filtered.length > 0 && !pendingWinner) {
-        const known = (ensureFile(cache, sessionId, filePath).findings || []).slice();
+        const known = (
+          ensureFile(cache, sessionId, filePath).findings || []
+        ).slice();
         pendingWinner = { filePath, known };
       } else if (filtered.length === 0 && !cleanWinner) {
         cleanWinner = { filePath };
@@ -1657,22 +1802,36 @@ export async function runHook({
     }
 
     if (detectorThrewAny && !pendingWinner && !cleanWinner) {
-      return result({ emitted: false, error: "detector-threw", durationMs: Date.now() - started });
+      return result({
+        emitted: false,
+        error: "detector-threw",
+        durationMs: Date.now() - started,
+      });
     }
 
     if (truthy(env.IMPECCABLE_HOOK_QUIET) || config.quiet === true) {
-      return result({ emitted: false, quiet: true, durationMs: Date.now() - started });
+      return result({
+        emitted: false,
+        quiet: true,
+        durationMs: Date.now() - started,
+      });
     }
 
     if (pendingWinner && shouldEmitAckForFile(pendingWinner.filePath)) {
       const text = appendDesignSystemNote(
-        renderPendingAck(pendingWinner.filePath, pendingWinner.known, { cwd: projectCwd }),
+        renderPendingAck(pendingWinner.filePath, pendingWinner.known, {
+          cwd: projectCwd,
+        }),
         scanOptions,
       );
       return {
         exitCode: 0,
         stdout: payload(text, "PostToolUse", harness),
-        emission: { kind: "pending", file: pendingWinner.filePath, known: pendingWinner.known },
+        emission: {
+          kind: "pending",
+          file: pendingWinner.filePath,
+          known: pendingWinner.known,
+        },
         audit: {
           ...audit,
           file: pendingWinner.filePath,
@@ -1686,7 +1845,9 @@ export async function runHook({
     }
 
     if (suppressionWinner) {
-      const text = suppressionNotice(relativize(suppressionWinner.filePath, projectCwd));
+      const text = suppressionNotice(
+        relativize(suppressionWinner.filePath, projectCwd),
+      );
       return {
         exitCode: 0,
         stdout: payload(text, "PostToolUse", harness),
@@ -1722,11 +1883,19 @@ export async function runHook({
     }
 
     if (pendingWinner || cleanWinner) {
-      return result({ emitted: false, skipped: "non-ui-ack", durationMs: Date.now() - started });
+      return result({
+        emitted: false,
+        skipped: "non-ui-ack",
+        durationMs: Date.now() - started,
+      });
     }
 
     if (suppressedHit) {
-      return result({ suppressed: true, emitted: false, durationMs: Date.now() - started });
+      return result({
+        suppressed: true,
+        emitted: false,
+        durationMs: Date.now() - started,
+      });
     }
 
     return result({ skipped: lastSkip, durationMs: Date.now() - started });
@@ -1734,7 +1903,10 @@ export async function runHook({
     return {
       exitCode: 0,
       stdout: "",
-      audit: { ...audit, error: String(err && err.message ? err.message : err) },
+      audit: {
+        ...audit,
+        error: String(err && err.message ? err.message : err),
+      },
     };
   }
 }

@@ -32,6 +32,7 @@ modules/<domain>/
 ```
 
 ### Aturan Arsitektur Backend (TSD 7.4):
+
 - **Controller harus tipis**: Dilarang meletakkan database query atau kalkulasi kapasitas di controller.
 - **Service Isolation**: Antar domain module hanya boleh memanggil public service interface module lain, tidak boleh mengakses repository module lain secara langsung.
 - **Capacity Source of Truth**: Satu-satunya sumber kebenaran perhitungan kapasitas adalah `CapacityService` di `modules/capacity/capacity.service.ts`.

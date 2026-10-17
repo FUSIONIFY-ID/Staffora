@@ -42,7 +42,10 @@ import {
   writeLiveServerInfo,
 } from "./lib/impeccable-paths.mjs";
 import { countByPage as countPendingByPage } from "./live/manual-edits-buffer.mjs";
-import { createManualApplyController, summarizeManualApplyFailures } from "./live/manual-apply.mjs";
+import {
+  createManualApplyController,
+  summarizeManualApplyFailures,
+} from "./live/manual-apply.mjs";
 import {
   applyDeferredSvelteComponentAccepts,
   removeAllSvelteComponentSessions,
@@ -146,7 +149,8 @@ function enqueueEvent(event) {
     !event ||
     (event.id &&
       state.pendingEvents.some(
-        (entry) => entry.event?.id === event.id && entry.event?.type === event.type,
+        (entry) =>
+          entry.event?.id === event.id && entry.event?.type === event.type,
       ))
   )
     return;
@@ -211,7 +215,8 @@ function summarizePendingEventForStatus(entry) {
     summary.chunk = event.chunk || null;
     summary.repair = event.repair || null;
     summary.evidencePath = event.evidencePath || null;
-    summary.agentAction = event.agentAction || manualApply.buildAgentAction(event);
+    summary.agentAction =
+      event.agentAction || manualApply.buildAgentAction(event);
     summary.manualApplySummary = manualApply.summarizeEvent(
       event,
       manualApply.getDeferred(event.id)?.batch || event.batch,
@@ -300,7 +305,9 @@ function agentPollingConnected() {
   const now = Date.now();
   return (
     state.pendingPolls.length > 0 ||
-    state.pendingEvents.some((entry) => entry.leaseUntil && entry.leaseUntil > now)
+    state.pendingEvents.some(
+      (entry) => entry.leaseUntil && entry.leaseUntil > now,
+    )
   );
 }
 
@@ -333,7 +340,10 @@ function recordManualEditActivity(type, details = {}) {
   state.manualEditActivity = entry;
   if (DEBUG_MANUAL_EDIT_EVENTS) {
     try {
-      const filePath = path.join(getLiveDir(process.cwd()), "manual-edit-events.jsonl");
+      const filePath = path.join(
+        getLiveDir(process.cwd()),
+        "manual-edit-events.jsonl",
+      );
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
       fs.appendFileSync(filePath, JSON.stringify(entry) + "\n");
     } catch {
@@ -368,8 +378,24 @@ function loadBrowserScripts() {
   // This one IS cached — detect.js rarely changes during a session.
   const detectPaths = [
     path.join(__dirname, "detector", "detect-antipatterns-browser.js"),
-    path.join(__dirname, "..", "..", "cli", "engine", "detect-antipatterns-browser.js"),
-    path.join(__dirname, "..", "..", "..", "..", "cli", "engine", "detect-antipatterns-browser.js"),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "cli",
+      "engine",
+      "detect-antipatterns-browser.js",
+    ),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "cli",
+      "engine",
+      "detect-antipatterns-browser.js",
+    ),
     path.join(
       process.cwd(),
       "node_modules",
@@ -571,7 +597,9 @@ function createRequestHandler({ detectScript, liveScriptParts }) {
           status: "ok",
           port: state.port,
           connectedClients: state.sseClients.size,
-          pendingEvents: state.pendingEvents.map((entry) => summarizePendingEventForStatus(entry)),
+          pendingEvents: state.pendingEvents.map((entry) =>
+            summarizePendingEventForStatus(entry),
+          ),
           agentPolling: agentPollingConnected(),
           activeSessions: sessions,
           manualEdits: getManualEditStatus(),
@@ -615,8 +643,10 @@ function createRequestHandler({ detectScript, liveScriptParts }) {
 
       const mdPath = DESIGN_MD_PATH;
       const jsonPath =
-        resolveDesignSidecarPath(process.cwd(), PROJECT_CONTEXT.designContextDir || CONTEXT_DIR) ||
-        getDesignSidecarPath(process.cwd());
+        resolveDesignSidecarPath(
+          process.cwd(),
+          PROJECT_CONTEXT.designContextDir || CONTEXT_DIR,
+        ) || getDesignSidecarPath(process.cwd());
       const mdStat = statOrNull(mdPath);
       const jsonStat = statOrNull(jsonPath);
 
@@ -641,7 +671,11 @@ function createRequestHandler({ detectScript, liveScriptParts }) {
         present: true,
         hasMd: !!mdStat,
         hasSidecar: !!jsonStat,
-        mdNewerThanJson: !!(mdStat && jsonStat && mdStat.mtimeMs > jsonStat.mtimeMs + 1000),
+        mdNewerThanJson: !!(
+          mdStat &&
+          jsonStat &&
+          mdStat.mtimeMs > jsonStat.mtimeMs + 1000
+        ),
       };
 
       if (mdStat) {
@@ -656,7 +690,8 @@ function createRequestHandler({ detectScript, liveScriptParts }) {
         try {
           response.sidecar = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
         } catch (err) {
-          response.sidecarError = "Failed to parse .impeccable/design.json: " + err.message;
+          response.sidecarError =
+            "Failed to parse .impeccable/design.json: " + err.message;
         }
       }
 
@@ -776,7 +811,10 @@ function createRequestHandler({ detectScript, liveScriptParts }) {
         if (msg.type === "manual_edits") {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(
-            JSON.stringify({ error: "manual_edits must POST to /manual-edit-stash, not /events" }),
+            JSON.stringify({
+              error:
+                "manual_edits must POST to /manual-edit-stash, not /events",
+            }),
           );
           return;
         }
@@ -801,7 +839,12 @@ function createRequestHandler({ detectScript, liveScriptParts }) {
             state.sessionStore.appendEvent(msg);
           } catch (err) {
             res.writeHead(500, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "session_store_append_failed", message: err.message }));
+            res.end(
+              JSON.stringify({
+                error: "session_store_append_failed",
+                message: err.message,
+              }),
+            );
             return;
           }
         }
@@ -858,7 +901,10 @@ function handlePollGet(req, res, url) {
     return;
   }
   state.lastPollAt = Date.now();
-  const timeout = parseInt(url.searchParams.get("timeout") || DEFAULT_POLL_TIMEOUT, 10);
+  const timeout = parseInt(
+    url.searchParams.get("timeout") || DEFAULT_POLL_TIMEOUT,
+    10,
+  );
   const leaseMs = parseInt(url.searchParams.get("leaseMs") || "30000", 10);
   const available = findAvailablePendingEvent();
   if (available) {
@@ -895,7 +941,8 @@ function sessionFileMetadataFromPollReply(file) {
   if (!file || typeof file !== "string") return { file };
   const normalized = file.split(path.sep).join("/");
   const base = { file: normalized };
-  if (!normalized.endsWith("/manifest.json") && normalized !== "manifest.json") return base;
+  if (!normalized.endsWith("/manifest.json") && normalized !== "manifest.json")
+    return base;
   if (
     !normalized.includes("node_modules/.impeccable-live/") &&
     !normalized.includes("src/lib/impeccable/")
@@ -913,7 +960,8 @@ function sessionFileMetadataFromPollReply(file) {
 
   try {
     const manifest = JSON.parse(fs.readFileSync(full, "utf-8"));
-    if (manifest?.previewMode !== "svelte-component" || !manifest.sourceFile) return base;
+    if (manifest?.previewMode !== "svelte-component" || !manifest.sourceFile)
+      return base;
     return {
       file: String(manifest.sourceFile).split(path.sep).join("/"),
       sourceFile: String(manifest.sourceFile).split(path.sep).join("/"),
@@ -946,7 +994,10 @@ function handlePollPost(req, res) {
     }
     const pendingApplyDeferred = manualApply.getDeferred(msg.id);
     if (pendingApplyDeferred) {
-      const validation = manualApply.validateResultMessage(msg, pendingApplyDeferred);
+      const validation = manualApply.validateResultMessage(
+        msg,
+        pendingApplyDeferred,
+      );
       if (!validation.ok) {
         recordManualEditActivity("manual_edit_apply_reply_invalid", {
           id: msg.id,
@@ -954,7 +1005,9 @@ function handlePollPost(req, res) {
           chunk: pendingApplyDeferred.event?.chunk || null,
           repair: pendingApplyDeferred.event?.repair || null,
           reason:
-            validation.body?.reason || validation.body?.error || "invalid_manual_apply_result",
+            validation.body?.reason ||
+            validation.body?.error ||
+            "invalid_manual_apply_result",
           status: msg.data?.status || null,
         });
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -987,7 +1040,9 @@ function handlePollPost(req, res) {
         rollbackFailureCount: rollback.rollbackFailures?.length || 0,
       });
       res.writeHead(409, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "stale_manual_edit_apply_reply", ...rollback }));
+      res.end(
+        JSON.stringify({ error: "stale_manual_edit_apply_reply", ...rollback }),
+      );
       return;
     }
     const pendingEventBeforeAck = findPendingEventById(msg.id);
@@ -1011,10 +1066,13 @@ function handlePollPost(req, res) {
     let existingSession = null;
     if (!acknowledgedEvent && state.sessionStore && msg.id) {
       try {
-        existingSession = state.sessionStore.getSnapshot(msg.id, { includeCompleted: true });
+        existingSession = state.sessionStore.getSnapshot(msg.id, {
+          includeCompleted: true,
+        });
         if (!existingSession?.updatedAt) existingSession = null;
         skipJournalReply =
-          existingSession?.phase === "completed" || existingSession?.phase === "discarded";
+          existingSession?.phase === "completed" ||
+          existingSession?.phase === "discarded";
       } catch {
         /* fall through and record the reply normally */
       }
@@ -1110,7 +1168,10 @@ function cleanupSvelteComponentSessionsBeforeExit() {
   try {
     removeAllSvelteComponentSessions(process.cwd());
   } catch (err) {
-    console.warn("[impeccable] Svelte component session cleanup failed:", err.message);
+    console.warn(
+      "[impeccable] Svelte component session cleanup failed:",
+      err.message,
+    );
   }
 }
 
@@ -1124,7 +1185,10 @@ function applyLegacyDeferredAcceptsOnStartup() {
       );
     }
   } catch (err) {
-    console.warn("[impeccable] legacy deferred Svelte component accept apply failed:", err.message);
+    console.warn(
+      "[impeccable] legacy deferred Svelte component accept apply failed:",
+      err.message,
+    );
   }
 }
 
@@ -1170,7 +1234,9 @@ if (args.includes("stop")) {
   const keepInject = args.includes("--keep-inject");
   try {
     const { info } = readLiveServerInfo(process.cwd()) || {};
-    const res = await fetch(`http://localhost:${info.port}/stop?token=${info.token}`);
+    const res = await fetch(
+      `http://localhost:${info.port}/stop?token=${info.token}`,
+    );
     if (res.ok) console.log(`Stopped live server on port ${info.port}.`);
   } catch {
     console.log("No running live server found.");
@@ -1199,7 +1265,9 @@ if (args.includes("stop")) {
         err.stdout?.toString?.().trim?.() ||
         err.message ||
         String(err);
-      console.warn(`Note: could not remove live script tag (${detail.split("\n")[0]})`);
+      console.warn(
+        `Note: could not remove live script tag (${detail.split("\n")[0]})`,
+      );
     }
   }
   process.exit(0);
@@ -1210,11 +1278,15 @@ if (args.includes("stop")) {
 // simple (no shell backgrounding or chained commands).
 if (args.includes("--background")) {
   const childArgs = args.filter((a) => a !== "--background");
-  const child = spawn(process.execPath, [fileURLToPath(import.meta.url), ...childArgs], {
-    detached: true,
-    stdio: "ignore",
-    cwd: process.cwd(),
-  });
+  const child = spawn(
+    process.execPath,
+    [fileURLToPath(import.meta.url), ...childArgs],
+    {
+      detached: true,
+      stdio: "ignore",
+      cwd: process.cwd(),
+    },
+  );
   child.unref();
 
   // Poll for the PID file (the child writes it once the HTTP server is listening).
@@ -1242,9 +1314,13 @@ if (existingRecord?.info) {
   const existing = existingRecord.info;
   try {
     process.kill(existing.pid, 0);
-    console.error(`Live server already running on port ${existing.port} (pid ${existing.pid}).`);
     console.error(
-      "Stop it first with: node " + path.basename(fileURLToPath(import.meta.url)) + " stop",
+      `Live server already running on port ${existing.port} (pid ${existing.pid}).`,
+    );
+    console.error(
+      "Stop it first with: node " +
+        path.basename(fileURLToPath(import.meta.url)) +
+        " stop",
     );
     process.exit(1);
   } catch {
@@ -1263,7 +1339,9 @@ applyLegacyDeferredAcceptsOnStartup();
 restorePendingEventsFromStore();
 manualApply.pruneStaleEvidence();
 const portArg = args.find((a) => a.startsWith("--port="));
-state.port = portArg ? parseInt(portArg.split("=")[1], 10) : await findOpenPort();
+state.port = portArg
+  ? parseInt(portArg.split("=")[1], 10)
+  : await findOpenPort();
 // Annotation screenshots live in the project root so the agent's Read tool
 // doesn't trip a per-file permission prompt. Sessioned by token so concurrent
 // projects (or quick restarts) don't collide.
@@ -1272,16 +1350,26 @@ fs.mkdirSync(annotRoot, { recursive: true });
 state.sessionDir = fs.mkdtempSync(path.join(annotRoot, "session-"));
 
 const { detectScript, liveScriptParts } = loadBrowserScripts();
-httpServer = http.createServer(createRequestHandler({ detectScript, liveScriptParts }));
+httpServer = http.createServer(
+  createRequestHandler({ detectScript, liveScriptParts }),
+);
 
 httpServer.listen(state.port, "127.0.0.1", () => {
-  writeLiveServerInfo(process.cwd(), { pid: process.pid, port: state.port, token: state.token });
+  writeLiveServerInfo(process.cwd(), {
+    pid: process.pid,
+    port: state.port,
+    token: state.token,
+  });
   const url = `http://localhost:${state.port}`;
   console.log(`\nImpeccable live server running on ${url}`);
   console.log(`Token: ${state.token}\n`);
   console.log(`Script: ${url}/live.js`);
-  console.log("Inject: managed by live-inject.mjs; Astro source tags use is:inline automatically.");
-  console.log(`Stop:   node ${path.basename(fileURLToPath(import.meta.url))} stop`);
+  console.log(
+    "Inject: managed by live-inject.mjs; Astro source tags use is:inline automatically.",
+  );
+  console.log(
+    `Stop:   node ${path.basename(fileURLToPath(import.meta.url))} stop`,
+  );
 });
 
 process.on("SIGINT", shutdown);

@@ -15,7 +15,13 @@
  *   }
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  statSync,
+} from "node:fs";
 import { join, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
 export function getConfigPath(root) {
@@ -36,13 +42,19 @@ function safeReadJson(filePath) {
 }
 
 function hookSection(raw) {
-  return raw && raw.hook && typeof raw.hook === "object" && !Array.isArray(raw.hook)
+  return raw &&
+    raw.hook &&
+    typeof raw.hook === "object" &&
+    !Array.isArray(raw.hook)
     ? raw.hook
     : null;
 }
 
 function detectorSection(raw) {
-  return raw && raw.detector && typeof raw.detector === "object" && !Array.isArray(raw.detector)
+  return raw &&
+    raw.detector &&
+    typeof raw.detector === "object" &&
+    !Array.isArray(raw.detector)
     ? raw.detector
     : null;
 }
@@ -91,13 +103,22 @@ function applyDetectionConfigSource(config, raw) {
     };
   }
   if (Array.isArray(raw.ignoreRules)) {
-    config.ignoreRules = uniqueStrings([...config.ignoreRules, ...raw.ignoreRules]);
+    config.ignoreRules = uniqueStrings([
+      ...config.ignoreRules,
+      ...raw.ignoreRules,
+    ]);
   }
   if (Array.isArray(raw.ignoreFiles)) {
-    config.ignoreFiles = uniqueStrings([...config.ignoreFiles, ...raw.ignoreFiles]);
+    config.ignoreFiles = uniqueStrings([
+      ...config.ignoreFiles,
+      ...raw.ignoreFiles,
+    ]);
   }
   if (Array.isArray(raw.ignoreValues)) {
-    config.ignoreValues = mergeIgnoreValues(config.ignoreValues, raw.ignoreValues);
+    config.ignoreValues = mergeIgnoreValues(
+      config.ignoreValues,
+      raw.ignoreValues,
+    );
   }
   return config;
 }
@@ -124,7 +145,9 @@ export function readDetectionConfig(root) {
 }
 
 export function readRawDetectionConfig(root, opts = {}) {
-  const raw = safeReadJson(opts.local ? getLocalConfigPath(root) : getConfigPath(root));
+  const raw = safeReadJson(
+    opts.local ? getLocalConfigPath(root) : getConfigPath(root),
+  );
   const config = cloneRawDetectionConfig();
   applyDetectionConfigSource(config, hookSection(raw));
   applyDetectionConfigSource(config, detectorSection(raw));
@@ -159,12 +182,16 @@ function normalizeDetectionConfigForWrite(config) {
   const out = {};
   if (Array.isArray(config?.ignoreRules)) {
     out.ignoreRules = uniqueStrings(
-      config.ignoreRules.map((rule) => normalizeIgnoreRule(rule)).filter(Boolean),
+      config.ignoreRules
+        .map((rule) => normalizeIgnoreRule(rule))
+        .filter(Boolean),
     );
   }
   if (Array.isArray(config?.ignoreFiles)) {
     out.ignoreFiles = uniqueStrings(
-      config.ignoreFiles.filter((v) => typeof v === "string" && v.trim()).map((v) => v.trim()),
+      config.ignoreFiles
+        .filter((v) => typeof v === "string" && v.trim())
+        .map((v) => v.trim()),
     );
   }
   out.ignoreValues = normalizeIgnoreValueEntries(config?.ignoreValues || []);
@@ -377,9 +404,13 @@ export function normalizeIgnoreValueEntries(entries) {
     if (!rule || !value) continue;
     const normalized = { rule, value };
     const files = uniqueStrings([
-      ...(typeof entry.file === "string" && entry.file.trim() ? [entry.file.trim()] : []),
+      ...(typeof entry.file === "string" && entry.file.trim()
+        ? [entry.file.trim()]
+        : []),
       ...(Array.isArray(entry.files)
-        ? entry.files.filter((v) => typeof v === "string" && v.trim()).map((v) => v.trim())
+        ? entry.files
+            .filter((v) => typeof v === "string" && v.trim())
+            .map((v) => v.trim())
         : []),
     ]);
     if (files.length > 0) normalized.files = files;
@@ -397,10 +428,16 @@ export function normalizeIgnoreValueEntries(entries) {
 function mergeIgnoreValues(existing, incoming) {
   const map = new Map();
   for (const entry of normalizeIgnoreValueEntries(existing)) {
-    map.set(`${entry.rule}\0${entry.value}\0${ignoreValueFilesKey(entry.files)}`, entry);
+    map.set(
+      `${entry.rule}\0${entry.value}\0${ignoreValueFilesKey(entry.files)}`,
+      entry,
+    );
   }
   for (const entry of normalizeIgnoreValueEntries(incoming)) {
-    map.set(`${entry.rule}\0${entry.value}\0${ignoreValueFilesKey(entry.files)}`, entry);
+    map.set(
+      `${entry.rule}\0${entry.value}\0${ignoreValueFilesKey(entry.files)}`,
+      entry,
+    );
   }
   return Array.from(map.values());
 }
@@ -492,7 +529,9 @@ export function shouldIgnoreDetectionFile(filePath, root, config) {
 
 export function filterDetectionFindings(findings, config) {
   if (!Array.isArray(findings) || findings.length === 0) return [];
-  const ignoreRules = new Set((config?.ignoreRules || []).map((rule) => normalizeIgnoreRule(rule)));
+  const ignoreRules = new Set(
+    (config?.ignoreRules || []).map((rule) => normalizeIgnoreRule(rule)),
+  );
   const ignoreValues = normalizeIgnoreValueEntries(config?.ignoreValues || []);
   return findings.filter((finding) => {
     if (!finding || typeof finding !== "object") return false;
@@ -509,9 +548,13 @@ function isIgnoredFindingValue(finding, ignoreValues) {
   if (!rule || !value) return false;
   return ignoreValues.some((entry) => {
     const wildcardValue = entry.value === "*";
-    if (entry.rule !== rule || (!wildcardValue && !ignoreValueMatches(rule, entry.value, value)))
+    if (
+      entry.rule !== rule ||
+      (!wildcardValue && !ignoreValueMatches(rule, entry.value, value))
+    )
       return false;
-    if (!Array.isArray(entry.files) || entry.files.length === 0) return !wildcardValue;
+    if (!Array.isArray(entry.files) || entry.files.length === 0)
+      return !wildcardValue;
     return findingMatchesScopedIgnoreFile(finding, entry.files);
   });
 }
@@ -544,11 +587,18 @@ export function extractFindingIgnoreValue(finding) {
   return normalizeIgnoreValue(extractFindingIgnoreValueRaw(finding, rule));
 }
 
-function extractFindingIgnoreValueRaw(finding, rule = normalizeIgnoreRule(finding?.antipattern)) {
-  const direct = cleanIgnoreValueDisplay(finding.ignoreValue || finding.value || "");
+function extractFindingIgnoreValueRaw(
+  finding,
+  rule = normalizeIgnoreRule(finding?.antipattern),
+) {
+  const direct = cleanIgnoreValueDisplay(
+    finding.ignoreValue || finding.value || "",
+  );
   if (direct) return direct;
 
-  const candidates = [finding.detail, finding.snippet].filter((v) => typeof v === "string" && v);
+  const candidates = [finding.detail, finding.snippet].filter(
+    (v) => typeof v === "string" && v,
+  );
   for (const text of candidates) {
     if (rule === "bounce-easing") {
       const motion = extractMotionIgnoreValue(text);
@@ -654,7 +704,11 @@ export function ensureConfigGitExclude(root) {
       updated = existing.replace(markerRe, block);
     } else {
       const prefix =
-        existing.length === 0 ? "" : existing.endsWith("\n") ? existing : `${existing}\n`;
+        existing.length === 0
+          ? ""
+          : existing.endsWith("\n")
+            ? existing
+            : `${existing}\n`;
       updated = `${prefix}${block}\n`;
     }
     if (updated !== existing) {

@@ -81,7 +81,9 @@ function kebab(s) {
   if (!slug) return null;
   // Cap from the tail — the tail (filename) is more identifying than the
   // top-level directory.
-  return slug.length <= SLUG_MAX ? slug : slug.slice(slug.length - SLUG_MAX).replace(/^-/, "");
+  return slug.length <= SLUG_MAX
+    ? slug
+    : slug.slice(slug.length - SLUG_MAX).replace(/^-/, "");
 }
 
 /**
@@ -100,7 +102,13 @@ export function nowFilenameStamp(date = new Date()) {
  *
  * Returns the absolute path written.
  */
-export function writeSnapshot({ slug, meta, body, cwd = process.cwd(), now = new Date() }) {
+export function writeSnapshot({
+  slug,
+  meta,
+  body,
+  cwd = process.cwd(),
+  now = new Date(),
+}) {
   if (!slug) throw new Error("writeSnapshot requires a slug");
   const dir = getCritiqueDir(cwd);
   fs.mkdirSync(dir, { recursive: true });
@@ -238,7 +246,9 @@ function main(argv) {
       return;
     }
     default:
-      process.stderr.write("usage: critique-storage.mjs <slug|write|latest|trend> [args]\n");
+      process.stderr.write(
+        "usage: critique-storage.mjs <slug|write|latest|trend> [args]\n",
+      );
       process.exit(1);
   }
 }
@@ -246,7 +256,10 @@ function main(argv) {
 function isMainModule() {
   if (!process.argv[1]) return false;
   try {
-    return fs.realpathSync(fileURLToPath(import.meta.url)) === fs.realpathSync(process.argv[1]);
+    return (
+      fs.realpathSync(fileURLToPath(import.meta.url)) ===
+      fs.realpathSync(process.argv[1])
+    );
   } catch {
     // pathToFileURL normalizes Windows paths; keep it as a fallback for any
     // environment where realpath is unavailable.
