@@ -26,5 +26,10 @@ export default defineConfig({
     // tests/roles.test.ts needs no JSX at all. The Playwright suite lives in
     // tests/e2e as .spec.ts and is not matched here.
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    // Six files, one jsdom environment each. The default is one worker per core, and
+    // on a loaded machine the pool intermittently failed to start a fork ("Failed to
+    // start forks worker"), which reported as a test failure rather than a slow run.
+    // Two workers keeps the suite well under a second while leaving headroom.
+    maxWorkers: 2,
   },
 })
