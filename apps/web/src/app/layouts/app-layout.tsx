@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../providers/auth-provider.js'
+import { AppSidebar } from './app-sidebar.js'
 
 export const AppLayout: React.FC = (): React.JSX.Element => {
   const { user, logout } = useAuth()
@@ -13,11 +14,6 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
     await logout()
     navigate('/login')
   }
-
-  const role = user?.role || 'EMPLOYEE'
-  const isEmployee = role === 'EMPLOYEE'
-  const isAdmin = role === 'ADMIN'
-  const isManager = role === 'ADMIN' || role === 'PROJECT_MANAGER' || role === 'RESOURCE_MANAGER'
 
   // Breadcrumb derivation matching Figma
   const getBreadcrumb = (): string => {
@@ -35,198 +31,19 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
   }
 
   const userFullName = user?.employee?.fullName || (user?.email ? user.email.split('@')[0] : 'Arya Isnaidi')
-  const userInitials = userFullName
-    .split(' ')
-    .filter(Boolean)
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || 'AI'
-  const userRoleLabel = role === 'ADMIN' ? 'Admin' : role === 'PROJECT_MANAGER' ? 'Project Manager' : role === 'RESOURCE_MANAGER' ? 'Resource Manager' : 'Employee'
+  const userInitials =
+    userFullName
+      .split(' ')
+      .filter(Boolean)
+      .map((s) => s[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase() || 'AI'
 
   return (
     <div className="min-h-screen flex bg-[#F8F9FA] text-slate-800 font-sans antialiased">
-      {/* Desktop Sidebar (Left) */}
-      <aside className="hidden lg:flex lg:flex-col w-60 bg-white border-r border-slate-200/90 shrink-0 select-none">
-        {/* Brand / Logo */}
-        <div className="p-6 pb-5">
-          <Link to={isEmployee ? '/my-profile' : '/dashboard'} className="block group">
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
-              Staffora
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">Right People. Right Project.</p>
-          </Link>
-        </div>
-
-        {/* Navigation Menu */}
-        <nav className="flex-1 px-3 space-y-5 overflow-y-auto">
-          {/* Overview / Dashboard */}
-          {!isEmployee && (
-            <div>
-              <NavLink
-                to="/dashboard"
-                aria-label="Dashboard"
-                className={({ isActive }) =>
-                  `flex items-center px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`
-                }
-              >
-                <span className="sr-only">Dashboard</span>
-                Overview
-              </NavLink>
-            </div>
-          )}
-
-          {/* Section: WORKFORCE */}
-          {isManager && (
-            <div className="space-y-0.5">
-              <span className="block px-3.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-                Workforce
-              </span>
-              <NavLink
-                to="/resources"
-                className={({ isActive }) =>
-                  `flex items-center px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`
-                }
-              >
-                Resources
-              </NavLink>
-              <NavLink
-                to="/skills"
-                className={({ isActive }) =>
-                  `flex items-center px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`
-                }
-              >
-                Skills
-              </NavLink>
-              <NavLink
-                to="/capacity"
-                className={({ isActive }) =>
-                  `flex items-center px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`
-                }
-              >
-                Capacity
-              </NavLink>
-            </div>
-          )}
-
-          {/* Section: PROJECTS */}
-          <div className="space-y-0.5">
-            <span className="block px-3.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-              Projects
-            </span>
-            <NavLink
-              to="/projects"
-              className={({ isActive }) =>
-                `flex items-center px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-600 font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`
-              }
-            >
-              Projects
-            </NavLink>
-            {isManager && (
-              <NavLink
-                to="/allocations"
-                className={({ isActive }) =>
-                  `flex items-center px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`
-                }
-              >
-                Allocations
-              </NavLink>
-            )}
-          </div>
-
-          {/* Section: MY WORKSPACE */}
-          {isEmployee && (
-            <div className="space-y-0.5">
-              <span className="block px-3.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-                My Workspace
-              </span>
-              <NavLink
-                to="/my-profile"
-                className={({ isActive }) =>
-                  `flex items-center px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`
-                }
-              >
-                My Profile
-              </NavLink>
-            </div>
-          )}
-
-          {/* Section: ADMINISTRATION */}
-          {isAdmin && (
-            <div className="space-y-0.5">
-              <span className="block px-3.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-                Administration
-              </span>
-              <NavLink
-                to="/admin/users"
-                className={({ isActive }) =>
-                  `flex items-center px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`
-                }
-              >
-                Users
-              </NavLink>
-            </div>
-          )}
-        </nav>
-
-        {/* Bottom Profile Pill */}
-        <div className="p-4 border-t border-slate-100">
-          <div className="flex items-center justify-between rounded-2xl bg-slate-50 border border-slate-100 p-2.5">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-9 w-9 rounded-full bg-blue-100 text-blue-600 font-semibold text-xs flex items-center justify-center shrink-0">
-                {userInitials}
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-slate-800 truncate">{userFullName}</div>
-                <div className="text-[11px] text-slate-400 truncate">{userRoleLabel}</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              title="Sign out"
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors text-xs"
-              aria-label="Sign out"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </aside>
+      {/* Left Sidebar */}
+      <AppSidebar user={user} onLogout={handleLogout} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -282,7 +99,7 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
               <button
                 type="button"
                 onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <div className="h-7 w-7 rounded-full bg-blue-100 text-blue-600 text-xs font-semibold flex items-center justify-center">
                   {userInitials}
@@ -300,7 +117,7 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-medium"
+                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-medium cursor-pointer"
                   >
                     Sign out
                   </button>
@@ -333,6 +150,20 @@ export const AppLayout: React.FC = (): React.JSX.Element => {
               className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
             >
               Projects
+            </NavLink>
+            <NavLink
+              to="/my-profile"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              My Profile
+            </NavLink>
+            <NavLink
+              to="/admin/users"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              Users
             </NavLink>
           </div>
         )}
