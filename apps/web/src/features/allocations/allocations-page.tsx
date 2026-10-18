@@ -1,7 +1,7 @@
-import React from 'react'
-import { PageHeader } from '../../components/page-header.js'
-import { EmptyState } from '../../components/empty-state.js'
-import { Badge } from '../../components/ui/badge.js'
+import React from "react";
+import { PageHeader } from "../../components/page-header.js";
+import { EmptyState } from "../../components/empty-state.js";
+import { Badge } from "../../components/ui/badge.js";
 
 export const AllocationsPage: React.FC = () => {
   return (
@@ -18,5 +18,5 @@ export const AllocationsPage: React.FC = () => {
         description="Halaman ini siap diimplementasikan untuk penugasan sumber daya, validasi konflik kapasitas, dan riwayat alokasi."
       />
     </div>
-  )
-}
+  );
+};

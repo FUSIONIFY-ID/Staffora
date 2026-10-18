@@ -1,17 +1,17 @@
-import { z } from 'zod'
-import { Prisma } from '../../generated/prisma/client.js'
-import { ConflictError } from '../../common/errors/app-error.js'
+import { z } from "zod";
+import { Prisma } from "../../generated/prisma/client.js";
+import { ConflictError } from "../../common/errors/app-error.js";
 
 /** Response code and message for one violated unique constraint. */
 interface UniqueViolationTarget {
-  code: string
-  message: string
+  code: string;
+  message: string;
 }
 
-type UniqueViolationMap = Readonly<Record<string, UniqueViolationTarget>>
+type UniqueViolationMap = Readonly<Record<string, UniqueViolationTarget>>;
 
 export function conflictError(target: UniqueViolationTarget): ConflictError {
-  return new ConflictError(target.message, target.code)
+  return new ConflictError(target.message, target.code);
 }
 
 /**
@@ -34,11 +34,13 @@ const uniqueViolationMetaSchema = z.object({
       }),
     }),
   }),
-})
+});
 
 function readConstraintIndex(meta: unknown): string | undefined {
-  const parsed = uniqueViolationMetaSchema.safeParse(meta)
-  return parsed.success ? parsed.data.driverAdapterError.cause.constraint.index : undefined
+  const parsed = uniqueViolationMetaSchema.safeParse(meta);
+  return parsed.success
+    ? parsed.data.driverAdapterError.cause.constraint.index
+    : undefined;
 }
 
 /**
@@ -56,38 +58,41 @@ export function mapUniqueViolation(
   targets: UniqueViolationMap,
   fallback: UniqueViolationTarget,
 ): never {
-  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-    const index = readConstraintIndex(error.meta)
-    const target = index === undefined ? undefined : targets[index]
-    throw conflictError(target ?? fallback)
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    const index = readConstraintIndex(error.meta);
+    const target = index === undefined ? undefined : targets[index];
+    throw conflictError(target ?? fallback);
   }
-  throw error
+  throw error;
 }
 
 export const DEPARTMENT_NAME_DUPLICATE: UniqueViolationTarget = {
-  code: 'DUPLICATE_DEPARTMENT_NAME',
-  message: 'A department with this name already exists.',
-}
+  code: "DUPLICATE_DEPARTMENT_NAME",
+  message: "A department with this name already exists.",
+};
 
 export const JOB_ROLE_NAME_DUPLICATE: UniqueViolationTarget = {
-  code: 'DUPLICATE_JOB_ROLE_NAME',
-  message: 'A job role with this title already exists.',
-}
+  code: "DUPLICATE_JOB_ROLE_NAME",
+  message: "A job role with this title already exists.",
+};
 
 export const EMPLOYEE_CODE_DUPLICATE: UniqueViolationTarget = {
-  code: 'DUPLICATE_EMPLOYEE_CODE',
-  message: 'An employee with this code already exists.',
-}
+  code: "DUPLICATE_EMPLOYEE_CODE",
+  message: "An employee with this code already exists.",
+};
 
 export const WORK_EMAIL_DUPLICATE: UniqueViolationTarget = {
-  code: 'DUPLICATE_WORK_EMAIL',
-  message: 'An employee with this work email already exists.',
-}
+  code: "DUPLICATE_WORK_EMAIL",
+  message: "An employee with this work email already exists.",
+};
 
 export const EMPLOYEE_DUPLICATE_FALLBACK: UniqueViolationTarget = {
-  code: 'DUPLICATE_RESOURCE',
-  message: 'An employee with this code or work email already exists.',
-}
+  code: "DUPLICATE_RESOURCE",
+  message: "An employee with this code or work email already exists.",
+};
 
 /**
  * Unique indexes that guard master-data names. The case-sensitive index declared
@@ -98,14 +103,14 @@ export const EMPLOYEE_DUPLICATE_FALLBACK: UniqueViolationTarget = {
 export const DEPARTMENT_NAME_UNIQUE: UniqueViolationMap = {
   departments_name_key: DEPARTMENT_NAME_DUPLICATE,
   departments_name_lower_key: DEPARTMENT_NAME_DUPLICATE,
-}
+};
 
 export const JOB_ROLE_NAME_UNIQUE: UniqueViolationMap = {
   job_roles_name_key: JOB_ROLE_NAME_DUPLICATE,
   job_roles_name_lower_key: JOB_ROLE_NAME_DUPLICATE,
-}
+};
 
 export const EMPLOYEE_UNIQUE: UniqueViolationMap = {
   employees_employee_code_key: EMPLOYEE_CODE_DUPLICATE,
   employees_work_email_key: WORK_EMAIL_DUPLICATE,
-}
+};

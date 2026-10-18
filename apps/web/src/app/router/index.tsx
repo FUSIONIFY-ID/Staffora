@@ -1,44 +1,44 @@
-import React from 'react'
-import { Routes, Route, Navigate } from 'react-router'
-import { AppLayout } from '../layouts/app-layout.js'
-import { ProtectedRoute } from './protected-route.js'
-import { useAuth } from '../providers/auth-provider.js'
-import { LoadingState } from '../../components/loading-state.js'
-import { NotFoundView } from '../layouts/not-found-view.js'
+import React from "react";
+import { Routes, Route, Navigate } from "react-router";
+import { AppLayout } from "../layouts/app-layout.js";
+import { ProtectedRoute } from "./protected-route.js";
+import { useAuth } from "../providers/auth-provider.js";
+import { LoadingState } from "../../components/loading-state.js";
+import { NotFoundView } from "../layouts/not-found-view.js";
 import {
   ADMIN_ROLES,
   EMPLOYEE_ROLES,
   MANAGEMENT_ROLES,
   PROJECT_ROLES,
   homePathForRole,
-} from '../navigation/nav-config.js'
+} from "../navigation/nav-config.js";
 
 // Feature Pages
-import { LoginPage } from '../../features/auth/login-page.js'
-import { DashboardPage } from '../../features/dashboard/dashboard-page.js'
-import { ResourcesPage } from '../../features/resources/resources-page.js'
-import { ResourceDetailPage } from '../../features/resources/resource-detail-page.js'
-import { SkillsPage } from '../../features/skills/skills-page.js'
-import { CapacityPage } from '../../features/capacity/capacity-page.js'
-import { ProjectsPage } from '../../features/projects/projects-page.js'
-import { ProjectDetailPage } from '../../features/projects/project-detail-page.js'
-import { AllocationsPage } from '../../features/allocations/allocations-page.js'
-import { MyProfilePage } from '../../features/my-profile/my-profile-page.js'
-import { UsersPage } from '../../features/admin/users-page.js'
+import { LoginPage } from "../../features/auth/login-page.js";
+import { DashboardPage } from "../../features/dashboard/dashboard-page.js";
+import { ResourcesPage } from "../../features/resources/resources-page.js";
+import { ResourceDetailPage } from "../../features/resources/resource-detail-page.js";
+import { SkillsPage } from "../../features/skills/skills-page.js";
+import { CapacityPage } from "../../features/capacity/capacity-page.js";
+import { ProjectsPage } from "../../features/projects/projects-page.js";
+import { ProjectDetailPage } from "../../features/projects/project-detail-page.js";
+import { AllocationsPage } from "../../features/allocations/allocations-page.js";
+import { MyProfilePage } from "../../features/my-profile/my-profile-page.js";
+import { UsersPage } from "../../features/admin/users-page.js";
 
 const RootRedirect: React.FC = () => {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return <LoadingState fullHeight message="Loading Staffora..." />
+    return <LoadingState fullHeight message="Loading Staffora..." />;
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to={homePathForRole(user.role)} replace />
-}
+  return <Navigate to={homePathForRole(user.role)} replace />;
+};
 
 export const AppRouter: React.FC = () => {
   return (
@@ -173,5 +173,5 @@ export const AppRouter: React.FC = () => {
         <Route path="*" element={<NotFoundView />} />
       </Route>
     </Routes>
-  )
-}
+  );
+};

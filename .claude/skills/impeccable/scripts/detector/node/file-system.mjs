@@ -49,7 +49,8 @@ function walkDir(dir) {
     if (SKIP_DIRS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) files.push(...walkDir(full));
-    else if (SCANNABLE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) files.push(full);
+    else if (SCANNABLE_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))
+      files.push(full);
   }
   return files;
 }

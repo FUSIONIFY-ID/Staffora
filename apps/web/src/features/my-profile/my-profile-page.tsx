@@ -1,11 +1,11 @@
-import React from 'react'
-import { useAuth } from '../../app/providers/auth-provider.js'
-import { PageHeader } from '../../components/page-header.js'
-import { EmptyState } from '../../components/empty-state.js'
-import { Badge } from '../../components/ui/badge.js'
+import React from "react";
+import { useAuth } from "../../app/providers/auth-provider.js";
+import { PageHeader } from "../../components/page-header.js";
+import { EmptyState } from "../../components/empty-state.js";
+import { Badge } from "../../components/ui/badge.js";
 
 export const MyProfilePage: React.FC = () => {
-  const { user } = useAuth()
+  const { user } = useAuth();
 
   return (
     <div className="space-y-6">
@@ -16,10 +16,10 @@ export const MyProfilePage: React.FC = () => {
       />
 
       <EmptyState
-        icon={user?.employee?.fullName?.charAt(0) ?? 'U'}
-        title={user?.employee?.fullName ?? user?.email ?? 'My Profile'}
+        icon={user?.employee?.fullName?.charAt(0) ?? "U"}
+        title={user?.employee?.fullName ?? user?.email ?? "My Profile"}
         description="Halaman ini siap diimplementasikan untuk self-service profil karyawan (keahlian & jadwal proyek)."
       />
     </div>
-  )
-}
+  );
+};

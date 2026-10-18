@@ -160,6 +160,7 @@ erDiagram
 ## 2. Table Specifications & Constraints
 
 ### 2.1 `users`
+
 - **Purpose**: Application accounts for authentication and authorization.
 - **Constraints**:
   - `normalized_email`: Unique index, converted to lowercase and trimmed before insertion.
@@ -167,6 +168,7 @@ erDiagram
   - `employee_id`: Foreign key to `employees.id` (nullable for Admin without employee profile; required for PM/RM/Employee per business rule BR-G02).
 
 ### 2.2 `user_sessions`
+
 - **Purpose**: Server-side session store managed by `connect-pg-simple`.
 - **Fields**:
   - `sid` (varchar PK)
@@ -174,12 +176,14 @@ erDiagram
   - `expire` (timestamptz not null with B-tree index)
 
 ### 2.3 `departments` & `job_roles`
+
 - **Purpose**: Master tables providing standardized taxonomy for resources, staffing requirements, and allocations.
 - **Constraints**:
   - `name`: Unique constraint (case-insensitive/normalized).
   - Enforcement is two-layer. `schema.prisma` declares `name @unique`, which PostgreSQL implements case-sensitively as `departments_name_key` / `job_roles_name_key`. The case-insensitive half is a unique index over `lower(name)`, named `departments_name_lower_key` and `job_roles_name_lower_key`, added by migration `20261014160000_workforce_normalized_name_uniqueness` because Prisma cannot model an expression index. The application normalises whitespace and trims before writing, and the pre-flight block in that migration refuses to apply while case-insensitive duplicates exist.
 
 ### 2.4 `employees`
+
 - **Purpose**: Resource profiles representing the internal workforce.
 - **Constraints**:
   - `employee_code`: Unique identifier.
@@ -188,6 +192,7 @@ erDiagram
   - Index on `(status, department_id, job_role_id)` for high performance filtering.
 
 ### 2.5 `skills` & `employee_skills`
+
 - **Purpose**: Competency catalog and employee proficiency tracking.
 - **Constraints**:
   - `proficiency_level`: Integer constraint between `1` (Beginner) and `5` (Expert).
@@ -195,6 +200,7 @@ erDiagram
   - Index on `(skill_id, proficiency_level, employee_id)` for Resource Finder query acceleration.
 
 ### 2.6 `projects`
+
 - **Purpose**: Project boundaries and project management ownership.
 - **Constraints**:
   - `project_code`: Unique identifier.
@@ -203,6 +209,7 @@ erDiagram
   - Index on `(status, project_manager_employee_id, start_date, end_date)`.
 
 ### 2.7 `staffing_requirements` & `staffing_requirement_skills`
+
 - **Purpose**: Staffing demand planning per project.
 - **Constraints**:
   - `headcount >= 1`.
@@ -211,6 +218,7 @@ erDiagram
   - Unique constraint on `(staffing_requirement_id, skill_id)`.
 
 ### 2.8 `allocations`
+
 - **Purpose**: Actual workforce assignment to projects.
 - **Constraints**:
   - `allocation_percentage` between 1 and 100.
@@ -223,6 +231,7 @@ erDiagram
 ## 3. Allocation Lifecycle & Calculation State
 
 In accordance with TSD Section 9.3, display status is calculated deterministically on demand without background cron:
+
 - **`CANCELLED`**: `cancelled_at IS NOT NULL`
 - **`PLANNED`**: `cancelled_at IS NULL AND start_date > CURRENT_DATE`
 - **`ACTIVE`**: `cancelled_at IS NULL AND start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE`

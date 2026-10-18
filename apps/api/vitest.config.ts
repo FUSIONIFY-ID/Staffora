@@ -1,7 +1,7 @@
-import { existsSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { config as loadEnv } from 'dotenv'
-import { defineConfig } from 'vitest/config'
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { config as loadEnv } from "dotenv";
+import { defineConfig } from "vitest/config";
 
 /**
  * Test runs must not share a database with `npm run dev` and `db:seed`.
@@ -17,15 +17,15 @@ import { defineConfig } from 'vitest/config'
  * against that database before the first run; docs/development/testing-guide.md
  * has the commands.
  */
-const envTestPath = fileURLToPath(new URL('.env.test', import.meta.url))
+const envTestPath = fileURLToPath(new URL(".env.test", import.meta.url));
 if (existsSync(envTestPath)) {
-  loadEnv({ path: envTestPath, override: true, quiet: true })
+  loadEnv({ path: envTestPath, override: true, quiet: true });
 }
 
 export default defineConfig({
   test: {
-    environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    environment: "node",
+    include: ["tests/**/*.test.ts"],
     /**
      * The fixture hashes four passwords with bcrypt cost 12, and CLAUDE.md fixes
      * that cost, so a hook cannot be made fast by lowering it. On a loaded
@@ -36,4 +36,4 @@ export default defineConfig({
     hookTimeout: 60_000,
     testTimeout: 30_000,
   },
-})
+});

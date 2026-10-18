@@ -12,7 +12,7 @@ paths:
       summary: Liveness probe
       description: Returns 200 if the process is running.
       responses:
-        '200':
+        "200":
           description: Process alive
           content:
             application/json:
@@ -27,7 +27,7 @@ paths:
       summary: Readiness probe
       description: Returns 200 if the database and critical runtime dependencies are ready.
       responses:
-        '200':
+        "200":
           description: Service ready
           content:
             application/json:
@@ -36,12 +36,12 @@ paths:
                 properties:
                   status: { type: string, example: "ready" }
                   database: { type: string, example: "connected" }
-        '503':
+        "503":
           description: Service unavailable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/login:
     post:
@@ -66,14 +66,20 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email: { type: string, format: email, example: "admin@staffora.internal" }
+                email:
+                  {
+                    type: string,
+                    format: email,
+                    example: "admin@staffora.internal",
+                  }
                 password:
                   type: string
                   minLength: 1
                   description: Not checked against the 12-character creation policy, so the policy is never disclosed on sign-in.
                   example: "SuperSecret123!"
+
       responses:
-        '200':
+        "200":
           description: Login successful
           headers:
             Set-Cookie:
@@ -86,31 +92,31 @@ paths:
                 required: [data]
                 properties:
                   data:
-                    $ref: '#/components/schemas/LoginResult'
-        '401':
+                    $ref: "#/components/schemas/LoginResult"
+        "401":
           description: Invalid credentials (generic message) or inactive account
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Missing or invalid CSRF token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: Request body validation failed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
           description: Rate limit exceeded
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/logout:
     post:
@@ -120,20 +126,20 @@ paths:
         - sessionCookie: []
           csrfToken: []
       responses:
-        '204':
+        "204":
           description: Logged out successfully
-        '401':
+        "401":
           description: Unauthenticated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Missing or invalid CSRF token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/me:
     get:
@@ -142,7 +148,7 @@ paths:
       security:
         - sessionCookie: []
       responses:
-        '200':
+        "200":
           description: Authenticated user details
           content:
             application/json:
@@ -150,13 +156,13 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/UserIdentity'
-        '401':
+                    $ref: "#/components/schemas/UserIdentity"
+        "401":
           description: Unauthenticated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/csrf-token:
     get:
@@ -170,7 +176,7 @@ paths:
         - {}
         - sessionCookie: []
       responses:
-        '200':
+        "200":
           description: CSRF token value
           headers:
             Set-Cookie:
@@ -187,18 +193,111 @@ paths:
                     properties:
                       csrfToken: { type: string }
 
+  /users:
+    get:
+      summary: List users (Admin only)
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+    post:
+      summary: Create user (Admin only)
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInput"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/UserIdentity"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "409":
+          description: User email already exists or employee already linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+
+  /users/{id}:
+    patch:
+      summary: Update user (Admin only)
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInput"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/UserIdentity"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+
   /departments:
     get:
       summary: List departments
       responses:
-        '200':
+        "200":
           description: List of active departments
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DepartmentListResponse'
+                $ref: "#/components/schemas/DepartmentListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
     post:
       summary: Create department (Admin only)
+      security:
+        - sessionCookie: []
+          csrfToken: []
       requestBody:
         required: true
         content:
@@ -209,7 +308,7 @@ paths:
               properties:
                 name: { type: string }
       responses:
-        '201':
+        "201":
           description: Department created
           content:
             application/json:
@@ -217,14 +316,16 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Department'
-        '403':
+                    $ref: "#/components/schemas/Department"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
           description: Insufficient role. Only ADMIN may create master data.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: >-
             A department with this name already exists. The name is compared on a
             normalised, case-insensitive basis, so "IT" and "it" collide. Code is
@@ -232,26 +333,33 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: Malformed body
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /job-roles:
     get:
       summary: List job roles
       responses:
-        '200':
+        "200":
           description: List of active job roles
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobRoleListResponse'
+                $ref: "#/components/schemas/JobRoleListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
     post:
       summary: Create job role (Admin only)
+      security:
+        - sessionCookie: []
+          csrfToken: []
       requestBody:
         required: true
         content:
@@ -262,7 +370,7 @@ paths:
               properties:
                 name: { type: string }
       responses:
-        '201':
+        "201":
           description: Job role created
           content:
             application/json:
@@ -270,27 +378,29 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/JobRole'
-        '403':
+                    $ref: "#/components/schemas/JobRole"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
           description: Insufficient role. Only ADMIN may create master data.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: >-
             A job role with this title already exists, compared on a normalised,
             case-insensitive basis. Code is DUPLICATE_JOB_ROLE_NAME.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: Malformed body
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /employees:
     get:
@@ -315,36 +425,41 @@ paths:
           in: query
           schema: { type: integer, default: 20 }
       responses:
-        '200':
+        "200":
           description: Paginated employees
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EmployeeListResponse'
-        '403':
+                $ref: "#/components/schemas/EmployeeListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
           description: >-
             Insufficient role. The directory is readable by ADMIN, PROJECT_MANAGER
             and RESOURCE_MANAGER; an EMPLOYEE receives 403 here.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: Malformed query parameters, for example an unknown status value
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       summary: Create employee profile
+      security:
+        - sessionCookie: []
+          csrfToken: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateEmployeeInput'
+              $ref: "#/components/schemas/CreateEmployeeInput"
       responses:
-        '201':
+        "201":
           description: Employee created
           content:
             application/json:
@@ -352,14 +467,16 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Employee'
-        '403':
+                    $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
           description: Insufficient role. Only ADMIN and RESOURCE_MANAGER may create.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: >-
             The employee code or work email already exists. Code is
             DUPLICATE_EMPLOYEE_CODE or DUPLICATE_WORK_EMAIL. The check is not
@@ -368,14 +485,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: >-
             Malformed body, or a departmentId / jobRoleId that does not exist
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /employees/{id}:
     get:
@@ -404,7 +521,7 @@ paths:
             startDate: a past endDate with no startDate is rejected with 422 on `endDate`,
             because the default startDate of today would otherwise sit after it.
       responses:
-        '200':
+        "200":
           description: Employee detail with skills, allocations, and capacity
           content:
             application/json:
@@ -412,8 +529,12 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/EmployeeDetail'
-        '404':
+                    $ref: "#/components/schemas/EmployeeDetail"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
           description: >-
             Employee not found, or a record the caller may not see. An EMPLOYEE requesting
             another employee's profile receives the same 404 as an unknown id, so the
@@ -421,15 +542,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: Malformed employee id, or an invalid capacity date range
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
     patch:
       summary: Update employee profile
+      security:
+        - sessionCookie: []
+          csrfToken: []
       parameters:
         - name: id
           in: path
@@ -440,9 +564,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateEmployeeInput'
+              $ref: "#/components/schemas/UpdateEmployeeInput"
       responses:
-        '200':
+        "200":
           description: Employee updated
           content:
             application/json:
@@ -450,46 +574,55 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Employee'
-        '403':
+                    $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
           description: Insufficient role
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Employee not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: The update collides with an existing unique value.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: >-
             Malformed employee id or body, an empty body, or a departmentId /
             jobRoleId that does not exist
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /skills:
     get:
       summary: List skill catalog
       responses:
-        '200':
+        "200":
           description: List of skills
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SkillListResponse'
+                $ref: "#/components/schemas/SkillListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
     post:
       summary: Create skill (Admin/Resource Manager)
+      security:
+        - sessionCookie: []
+          csrfToken: []
       requestBody:
         required: true
         content:
@@ -500,7 +633,7 @@ paths:
               properties:
                 name: { type: string }
       responses:
-        '201':
+        "201":
           description: Skill created
           content:
             application/json:
@@ -508,7 +641,15 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Skill'
+                    $ref: "#/components/schemas/Skill"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
 
   /employees/{id}/skills:
     get:
@@ -519,7 +660,7 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: List of employee skills with proficiency
           content:
             application/json:
@@ -529,9 +670,18 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/EmployeeSkill'
+                      $ref: "#/components/schemas/EmployeeSkill"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
     post:
       summary: Assign skill to employee
+      security:
+        - sessionCookie: []
+          csrfToken: []
       parameters:
         - name: id
           in: path
@@ -548,7 +698,7 @@ paths:
                 skillId: { type: string, format: uuid }
                 proficiencyLevel: { type: integer, minimum: 1, maximum: 5 }
       responses:
-        '201':
+        "201":
           description: Skill assigned
           content:
             application/json:
@@ -556,7 +706,83 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/EmployeeSkill'
+                    $ref: "#/components/schemas/EmployeeSkill"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
+
+  /employees/{id}/skills/{skillId}:
+    patch:
+      summary: Update employee skill proficiency
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: skillId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [proficiencyLevel]
+              properties:
+                proficiencyLevel: { type: integer, minimum: 1, maximum: 5 }
+      responses:
+        "200":
+          description: Proficiency updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/EmployeeSkill"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
+    delete:
+      summary: Remove skill from employee
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: skillId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204":
+          description: Skill removed
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
 
   /projects:
     get:
@@ -567,7 +793,11 @@ paths:
           schema: { type: string }
         - name: status
           in: query
-          schema: { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
+          schema:
+            {
+              type: string,
+              enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED],
+            }
         - name: projectManagerEmployeeId
           in: query
           schema: { type: string, format: uuid }
@@ -578,22 +808,31 @@ paths:
           in: query
           schema: { type: integer, default: 20 }
       responses:
-        '200':
+        "200":
           description: Paginated projects
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectListResponse'
+                $ref: "#/components/schemas/ProjectListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
     post:
       summary: Create project
+      security:
+        - sessionCookie: []
+          csrfToken: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateProjectInput'
+              $ref: "#/components/schemas/CreateProjectInput"
       responses:
-        '201':
+        "201":
           description: Project created
           content:
             application/json:
@@ -601,7 +840,15 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Project'
+                    $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
 
   /projects/{id}:
     get:
@@ -612,7 +859,7 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: Project detail with staffing requirements and allocations
           content:
             application/json:
@@ -620,9 +867,18 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/ProjectDetail'
+                    $ref: "#/components/schemas/ProjectDetail"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
     patch:
       summary: Update project
+      security:
+        - sessionCookie: []
+          csrfToken: []
       parameters:
         - name: id
           in: path
@@ -633,9 +889,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateProjectInput'
+              $ref: "#/components/schemas/UpdateProjectInput"
       responses:
-        '200':
+        "200":
           description: Project updated
           content:
             application/json:
@@ -643,7 +899,15 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Project'
+                    $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
 
   /projects/{id}/staffing-requirements:
     get:
@@ -654,7 +918,7 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: Staffing requirements
           content:
             application/json:
@@ -664,9 +928,18 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/StaffingRequirement'
+                      $ref: "#/components/schemas/StaffingRequirement"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
     post:
       summary: Create staffing requirement for project
+      security:
+        - sessionCookie: []
+          csrfToken: []
       parameters:
         - name: id
           in: path
@@ -677,9 +950,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateStaffingRequirementInput'
+              $ref: "#/components/schemas/CreateStaffingRequirementInput"
       responses:
-        '201':
+        "201":
           description: Staffing requirement created
           content:
             application/json:
@@ -687,11 +960,82 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/StaffingRequirement'
+                    $ref: "#/components/schemas/StaffingRequirement"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+
+  /staffing-requirements/{id}:
+    patch:
+      summary: Update staffing requirement
+      description: Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager. Passing an empty array for skills removes all existing required skills.
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStaffingRequirementInput"
+      responses:
+        "200":
+          description: Staffing requirement updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaffingRequirement"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+    delete:
+      summary: Delete staffing requirement (Not Implemented)
+      description: Staffing requirement physical deletion is disabled per BR-G15. Soft-delete / archival will be designed in Sprint 2 (US03).
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          description: Not Implemented (pending soft-delete design in US03)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /allocations:
     get:
       summary: List allocations
+      security:
+        - sessionCookie: []
       parameters:
         - name: employeeId
           in: query
@@ -706,23 +1050,36 @@ paths:
           in: query
           schema: { type: string, format: date }
       responses:
-        '200':
+        "200":
           description: List of allocations
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AllocationListResponse'
+                $ref: "#/components/schemas/AllocationListResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       summary: Create resource allocation
       description: Validates employee capacity under row lock before saving. Rejects if total concurrent allocation exceeds 100%.
+      security:
+        - sessionCookie: []
+          csrfToken: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAllocationInput'
+              $ref: "#/components/schemas/CreateAllocationInput"
       responses:
-        '201':
+        "201":
           description: Allocation created
           content:
             application/json:
@@ -730,17 +1087,61 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Allocation'
-        '409':
+                    $ref: "#/components/schemas/Allocation"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "409":
           description: Capacity conflict or validation conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CapacityConflictResponse'
+                $ref: "#/components/schemas/CapacityConflictResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /allocations/{id}:
+    get:
+      summary: Get allocation detail
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Allocation detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Allocation"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
     patch:
       summary: Update allocation
+      security:
+        - sessionCookie: []
+          csrfToken: []
       parameters:
         - name: id
           in: path
@@ -751,9 +1152,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAllocationInput'
+              $ref: "#/components/schemas/UpdateAllocationInput"
       responses:
-        '200':
+        "200":
           description: Allocation updated
           content:
             application/json:
@@ -761,17 +1162,34 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Allocation'
-        '409':
+                    $ref: "#/components/schemas/Allocation"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "409":
           description: Capacity conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CapacityConflictResponse'
+                $ref: "#/components/schemas/CapacityConflictResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /allocations/{id}/end:
     post:
       summary: End active allocation early
+      security:
+        - sessionCookie: []
+          csrfToken: []
       parameters:
         - name: id
           in: path
@@ -787,7 +1205,7 @@ paths:
               properties:
                 endDate: { type: string, format: date }
       responses:
-        '200':
+        "200":
           description: Allocation ended
           content:
             application/json:
@@ -795,18 +1213,35 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Allocation'
+                    $ref: "#/components/schemas/Allocation"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /allocations/{id}/cancel:
     post:
       summary: Cancel planned allocation
+      security:
+        - sessionCookie: []
+          csrfToken: []
       parameters:
         - name: id
           in: path
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: Allocation cancelled
           content:
             application/json:
@@ -814,11 +1249,27 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Allocation'
+                    $ref: "#/components/schemas/Allocation"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          description: Not Implemented (pending full implementation in US04)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /resource-finder:
     get:
       summary: Search available resources
+      security:
+        - sessionCookie: []
       parameters:
         - name: startDate
           in: query
@@ -844,16 +1295,26 @@ paths:
           in: query
           schema: { type: integer, minimum: 0, maximum: 100 }
       responses:
-        '200':
+        "200":
           description: Search results with peak concurrent allocation and remaining capacity
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResourceFinderResponse'
+                $ref: "#/components/schemas/ResourceFinderResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
 
   /capacity:
     get:
       summary: Query organization capacity
+      security:
+        - sessionCookie: []
       parameters:
         - name: startDate
           in: query
@@ -867,16 +1328,58 @@ paths:
           in: query
           schema: { type: string, format: uuid }
       responses:
-        '200':
+        "200":
           description: Capacity summaries across employees
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrganizationCapacityResponse'
+                $ref: "#/components/schemas/OrganizationCapacityResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
+
+  /capacity/employees/{id}:
+    get:
+      summary: Single employee capacity timeline
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Employee capacity timeline
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      employeeId: { type: string, format: uuid }
+                      timeline:
+                        type: array
+                        items: { type: object }
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "422":
+          $ref: "#/components/responses/ValidationErrorResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
 
   /dashboard:
     get:
       summary: Role-scoped dashboard summary
+      security:
+        - sessionCookie: []
       parameters:
         - name: startDate
           in: query
@@ -885,7 +1388,7 @@ paths:
           in: query
           schema: { type: string, format: date }
       responses:
-        '200':
+        "200":
           description: Dashboard metrics
           content:
             application/json:
@@ -893,14 +1396,20 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/DashboardData'
+                    $ref: "#/components/schemas/DashboardData"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
 
   /me:
     get:
       summary: Employee self-view
       description: Returns self profile, skills, current and upcoming allocations, and capacity.
+      security:
+        - sessionCookie: []
       responses:
-        '200':
+        "200":
           description: Employee personal summary
           content:
             application/json:
@@ -908,7 +1417,11 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/EmployeeSelfView'
+                    $ref: "#/components/schemas/EmployeeSelfView"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "501":
+          $ref: "#/components/responses/NotImplementedResponse"
 
 components:
   securitySchemes:
@@ -922,6 +1435,37 @@ components:
       in: header
       name: X-CSRF-Token
       description: Synchronizer token from login or `GET /auth/csrf-token`; required on every POST, PUT, PATCH, and DELETE, including `POST /auth/login`.
+  responses:
+    UnauthorizedResponse:
+      description: Authentication required or session expired
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ForbiddenResponse:
+      description: Access forbidden (RBAC or CSRF violation)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFoundResponse:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationErrorResponse:
+      description: Validation failed for request parameters or body
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotImplementedResponse:
+      description: Feature not implemented in Sprint 1
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     ErrorResponse:
       type: object
@@ -941,18 +1485,28 @@ components:
       type: object
       required: [message, code, errors, meta, requestId]
       properties:
-        message: { type: string, example: "Allocation exceeds employee capacity." }
+        message:
+          { type: string, example: "Allocation exceeds employee capacity." }
         code: { type: string, example: "CAPACITY_CONFLICT" }
         errors: { type: object }
         meta:
           type: object
-          required: [peakAllocation, requestedAllocation, remainingCapacity, conflictStartDate, conflictEndDate]
+          required:
+            [
+              peakAllocation,
+              requestedAllocation,
+              remainingCapacity,
+              conflictStartDate,
+              conflictEndDate,
+            ]
           properties:
             peakAllocation: { type: integer, example: 80 }
             requestedAllocation: { type: integer, example: 30 }
             remainingCapacity: { type: integer, example: 20 }
-            conflictStartDate: { type: string, format: date, example: "2026-11-01" }
-            conflictEndDate: { type: string, format: date, example: "2026-11-15" }
+            conflictStartDate:
+              { type: string, format: date, example: "2026-11-01" }
+            conflictEndDate:
+              { type: string, format: date, example: "2026-11-15" }
         requestId: { type: string }
 
     UserIdentity:
@@ -961,7 +1515,11 @@ components:
       properties:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
-        role: { type: string, enum: [ADMIN, PROJECT_MANAGER, RESOURCE_MANAGER, EMPLOYEE] }
+        role:
+          {
+            type: string,
+            enum: [ADMIN, PROJECT_MANAGER, RESOURCE_MANAGER, EMPLOYEE],
+          }
         isActive: { type: boolean }
         employeeId: { type: string, format: uuid, nullable: true }
         employee:
@@ -982,10 +1540,39 @@ components:
       required: [user, csrfToken]
       properties:
         user:
-          $ref: '#/components/schemas/UserIdentity'
+          $ref: "#/components/schemas/UserIdentity"
         csrfToken:
           type: string
           description: Synchronizer token for the new session; send as `X-CSRF-Token` on state-changing requests.
+
+    CreateUserInput:
+      type: object
+      required: [email, password, role]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 12 }
+        role:
+          type: string
+          enum: [ADMIN, PROJECT_MANAGER, RESOURCE_MANAGER, EMPLOYEE]
+        employeeId: { type: string, format: uuid, nullable: true }
+
+    UpdateUserInput:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [ADMIN, PROJECT_MANAGER, RESOURCE_MANAGER, EMPLOYEE]
+        isActive: { type: boolean }
+        employeeId: { type: string, format: uuid, nullable: true }
+
+    UserListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserIdentity"
 
     Department:
       type: object
@@ -1001,7 +1588,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Department'
+            $ref: "#/components/schemas/Department"
 
     JobRole:
       type: object
@@ -1017,7 +1604,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/JobRole'
+            $ref: "#/components/schemas/JobRole"
 
     Skill:
       type: object
@@ -1033,7 +1620,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Skill'
+            $ref: "#/components/schemas/Skill"
 
     EmployeeSkill:
       type: object
@@ -1047,7 +1634,8 @@ components:
 
     CreateEmployeeInput:
       type: object
-      required: [employeeCode, fullName, workEmail, departmentId, jobRoleId, status]
+      required:
+        [employeeCode, fullName, workEmail, departmentId, jobRoleId, status]
       properties:
         employeeCode: { type: string }
         fullName: { type: string }
@@ -1066,7 +1654,17 @@ components:
 
     Employee:
       type: object
-      required: [id, employeeCode, fullName, workEmail, departmentId, jobRoleId, status, availability]
+      required:
+        [
+          id,
+          employeeCode,
+          fullName,
+          workEmail,
+          departmentId,
+          jobRoleId,
+          status,
+          availability,
+        ]
       properties:
         id: { type: string, format: uuid }
         employeeCode: { type: string }
@@ -1100,17 +1698,17 @@ components:
 
     EmployeeDetail:
       allOf:
-        - $ref: '#/components/schemas/Employee'
+        - $ref: "#/components/schemas/Employee"
         - type: object
           properties:
             skills:
               type: array
               items:
-                $ref: '#/components/schemas/EmployeeSkill'
+                $ref: "#/components/schemas/EmployeeSkill"
             allocations:
               type: array
               items:
-                $ref: '#/components/schemas/Allocation'
+                $ref: "#/components/schemas/Allocation"
             evaluatedPeriod:
               type: object
               description: >-
@@ -1119,7 +1717,13 @@ components:
                 sweep-line engine, and remainingCapacity is 100 minus that peak. Allocations
                 that overlap the window without overlapping each other are never summed
                 (TSD 10.3 / BR-G17).
-              required: [startDate, endDate, peakConcurrentAllocation, remainingCapacity]
+              required:
+                [
+                  startDate,
+                  endDate,
+                  peakConcurrentAllocation,
+                  remainingCapacity,
+                ]
               properties:
                 startDate: { type: string, format: date }
                 endDate: { type: string, format: date }
@@ -1132,20 +1736,33 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Employee'
+            $ref: "#/components/schemas/Employee"
         meta:
-          $ref: '#/components/schemas/PaginationMeta'
+          $ref: "#/components/schemas/PaginationMeta"
 
     CreateProjectInput:
       type: object
-      required: [projectCode, name, projectManagerEmployeeId, startDate, endDate, status]
+      required:
+        [
+          projectCode,
+          name,
+          projectManagerEmployeeId,
+          startDate,
+          endDate,
+          status,
+        ]
       properties:
         projectCode: { type: string }
         name: { type: string }
         projectManagerEmployeeId: { type: string, format: uuid }
         startDate: { type: string, format: date }
         endDate: { type: string, format: date }
-        status: { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED], default: DRAFT }
+        status:
+          {
+            type: string,
+            enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED],
+            default: DRAFT,
+          }
 
     UpdateProjectInput:
       type: object
@@ -1154,11 +1771,21 @@ components:
         projectManagerEmployeeId: { type: string, format: uuid }
         startDate: { type: string, format: date }
         endDate: { type: string, format: date }
-        status: { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
+        status:
+          { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
 
     Project:
       type: object
-      required: [id, projectCode, name, projectManagerEmployeeId, startDate, endDate, status]
+      required:
+        [
+          id,
+          projectCode,
+          name,
+          projectManagerEmployeeId,
+          startDate,
+          endDate,
+          status,
+        ]
       properties:
         id: { type: string, format: uuid }
         projectCode: { type: string }
@@ -1167,23 +1794,24 @@ components:
         projectManagerName: { type: string }
         startDate: { type: string, format: date }
         endDate: { type: string, format: date }
-        status: { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
+        status:
+          { type: string, enum: [DRAFT, PLANNED, ACTIVE, COMPLETED, ARCHIVED] }
         staffingRequirementCount: { type: integer, default: 0 }
         allocatedResourceCount: { type: integer, default: 0 }
 
     ProjectDetail:
       allOf:
-        - $ref: '#/components/schemas/Project'
+        - $ref: "#/components/schemas/Project"
         - type: object
           properties:
             staffingRequirements:
               type: array
               items:
-                $ref: '#/components/schemas/StaffingRequirement'
+                $ref: "#/components/schemas/StaffingRequirement"
             allocations:
               type: array
               items:
-                $ref: '#/components/schemas/Allocation'
+                $ref: "#/components/schemas/Allocation"
 
     ProjectListResponse:
       type: object
@@ -1191,9 +1819,9 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Project'
+            $ref: "#/components/schemas/Project"
         meta:
-          $ref: '#/components/schemas/PaginationMeta'
+          $ref: "#/components/schemas/PaginationMeta"
 
     CreateStaffingRequirementInput:
       type: object
@@ -1213,9 +1841,38 @@ components:
               skillId: { type: string, format: uuid }
               minimumProficiencyLevel: { type: integer, minimum: 1, maximum: 5 }
 
+    UpdateStaffingRequirementInput:
+      type: object
+      properties:
+        jobRoleId: { type: string, format: uuid }
+        headcount: { type: integer, minimum: 1 }
+        allocationPercentage: { type: integer, minimum: 1, maximum: 100 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        skills:
+          type: array
+          items:
+            type: object
+            required: [skillId, minimumProficiencyLevel]
+            properties:
+              skillId: { type: string, format: uuid }
+              minimumProficiencyLevel: { type: integer, minimum: 1, maximum: 5 }
+
     StaffingRequirement:
       type: object
-      required: [id, projectId, jobRoleId, jobRoleTitle, headcount, filledHeadcount, allocationPercentage, startDate, endDate, status]
+      required:
+        [
+          id,
+          projectId,
+          jobRoleId,
+          jobRoleTitle,
+          headcount,
+          filledHeadcount,
+          allocationPercentage,
+          startDate,
+          endDate,
+          status,
+        ]
       properties:
         id: { type: string, format: uuid }
         projectId: { type: string, format: uuid }
@@ -1238,7 +1895,15 @@ components:
 
     CreateAllocationInput:
       type: object
-      required: [employeeId, projectId, jobRoleId, allocationPercentage, startDate, endDate]
+      required:
+        [
+          employeeId,
+          projectId,
+          jobRoleId,
+          allocationPercentage,
+          startDate,
+          endDate,
+        ]
       properties:
         employeeId: { type: string, format: uuid }
         projectId: { type: string, format: uuid }
@@ -1258,7 +1923,17 @@ components:
 
     Allocation:
       type: object
-      required: [id, employeeId, projectId, jobRoleId, allocationPercentage, startDate, endDate, displayStatus]
+      required:
+        [
+          id,
+          employeeId,
+          projectId,
+          jobRoleId,
+          allocationPercentage,
+          startDate,
+          endDate,
+          displayStatus,
+        ]
       properties:
         id: { type: string, format: uuid }
         employeeId: { type: string, format: uuid }
@@ -1272,7 +1947,8 @@ components:
         allocationPercentage: { type: integer }
         startDate: { type: string, format: date }
         endDate: { type: string, format: date }
-        displayStatus: { type: string, enum: [PLANNED, ACTIVE, ENDED, CANCELLED] }
+        displayStatus:
+          { type: string, enum: [PLANNED, ACTIVE, ENDED, CANCELLED] }
         cancelledAt: { type: string, format: date-time, nullable: true }
 
     AllocationListResponse:
@@ -1281,11 +1957,22 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Allocation'
+            $ref: "#/components/schemas/Allocation"
 
     ResourceFinderItem:
       type: object
-      required: [employeeId, employeeCode, fullName, workEmail, jobRoleTitle, departmentName, peakConcurrentAllocation, remainingCapacity, isAssignable]
+      required:
+        [
+          employeeId,
+          employeeCode,
+          fullName,
+          workEmail,
+          jobRoleTitle,
+          departmentName,
+          peakConcurrentAllocation,
+          remainingCapacity,
+          isAssignable,
+        ]
       properties:
         employeeId: { type: string, format: uuid }
         employeeCode: { type: string }
@@ -1299,7 +1986,7 @@ components:
         skills:
           type: array
           items:
-            $ref: '#/components/schemas/EmployeeSkill'
+            $ref: "#/components/schemas/EmployeeSkill"
 
     ResourceFinderResponse:
       type: object
@@ -1307,7 +1994,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/ResourceFinderItem'
+            $ref: "#/components/schemas/ResourceFinderItem"
         meta:
           type: object
           properties:
@@ -1344,7 +2031,15 @@ components:
 
     DashboardData:
       type: object
-      required: [totalActiveResources, totalActiveProjects, fullyAvailableResources, fullyAllocatedResources, openStaffingRequirements, capacityDistribution]
+      required:
+        [
+          totalActiveResources,
+          totalActiveProjects,
+          fullyAvailableResources,
+          fullyAllocatedResources,
+          openStaffingRequirements,
+          capacityDistribution,
+        ]
       properties:
         totalActiveResources: { type: integer }
         totalActiveProjects: { type: integer }
@@ -1360,26 +2055,34 @@ components:
         accessibleProjects:
           type: array
           items:
-            $ref: '#/components/schemas/Project'
+            $ref: "#/components/schemas/Project"
 
     EmployeeSelfView:
       type: object
-      required: [profile, skills, currentAllocations, plannedAllocations, currentTotalAllocation, remainingCapacity]
+      required:
+        [
+          profile,
+          skills,
+          currentAllocations,
+          plannedAllocations,
+          currentTotalAllocation,
+          remainingCapacity,
+        ]
       properties:
         profile:
-          $ref: '#/components/schemas/Employee'
+          $ref: "#/components/schemas/Employee"
         skills:
           type: array
           items:
-            $ref: '#/components/schemas/EmployeeSkill'
+            $ref: "#/components/schemas/EmployeeSkill"
         currentAllocations:
           type: array
           items:
-            $ref: '#/components/schemas/Allocation'
+            $ref: "#/components/schemas/Allocation"
         plannedAllocations:
           type: array
           items:
-            $ref: '#/components/schemas/Allocation'
+            $ref: "#/components/schemas/Allocation"
         currentTotalAllocation: { type: integer }
         remainingCapacity: { type: integer }
 

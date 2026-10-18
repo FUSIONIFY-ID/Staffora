@@ -10,7 +10,11 @@ import {
 import { isFullPage } from "../../shared/page.mjs";
 import { applyInlineIgnores } from "../../shared/inline-ignores.mjs";
 import { finding } from "../../findings.mjs";
-import { profileFindings, profileStep, profileStepAsync } from "../../profile/profiler.mjs";
+import {
+  profileFindings,
+  profileStep,
+  profileStepAsync,
+} from "../../profile/profiler.mjs";
 import {
   checkElementBorders,
   checkElementClippedOverflow,
@@ -47,7 +51,9 @@ function checkStaticPageTypography(document, window) {
   for (const el of document.querySelectorAll(
     "p, h1, h2, h3, h4, h5, h6, li, td, th, dd, blockquote, figcaption, a, button, label, span, div",
   )) {
-    const hasText = el.childNodes.some((n) => n.nodeType === 3 && n.textContent.trim().length > 0);
+    const hasText = el.childNodes.some(
+      (n) => n.nodeType === 3 && n.textContent.trim().length > 0,
+    );
     if (!hasText) continue;
     const ff = window.getComputedStyle(el).fontFamily || "";
     const stack = ff.split(",").map((f) =>
@@ -65,14 +71,18 @@ function checkStaticPageTypography(document, window) {
     findings.push({ id: "overused-font", snippet: `Primary font: ${font}` });
   }
   if (fonts.size === 1 && document.querySelectorAll("*").length >= 20) {
-    findings.push({ id: "single-font", snippet: `only font used is ${[...fonts][0]}` });
+    findings.push({
+      id: "single-font",
+      snippet: `only font used is ${[...fonts][0]}`,
+    });
   }
   const sizes = new Set();
   for (const el of document.querySelectorAll(
     "h1, h2, h3, h4, h5, h6, p, span, a, li, td, th, label, button, div",
   )) {
     const fontSize = parseFloat(window.getComputedStyle(el).fontSize);
-    if (fontSize >= 8 && fontSize < 200) sizes.add(Math.round(fontSize * 10) / 10);
+    if (fontSize >= 8 && fontSize < 200)
+      sizes.add(Math.round(fontSize * 10) / 10);
   }
   if (sizes.size >= 3) {
     const sorted = [...sizes].sort((a, b) => a - b);
@@ -129,7 +139,11 @@ const STATIC_ELEMENT_RULES = [
         resolveBackground(el.parentElement || el, window, customPropMap),
       ),
   },
-  { id: "motion-rules", selector: "*", run: (el, tag, style) => checkElementMotion(tag, style) },
+  {
+    id: "motion-rules",
+    selector: "*",
+    run: (el, tag, style) => checkElementMotion(tag, style),
+  },
   {
     id: "icon-tile-stack",
     selector: "h1,h2,h3,h4,h5,h6",
@@ -146,21 +160,28 @@ const STATIC_ELEMENT_RULES = [
     run: (el, tag, style, window, customPropMap) =>
       checkElementHeroEyebrow(el, style, tag, window, customPropMap),
   },
-  { id: "broken-image", selector: "img", run: (el) => checkElementBrokenImage(el) },
+  {
+    id: "broken-image",
+    selector: "img",
+    run: (el) => checkElementBrokenImage(el),
+  },
   {
     id: "quality-rules",
     selector: "*",
-    run: (el, tag, style, window) => checkElementQuality(el, style, tag, window),
+    run: (el, tag, style, window) =>
+      checkElementQuality(el, style, tag, window),
   },
   {
     id: "oversized-h1",
     selector: "h1",
-    run: (el, tag, style, window) => checkElementOversizedH1(el, style, tag, window),
+    run: (el, tag, style, window) =>
+      checkElementOversizedH1(el, style, tag, window),
   },
   {
     id: "clipped-overflow-container",
     selector: "*",
-    run: (el, tag, style, window) => checkElementClippedOverflow(el, style, tag, window),
+    run: (el, tag, style, window) =>
+      checkElementClippedOverflow(el, style, tag, window),
   },
   {
     id: "gpt-thin-border-wide-shadow",
@@ -223,10 +244,20 @@ async function detectHtml(filePath, options = {}) {
       ruleId: "parse-document",
       target: filePath,
     },
-    () => modules.parseDocument(html, { lowerCaseAttributeNames: false, lowerCaseTags: true }),
+    () =>
+      modules.parseDocument(html, {
+        lowerCaseAttributeNames: false,
+        lowerCaseTags: true,
+      }),
   );
 
-  const cssText = collectStaticCssText(root, fileDir, profile, filePath, modules);
+  const cssText = collectStaticCssText(
+    root,
+    fileDir,
+    profile,
+    filePath,
+    modules,
+  );
   const document = new StaticDocument(root, modules);
   buildStaticStyleMap(root, document, cssText, modules, profile, filePath);
   const window = buildStaticWindow(document);
@@ -267,7 +298,10 @@ async function detectHtml(filePath, options = {}) {
         ruleId: "design-system",
         target: filePath,
       },
-      () => checkSourceDesignSystem(html, filePath, { designSystem: options.designSystem }),
+      () =>
+        checkSourceDesignSystem(html, filePath, {
+          designSystem: options.designSystem,
+        }),
     );
     const staticDesignFindings = profileFindings(
       profile,
@@ -277,9 +311,17 @@ async function detectHtml(filePath, options = {}) {
         ruleId: "design-system",
         target: filePath,
       },
-      () => collectStaticDesignSystemFindings(document, window, filePath, options.designSystem),
+      () =>
+        collectStaticDesignSystemFindings(
+          document,
+          window,
+          filePath,
+          options.designSystem,
+        ),
     );
-    findings.push(...mergeDesignSystemFindings(staticDesignFindings, sourceDesignFindings));
+    findings.push(
+      ...mergeDesignSystemFindings(staticDesignFindings, sourceDesignFindings),
+    );
   }
 
   if (isFullPage(html)) {
@@ -301,18 +343,25 @@ async function detectHtml(filePath, options = {}) {
     )) {
       findings.push(finding(f.id, filePath, f.snippet));
     }
-    for (const f of runPageCheck("layout-rules", () => checkPageLayout(document, window))) {
+    for (const f of runPageCheck("layout-rules", () =>
+      checkPageLayout(document, window),
+    )) {
       findings.push(finding(f.id, filePath, f.snippet));
     }
-    for (const f of runPageCheck("cream-palette", () => checkCreamPalette(document, window))) {
+    for (const f of runPageCheck("cream-palette", () =>
+      checkCreamPalette(document, window),
+    )) {
       findings.push(finding(f.id, filePath, f.snippet));
     }
-    for (const f of runPageCheck("skipped-heading", () => checkPageQualityFromDoc(document))) {
+    for (const f of runPageCheck("skipped-heading", () =>
+      checkPageQualityFromDoc(document),
+    )) {
       findings.push(finding(f.id, filePath, f.snippet));
     }
     for (const f of runPageCheck("html-patterns", () =>
       checkHtmlPatterns(html).filter(
-        (item) => item.id !== "bounce-easing" && item.id !== "layout-transition",
+        (item) =>
+          item.id !== "bounce-easing" && item.id !== "layout-transition",
       ),
     )) {
       findings.push(finding(f.id, filePath, f.snippet));
@@ -333,7 +382,9 @@ async function detectHtml(filePath, options = {}) {
   // Static-HTML findings carry no line number, so only whole-file
   // `impeccable-disable` directives apply here — exactly the standalone-document
   // waiver this primitive targets. Bypassed by `--no-config` / `--no-inline-ignores`.
-  return options?.inlineIgnores === false ? byProvider : applyInlineIgnores(byProvider, html);
+  return options?.inlineIgnores === false
+    ? byProvider
+    : applyInlineIgnores(byProvider, html);
 }
 
 export { checkStaticPageTypography, STATIC_ELEMENT_RULES, detectHtml };

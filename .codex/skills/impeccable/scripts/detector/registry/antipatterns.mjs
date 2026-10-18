@@ -420,7 +420,9 @@ function getRuleEngineSupport(engine) {
 }
 
 // Set of provider tags that gate rules off by default (e.g. 'gpt', 'gemini').
-const GATED_PROVIDERS = new Set(ANTIPATTERNS.map((rule) => rule.gated).filter(Boolean));
+const GATED_PROVIDERS = new Set(
+  ANTIPATTERNS.map((rule) => rule.gated).filter(Boolean),
+);
 
 // Drop findings for rules gated behind a provider tag unless that provider
 // was explicitly enabled (CLI --gpt / --gemini). Non-gated findings always

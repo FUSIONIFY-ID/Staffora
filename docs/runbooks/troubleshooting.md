@@ -119,5 +119,6 @@ Panduan diagnosa dan penanganan insiden operasional Staffora.
   `migrate resolve --rolled-back` hanya membersihkan catatan kegagalan; ia tidak mengubah data.
   Jalankan perintah SQL penggabungan di atas sebelum langkah ini, karena deploy berikutnya akan
   mencoba index yang sama dan gagal lagi bila duplikatnya masih ada.
+
 - **Pencegahan**: periksa duplikat sebelum menerapkan migrasi ke lingkungan yang sudah berisi data.
   Query diagnosa di atas bersifat read-only dan aman dijalankan lebih dulu.

@@ -10,6 +10,7 @@ The Tech Lead (**Arya Isnaidi**) is the approving reviewer. Normal work targets 
 ## Required Verification Gate
 
 Run from the repository root:
+
 ```powershell
 npm run lint
 npm run typecheck

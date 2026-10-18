@@ -38,77 +38,329 @@
   },
 
   "layout": {
-    "designWidth": { "value": 1440, "unit": "px", "confidence": "EXACT", "note": "Labelled 'Desktop 1440' in frame 02." },
-    "sidebarWidth": { "value": 240, "unit": "px", "confidence": "EXACT", "note": "Labelled 'Sidebar 240' in frame 02." },
-    "headerHeight": { "value": 72, "unit": "px", "confidence": "EXACT", "note": "Labelled 'Header 72' in frame 02." },
-    "contentGutter": { "value": 36, "unit": "px", "confidence": "EXACT", "note": "Content starts at x=276 with a 240 sidebar, so 36px gutter on both sides. Content width 1128 = 1440 - 240 - 36 - 36." },
+    "designWidth": {
+      "value": 1440,
+      "unit": "px",
+      "confidence": "EXACT",
+      "note": "Labelled 'Desktop 1440' in frame 02."
+    },
+    "sidebarWidth": {
+      "value": 240,
+      "unit": "px",
+      "confidence": "EXACT",
+      "note": "Labelled 'Sidebar 240' in frame 02."
+    },
+    "headerHeight": {
+      "value": 72,
+      "unit": "px",
+      "confidence": "EXACT",
+      "note": "Labelled 'Header 72' in frame 02."
+    },
+    "contentGutter": {
+      "value": 36,
+      "unit": "px",
+      "confidence": "EXACT",
+      "note": "Content starts at x=276 with a 240 sidebar, so 36px gutter on both sides. Content width 1128 = 1440 - 240 - 36 - 36."
+    },
     "contentMaxWidth": { "value": 1128, "unit": "px", "confidence": "EXACT" },
-    "minimumUsableWidth": { "value": 1280, "unit": "px", "confidence": "EXACT", "note": "PRD 17.3 requires desktop-first at 1440 and usable at 1280." },
-    "responsiveBehaviour": { "confidence": "UNKNOWN", "note": "Only fixed 1440 frames exist. No mobile or tablet frame, so no breakpoint can be read from the source." }
+    "minimumUsableWidth": {
+      "value": 1280,
+      "unit": "px",
+      "confidence": "EXACT",
+      "note": "PRD 17.3 requires desktop-first at 1440 and usable at 1280."
+    },
+    "responsiveBehaviour": {
+      "confidence": "UNKNOWN",
+      "note": "Only fixed 1440 frames exist. No mobile or tablet frame, so no breakpoint can be read from the source."
+    }
   },
 
   "colors": {
-    "surfacePage": { "value": "#F7F8FA", "confidence": "EXACT", "role": "App page background." },
-    "surfaceWhite": { "value": "#FFFFFF", "confidence": "EXACT", "role": "Cards, tables, sidebar, header." },
-    "surfaceTableHeader": { "value": "#FAFAFA", "confidence": "EXACT", "role": "Table header row." },
-    "surfaceChip": { "value": "#F5F5F5", "confidence": "EXACT", "role": "Neutral chip and filter pill." },
-    "surfaceDivider": { "value": "#F0F0F0", "confidence": "EXACT", "role": "Table row divider." },
-    "surfaceBrandPanel": { "value": "#111827", "confidence": "EXACT", "role": "Login brand panel only. The single dark surface in the design." },
+    "surfacePage": {
+      "value": "#F7F8FA",
+      "confidence": "EXACT",
+      "role": "App page background."
+    },
+    "surfaceWhite": {
+      "value": "#FFFFFF",
+      "confidence": "EXACT",
+      "role": "Cards, tables, sidebar, header."
+    },
+    "surfaceTableHeader": {
+      "value": "#FAFAFA",
+      "confidence": "EXACT",
+      "role": "Table header row."
+    },
+    "surfaceChip": {
+      "value": "#F5F5F5",
+      "confidence": "EXACT",
+      "role": "Neutral chip and filter pill."
+    },
+    "surfaceDivider": {
+      "value": "#F0F0F0",
+      "confidence": "EXACT",
+      "role": "Table row divider."
+    },
+    "surfaceBrandPanel": {
+      "value": "#111827",
+      "confidence": "EXACT",
+      "role": "Login brand panel only. The single dark surface in the design."
+    },
 
-    "primary": { "value": "#2563EB", "confidence": "EXACT", "role": "Primary button, active nav, links, progress fill." },
-    "primaryHover": { "value": "#1D4ED8", "confidence": "INFERRED", "note": "Derived from the info-text token. Hover states are not depicted in the source." },
+    "primary": {
+      "value": "#2563EB",
+      "confidence": "EXACT",
+      "role": "Primary button, active nav, links, progress fill."
+    },
+    "primaryHover": {
+      "value": "#1D4ED8",
+      "confidence": "INFERRED",
+      "note": "Derived from the info-text token. Hover states are not depicted in the source."
+    },
 
-    "textPrimary": { "value": "#171717", "confidence": "EXACT", "role": "Page titles, card values." },
-    "textSecondary": { "value": "#525252", "confidence": "EXACT", "role": "Table cells, body copy." },
-    "textMuted": { "value": "#737373", "confidence": "EXACT", "role": "Subtitles, breadcrumb, table header labels." },
-    "textPlaceholder": { "value": "#A3A3A3", "confidence": "EXACT", "role": "Input placeholder, footnote." },
-    "textStrong": { "value": "#262626", "confidence": "EXACT", "role": "Emphasised table cell." },
-    "textDark": { "value": "#404040", "confidence": "EXACT", "role": "Secondary emphasis." },
+    "textPrimary": {
+      "value": "#171717",
+      "confidence": "EXACT",
+      "role": "Page titles, card values."
+    },
+    "textSecondary": {
+      "value": "#525252",
+      "confidence": "EXACT",
+      "role": "Table cells, body copy."
+    },
+    "textMuted": {
+      "value": "#737373",
+      "confidence": "EXACT",
+      "role": "Subtitles, breadcrumb, table header labels."
+    },
+    "textPlaceholder": {
+      "value": "#A3A3A3",
+      "confidence": "EXACT",
+      "role": "Input placeholder, footnote."
+    },
+    "textStrong": {
+      "value": "#262626",
+      "confidence": "EXACT",
+      "role": "Emphasised table cell."
+    },
+    "textDark": {
+      "value": "#404040",
+      "confidence": "EXACT",
+      "role": "Secondary emphasis."
+    },
 
-    "borderDefault": { "value": "#E5E7EB", "confidence": "EXACT", "role": "Card, table, and container border." },
-    "borderInput": { "value": "#D4D4D4", "confidence": "EXACT", "role": "Form field border." },
+    "borderDefault": {
+      "value": "#E5E7EB",
+      "confidence": "EXACT",
+      "role": "Card, table, and container border."
+    },
+    "borderInput": {
+      "value": "#D4D4D4",
+      "confidence": "EXACT",
+      "role": "Form field border."
+    },
 
-    "success": { "value": "#16A34A", "confidence": "EXACT", "role": "Progress fill, fulfilled indicator." },
-    "successSurface": { "value": "#DCFCE7", "confidence": "EXACT", "role": "Active status chip background." },
-    "successText": { "value": "#166534", "confidence": "EXACT", "role": "Active status chip text." },
-    "warning": { "value": "#D97706", "confidence": "EXACT", "role": "Partially filled, needs attention." },
+    "success": {
+      "value": "#16A34A",
+      "confidence": "EXACT",
+      "role": "Progress fill, fulfilled indicator."
+    },
+    "successSurface": {
+      "value": "#DCFCE7",
+      "confidence": "EXACT",
+      "role": "Active status chip background."
+    },
+    "successText": {
+      "value": "#166534",
+      "confidence": "EXACT",
+      "role": "Active status chip text."
+    },
+    "warning": {
+      "value": "#D97706",
+      "confidence": "EXACT",
+      "role": "Partially filled, needs attention."
+    },
     "warningSurface": { "value": "#FEF3C7", "confidence": "EXACT" },
-    "danger": { "value": "#DC2626", "confidence": "EXACT", "role": "Fully allocated, required-role warning, 403 badge." },
+    "danger": {
+      "value": "#DC2626",
+      "confidence": "EXACT",
+      "role": "Fully allocated, required-role warning, 403 badge."
+    },
     "dangerSurface": { "value": "#FEE2E2", "confidence": "EXACT" },
     "dangerText": { "value": "#991B1B", "confidence": "EXACT" },
-    "dangerBadgeSurface": { "value": "#FEF2F2", "confidence": "EXACT", "role": "403 badge circle." },
+    "dangerBadgeSurface": {
+      "value": "#FEF2F2",
+      "confidence": "EXACT",
+      "role": "403 badge circle."
+    },
 
-    "infoSurface": { "value": "#EFF6FF", "confidence": "EXACT", "role": "Informational note panel." },
+    "infoSurface": {
+      "value": "#EFF6FF",
+      "confidence": "EXACT",
+      "role": "Informational note panel."
+    },
     "infoText": { "value": "#1D4ED8", "confidence": "EXACT" },
     "infoBorder": { "value": "#BFDBFE", "confidence": "EXACT" },
-    "infoBadgeSurface": { "value": "#DBEAFE", "confidence": "EXACT", "role": "Avatar circle." },
-    "neutralSurfaceAlt": { "value": "#F8FAFC", "confidence": "EXACT", "role": "Role-context panel on 403." },
+    "infoBadgeSurface": {
+      "value": "#DBEAFE",
+      "confidence": "EXACT",
+      "role": "Avatar circle."
+    },
+    "neutralSurfaceAlt": {
+      "value": "#F8FAFC",
+      "confidence": "EXACT",
+      "role": "Role-context panel on 403."
+    },
     "neutralBorderAlt": { "value": "#E2E8F0", "confidence": "EXACT" }
   },
 
   "typography": {
-    "fontFamily": { "value": "Exo 2", "confidence": "EXACT", "note": "Every text style in the file uses Exo 2. Weights 400, 500, 600." },
-    "fallback": { "value": "system-ui, -apple-system, sans-serif", "confidence": "INFERRED" },
+    "fontFamily": {
+      "value": "Exo 2",
+      "confidence": "EXACT",
+      "note": "Every text style in the file uses Exo 2. Weights 400, 500, 600."
+    },
+    "fallback": {
+      "value": "system-ui, -apple-system, sans-serif",
+      "confidence": "INFERRED"
+    },
     "scale": [
-      { "token": "display", "size": 32, "lineHeight": 46, "weight": 600, "confidence": "EXACT" },
-      { "token": "badgeHero", "size": 30, "lineHeight": 44, "weight": 600, "confidence": "EXACT", "note": "403 and 404 numeric badge." },
-      { "token": "pageTitle", "size": 28, "lineHeight": 41, "weight": 600, "confidence": "EXACT" },
-      { "token": "sectionTitle", "size": 24, "lineHeight": 35, "weight": 600, "confidence": "EXACT" },
-      { "token": "metric", "size": 22, "lineHeight": 32, "weight": 600, "confidence": "EXACT" },
-      { "token": "cardTitle", "size": 20, "lineHeight": 29, "weight": 600, "confidence": "EXACT" },
-      { "token": "subheading", "size": 18, "lineHeight": 26, "weight": 600, "confidence": "EXACT" },
-      { "token": "cardHeading", "size": 17, "lineHeight": 25, "weight": 600, "confidence": "EXACT" },
-      { "token": "headingSm", "size": 16, "lineHeight": 23, "weight": 600, "confidence": "EXACT" },
-      { "token": "body", "size": 14, "lineHeight": 20, "weight": 400, "confidence": "EXACT" },
-      { "token": "bodyMedium", "size": 14, "lineHeight": 20, "weight": 500, "confidence": "EXACT", "note": "Breadcrumb." },
-      { "token": "button", "size": 14, "lineHeight": 20, "weight": 600, "confidence": "EXACT" },
-      { "token": "bodySm", "size": 13, "lineHeight": 19, "weight": 400, "confidence": "EXACT" },
-      { "token": "bodySmMedium", "size": 13, "lineHeight": 19, "weight": 500, "confidence": "EXACT" },
-      { "token": "bodySmSemibold", "size": 13, "lineHeight": 19, "weight": 600, "confidence": "EXACT" },
-      { "token": "label", "size": 12, "lineHeight": 17, "weight": 500, "confidence": "EXACT", "note": "Form label, table cell." },
-      { "token": "tableHeader", "size": 12, "lineHeight": 17, "weight": 600, "confidence": "EXACT" },
-      { "token": "chip", "size": 11, "lineHeight": 16, "weight": 500, "confidence": "EXACT" },
-      { "token": "footnote", "size": 11, "lineHeight": 16, "weight": 400, "confidence": "EXACT" }
+      {
+        "token": "display",
+        "size": 32,
+        "lineHeight": 46,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "badgeHero",
+        "size": 30,
+        "lineHeight": 44,
+        "weight": 600,
+        "confidence": "EXACT",
+        "note": "403 and 404 numeric badge."
+      },
+      {
+        "token": "pageTitle",
+        "size": 28,
+        "lineHeight": 41,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "sectionTitle",
+        "size": 24,
+        "lineHeight": 35,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "metric",
+        "size": 22,
+        "lineHeight": 32,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "cardTitle",
+        "size": 20,
+        "lineHeight": 29,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "subheading",
+        "size": 18,
+        "lineHeight": 26,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "cardHeading",
+        "size": 17,
+        "lineHeight": 25,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "headingSm",
+        "size": 16,
+        "lineHeight": 23,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "body",
+        "size": 14,
+        "lineHeight": 20,
+        "weight": 400,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "bodyMedium",
+        "size": 14,
+        "lineHeight": 20,
+        "weight": 500,
+        "confidence": "EXACT",
+        "note": "Breadcrumb."
+      },
+      {
+        "token": "button",
+        "size": 14,
+        "lineHeight": 20,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "bodySm",
+        "size": 13,
+        "lineHeight": 19,
+        "weight": 400,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "bodySmMedium",
+        "size": 13,
+        "lineHeight": 19,
+        "weight": 500,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "bodySmSemibold",
+        "size": 13,
+        "lineHeight": 19,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "label",
+        "size": 12,
+        "lineHeight": 17,
+        "weight": 500,
+        "confidence": "EXACT",
+        "note": "Form label, table cell."
+      },
+      {
+        "token": "tableHeader",
+        "size": 12,
+        "lineHeight": 17,
+        "weight": 600,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "chip",
+        "size": 11,
+        "lineHeight": 16,
+        "weight": 500,
+        "confidence": "EXACT"
+      },
+      {
+        "token": "footnote",
+        "size": 11,
+        "lineHeight": 16,
+        "weight": 400,
+        "confidence": "EXACT"
+      }
     ]
   },
 
@@ -124,8 +376,19 @@
   "components": {
     "buttonPrimary": {
       "confidence": "EXACT",
-      "layout": { "mode": "row", "padding": "10px 16px", "justifyContent": "center", "alignItems": "center", "gap": 8 },
-      "height": { "value": 40, "unit": "px", "confidence": "ESTIMATED", "note": "Frames show 34, 39, 40, 42 and 48 depending on context; 40 is the common value." },
+      "layout": {
+        "mode": "row",
+        "padding": "10px 16px",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "gap": 8
+      },
+      "height": {
+        "value": 40,
+        "unit": "px",
+        "confidence": "ESTIMATED",
+        "note": "Frames show 34, 39, 40, 42 and 48 depending on context; 40 is the common value."
+      },
       "fill": "#2563EB",
       "textColor": "#FFFFFF",
       "textStyle": "button",
@@ -174,11 +437,31 @@
       "padding": "4px 10px",
       "textStyle": "chip",
       "variants": {
-        "success": { "fill": "#DCFCE7", "text": "#166534", "label": "Active / fulfilled" },
-        "neutral": { "fill": "#F5F5F5", "text": "#525252", "label": "Inactive / neutral" },
-        "warning": { "fill": "#FEF3C7", "text": "#D97706", "label": "Partially filled" },
-        "danger": { "fill": "#FEE2E2", "text": "#991B1B", "label": "Fully allocated" },
-        "info": { "fill": "#EFF6FF", "text": "#1D4ED8", "label": "Informational" }
+        "success": {
+          "fill": "#DCFCE7",
+          "text": "#166534",
+          "label": "Active / fulfilled"
+        },
+        "neutral": {
+          "fill": "#F5F5F5",
+          "text": "#525252",
+          "label": "Inactive / neutral"
+        },
+        "warning": {
+          "fill": "#FEF3C7",
+          "text": "#D97706",
+          "label": "Partially filled"
+        },
+        "danger": {
+          "fill": "#FEE2E2",
+          "text": "#991B1B",
+          "label": "Fully allocated"
+        },
+        "info": {
+          "fill": "#EFF6FF",
+          "text": "#1D4ED8",
+          "label": "Informational"
+        }
       }
     },
     "progressBar": {
@@ -237,7 +520,11 @@
       "title": "Access denied",
       "titleStyle": "pageTitle",
       "bodyText": "You don’t have permission to access this area with your current Staffora role.",
-      "roleContextPanel": { "fill": "#F8FAFC", "border": "1px #E2E8F0", "radius": 8 },
+      "roleContextPanel": {
+        "fill": "#F8FAFC",
+        "border": "1px #E2E8F0",
+        "radius": 8
+      },
       "primaryAction": "Back to Dashboard"
     },
     "404NotFound": {
@@ -257,8 +544,19 @@
       "confidence": "EXACT",
       "source": "frame 01",
       "model": "Two-column split at 1440: brand panel 680px fixed on the left, auth column filling the remainder.",
-      "brandPanel": { "width": 680, "fill": "#111827", "title": "Staffora", "tagline": "Right People. Right Project." },
-      "card": { "width": 420, "height": 520, "radius": 14, "fill": "#FFFFFF", "border": "1px #E5E7EB" },
+      "brandPanel": {
+        "width": 680,
+        "fill": "#111827",
+        "title": "Staffora",
+        "tagline": "Right People. Right Project."
+      },
+      "card": {
+        "width": 420,
+        "height": 520,
+        "radius": 14,
+        "fill": "#FFFFFF",
+        "border": "1px #E5E7EB"
+      },
       "fields": ["Work email", "Password"],
       "fieldHeight": 40,
       "submitHeight": 48,

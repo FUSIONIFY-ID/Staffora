@@ -1,8 +1,20 @@
-import { prisma } from '../../common/database/prisma.js'
-import type { Role } from '../../common/auth/types.js'
+import type { Prisma, User, Employee } from "../../generated/prisma/client.js";
+import { prisma } from "../../common/database/prisma.js";
+import type { Role } from "../../common/auth/types.js";
+
+export type UserWithEmployee = Prisma.UserGetPayload<{
+  include: {
+    employee: {
+      include: {
+        department: true;
+        jobRole: true;
+      };
+    };
+  };
+}>;
 
 export const identityRepository = {
-  findByNormalizedEmail(email: string) {
+  findByNormalizedEmail(email: string): Promise<UserWithEmployee | null> {
     return prisma.user.findUnique({
       where: { normalizedEmail: email.trim().toLowerCase() },
       include: {
@@ -13,10 +25,10 @@ export const identityRepository = {
           },
         },
       },
-    })
+    });
   },
 
-  findById(id: string) {
+  findById(id: string): Promise<UserWithEmployee | null> {
     return prisma.user.findUnique({
       where: { id },
       include: {
@@ -27,10 +39,10 @@ export const identityRepository = {
           },
         },
       },
-    })
+    });
   },
 
-  findAll() {
+  findAll(): Promise<UserWithEmployee[]> {
     return prisma.user.findMany({
       include: {
         employee: {
@@ -40,17 +52,17 @@ export const identityRepository = {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
-    })
+      orderBy: { createdAt: "desc" },
+    });
   },
 
   createUser(data: {
-    normalizedEmail: string
-    passwordHash: string
-    role: Role
-    employeeId?: string
-    createdBy?: string
-  }) {
+    normalizedEmail: string;
+    passwordHash: string;
+    role: Role;
+    employeeId?: string;
+    createdBy?: string;
+  }): Promise<UserWithEmployee> {
     return prisma.user.create({
       data: {
         normalizedEmail: data.normalizedEmail.trim().toLowerCase(),
@@ -67,18 +79,18 @@ export const identityRepository = {
           },
         },
       },
-    })
+    });
   },
 
   updateUser(
     id: string,
     data: {
-      role?: Role
-      isActive?: boolean
-      employeeId?: string | null
-      updatedBy?: string
+      role?: Role;
+      isActive?: boolean;
+      employeeId?: string | null;
+      updatedBy?: string;
     },
-  ) {
+  ): Promise<UserWithEmployee> {
     return prisma.user.update({
       where: { id },
       data: {
@@ -95,6 +107,18 @@ export const identityRepository = {
           },
         },
       },
-    })
+    });
   },
-}
+
+  findEmployeeById(employeeId: string): Promise<Employee | null> {
+    return prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
+  },
+
+  findByEmployeeId(employeeId: string): Promise<User | null> {
+    return prisma.user.findUnique({
+      where: { employeeId },
+    });
+  },
+};

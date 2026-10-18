@@ -1,66 +1,121 @@
-import type { Request, Response, NextFunction } from 'express'
-import { sendSuccess, sendList } from '../../common/http/response.js'
-import { allocationsService } from './allocations.service.js'
+import type { Request, Response, NextFunction } from "express";
+import { getParam } from "../../common/http/params.js";
+import { assertAuth } from "../../common/auth/policy.js";
+import {
+  sendSuccess,
+  sendList,
+  sendCreated,
+  sendNoContent,
+} from "../../common/http/response.js";
+import { allocationsService } from "./allocations.service.js";
 
 export const allocationsController = {
-  async getAllocations(req: Request, res: Response, next: NextFunction) {
+  async getAllocations(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
-      const result = await allocationsService.getAllocations(req.query, req.user!)
+      assertAuth(req.user);
+      const result = await allocationsService.getAllocations(
+        req.query,
+        req.user,
+      );
       return sendList(res, result.data, {
         page: result.page,
         pageSize: result.pageSize,
         total: result.total,
-      })
+      });
     } catch (err) {
-      next(err)
+      next(err);
     }
   },
 
-  async getAllocationById(req: Request, res: Response, next: NextFunction) {
+  async getAllocationById(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
-      const item = await allocationsService.getAllocationById(req.params.id as string, req.user!)
-      return sendSuccess(res, item)
+      const allocationId = getParam(req.params.id);
+      assertAuth(req.user);
+      const item = await allocationsService.getAllocationById(
+        allocationId,
+        req.user,
+      );
+      return sendSuccess(res, item);
     } catch (err) {
-      next(err)
+      next(err);
     }
   },
 
-  async createAllocation(req: Request, res: Response, next: NextFunction) {
+  async createAllocation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
-      const item = await allocationsService.createAllocation(req.body, req.user!)
-      return res.status(201).json({
-        data: item,
-        meta: { message: 'Allocation created scaffold' },
-      })
+      assertAuth(req.user);
+      const item = await allocationsService.createAllocation(
+        req.body,
+        req.user,
+      );
+      return sendCreated(res, item);
     } catch (err) {
-      next(err)
+      next(err);
     }
   },
 
-  async updateAllocation(req: Request, res: Response, next: NextFunction) {
+  async updateAllocation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
-      const item = await allocationsService.updateAllocation(req.params.id as string, req.body, req.user!)
-      return sendSuccess(res, item)
+      const allocationId = getParam(req.params.id);
+      assertAuth(req.user);
+      const item = await allocationsService.updateAllocation(
+        allocationId,
+        req.body,
+        req.user,
+      );
+      return sendSuccess(res, item);
     } catch (err) {
-      next(err)
+      next(err);
     }
   },
 
-  async endAllocation(req: Request, res: Response, next: NextFunction) {
+  async endAllocation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
-      const item = await allocationsService.endAllocation(req.params.id as string, req.body, req.user!)
-      return sendSuccess(res, item)
+      const allocationId = getParam(req.params.id);
+      assertAuth(req.user);
+      const item = await allocationsService.endAllocation(
+        allocationId,
+        req.body,
+        req.user,
+      );
+      return sendSuccess(res, item);
     } catch (err) {
-      next(err)
+      next(err);
     }
   },
 
-  async cancelAllocation(req: Request, res: Response, next: NextFunction) {
+  async cancelAllocation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void | Response> {
     try {
-      await allocationsService.cancelAllocation(req.params.id as string, req.user!)
-      return res.status(204).send()
+      const allocationId = getParam(req.params.id);
+      assertAuth(req.user);
+      await allocationsService.cancelAllocation(allocationId, req.user);
+      return sendNoContent(res);
     } catch (err) {
-      next(err)
+      next(err);
     }
   },
-}
+};

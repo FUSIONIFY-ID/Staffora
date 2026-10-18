@@ -1,15 +1,15 @@
-import React from 'react'
-import { Alert } from './ui/alert.js'
-import { Button } from './ui/button.js'
+import React from "react";
+import { Alert } from "./ui/alert.js";
+import { Button } from "./ui/button.js";
 
 export interface ErrorStateProps {
-  title?: string
-  message: string
-  onRetry?: () => void
+  title?: string;
+  message: string;
+  onRetry?: () => void;
 }
 
 export const ErrorState: React.FC<ErrorStateProps> = ({
-  title = 'Something went wrong',
+  title = "Something went wrong",
   message,
   onRetry,
 }) => {
@@ -26,5 +26,5 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
         )}
       </Alert>
     </div>
-  )
-}
+  );
+};

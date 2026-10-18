@@ -31,8 +31,18 @@ Built-in CSS easings are too weak. Use strong custom curves:
 
 ```css
 --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* strong ease-out for UI */
---ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); /* strong ease-in-out for on-screen movement */
---ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* iOS-like drawer curve (Ionic) */
+--ease-in-out: cubic-bezier(
+  0.77,
+  0,
+  0.175,
+  1
+); /* strong ease-in-out for on-screen movement */
+--ease-drawer: cubic-bezier(
+  0.32,
+  0.72,
+  0,
+  1
+); /* iOS-like drawer curve (Ionic) */
 ```
 
 Find curves at [easing.dev](https://easing.dev/) or [easings.co](https://easings.co/) — don't hand-roll from scratch.
@@ -148,11 +158,14 @@ Slow where the user is deciding, fast where the system responds.
 - **CSS animations beat JS under load** — they run off the main thread; rAF-based animations stutter while the browser loads/scripts/paints. Use CSS for predetermined motion, JS for dynamic/interruptible.
 - **WAAPI** gives JS control with CSS performance (hardware-accelerated, interruptible, no library):
   ```js
-  element.animate([{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }], {
-    duration: 1000,
-    fill: "forwards",
-    easing: "cubic-bezier(0.77, 0, 0.175, 1)",
-  });
+  element.animate(
+    [{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }],
+    {
+      duration: 1000,
+      fill: "forwards",
+      easing: "cubic-bezier(0.77, 0, 0.175, 1)",
+    },
+  );
   ```
 
 ## Transforms & clip-path

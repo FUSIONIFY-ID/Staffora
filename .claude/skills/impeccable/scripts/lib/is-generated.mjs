@@ -32,7 +32,9 @@ const HEADER_MARKERS = [
  */
 export function isGeneratedFile(filePath, options = {}) {
   const cwd = options.cwd || process.cwd();
-  const absPath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
+  const absPath = path.isAbsolute(filePath)
+    ? filePath
+    : path.resolve(cwd, filePath);
 
   if (isGitIgnored(absPath, cwd)) return true;
   if (hasGeneratedHeader(absPath)) return true;

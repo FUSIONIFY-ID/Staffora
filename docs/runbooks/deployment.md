@@ -7,6 +7,7 @@ Panduan operasional deployment Staffora ke staging dan production.
 ## 1. Deployment Topology (TSD 16.2 & ADR-007)
 
 Staffora dideploy pada **Single Linux VM + Docker Compose** dengan entry point **Nginx Reverse Proxy**:
+
 - `Nginx`: Melayani TLS termination, menyajikan static React build di `/`, me-reverse proxy `/api/v1` ke container Express API, dan menyajikan `/api-docs` (Swagger UI).
 - `Express API`: Node.js 24 LTS container.
 - `PostgreSQL`: PostgreSQL 18 container (tidak diekspos ke public internet).
@@ -24,6 +25,7 @@ Staffora dideploy pada **Single Linux VM + Docker Compose** dengan entry point *
 ## 2. Automated Staging Deployment (TSD 16.4)
 
 Setiap merge ke branch `main` akan memicu GitHub Actions:
+
 1. Menjalankan linter, typechecker, test suites, dan disposable migration test.
 2. Membangun multi-arch Docker images dan mem-push ke GitHub Container Registry (`ghcr.io`).
 3. Deploy otomatis ke staging VM.

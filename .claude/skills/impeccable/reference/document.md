@@ -316,7 +316,11 @@ Regenerate the sidecar whenever you regenerate root `DESIGN.md`. If the user onl
     "overview": "2-3 paragraphs of the philosophy, pulled from DESIGN.md Overview section.",
     "keyCharacteristics": ["...", "..."],
     "rules": [
-      { "name": "The One Voice Rule", "body": "...", "section": "colors|typography|elevation" }
+      {
+        "name": "The One Voice Rule",
+        "body": "...",
+        "section": "colors|typography|elevation"
+      }
     ],
     "dos": ["Do use ..."],
     "donts": ["Don't use ..."]

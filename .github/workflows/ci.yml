@@ -47,7 +47,7 @@ jobs:
       - name: Setup Node.js 24 LTS
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: "24"
           cache: npm
 
       - name: Install dependencies
@@ -75,6 +75,9 @@ jobs:
 
       - name: Automated Tests
         run: npm test
+
+      - name: Authorization Coverage Gate
+        run: npm run test:coverage:auth
 
       - name: Production Bundle Build
         run: npm run build

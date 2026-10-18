@@ -1,10 +1,10 @@
-import React from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router'
-import { useAuth } from '../providers/auth-provider.js'
-import { ErrorBoundary } from '../../components/error-boundary.js'
-import { AppSidebar } from './app-sidebar.js'
-import { AppHeader } from './app-header.js'
-import { AppUserMenu } from './app-user-menu.js'
+import React from "react";
+import { Outlet, useLocation, useNavigate } from "react-router";
+import { useAuth } from "../providers/auth-provider.js";
+import { ErrorBoundary } from "../../components/error-boundary.js";
+import { AppSidebar } from "./app-sidebar.js";
+import { AppHeader } from "./app-header.js";
+import { AppUserMenu } from "./app-user-menu.js";
 
 /**
  * Application shell.
@@ -15,17 +15,17 @@ import { AppUserMenu } from './app-user-menu.js'
  * "Sign in" link.
  */
 export const AppLayout: React.FC = () => {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
+    await logout();
+    navigate("/login");
+  };
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
@@ -33,7 +33,9 @@ export const AppLayout: React.FC = () => {
       <AppSidebar user={user} />
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <AppHeader actions={<AppUserMenu user={user} onSignOut={handleLogout} />} />
+        <AppHeader
+          actions={<AppUserMenu user={user} onSignOut={handleLogout} />}
+        />
 
         <main className="flex-1 w-full max-w-[1440px] mx-auto px-9 py-8">
           {/* Keyed on the pathname so a crash on one page does not keep the next
@@ -44,5 +46,5 @@ export const AppLayout: React.FC = () => {
         </main>
       </div>
     </div>
-  )
-}
+  );
+};

@@ -6,7 +6,11 @@ function isNeutralColor(color) {
   // rgb/rgba — use channel spread. Threshold 30 ≈ 11.7% of the 0–255 range.
   const rgb = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (rgb) {
-    return Math.max(+rgb[1], +rgb[2], +rgb[3]) - Math.min(+rgb[1], +rgb[2], +rgb[3]) < 30;
+    return (
+      Math.max(+rgb[1], +rgb[2], +rgb[3]) -
+        Math.min(+rgb[1], +rgb[2], +rgb[3]) <
+      30
+    );
   }
 
   // oklch()/lch() — chroma is the second numeric component.
@@ -125,7 +129,9 @@ function getHue(c) {
 
 function colorToHex(c) {
   if (!c) return "?";
-  return "#" + [c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, "0")).join("");
+  return (
+    "#" + [c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, "0")).join("")
+  );
 }
 
 export {

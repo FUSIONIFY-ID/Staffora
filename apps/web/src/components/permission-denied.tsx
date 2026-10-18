@@ -1,13 +1,13 @@
-import React from 'react'
-import { useNavigate } from 'react-router'
-import type { Role } from '../app/providers/auth-provider.js'
-import { ROLE_LABELS } from '../app/roles.js'
-import { Button } from './ui/button.js'
+import React from "react";
+import { useNavigate } from "react-router";
+import type { Role } from "../app/providers/auth-provider.js";
+import { ROLE_LABELS } from "../app/roles.js";
+import { Button } from "./ui/button.js";
 
 export interface PermissionDeniedProps {
-  role: Role
-  homePath: string
-  requiredRoles?: readonly Role[]
+  role: Role;
+  homePath: string;
+  requiredRoles?: readonly Role[];
 }
 
 /**
@@ -25,14 +25,17 @@ export const PermissionDenied: React.FC<PermissionDeniedProps> = ({
   homePath,
   requiredRoles,
 }) => {
-  const navigate = useNavigate()
-  const homeLabel = homePath === '/my-profile' ? 'Back to My Profile' : 'Back to Dashboard'
+  const navigate = useNavigate();
+  const homeLabel =
+    homePath === "/my-profile" ? "Back to My Profile" : "Back to Dashboard";
 
   return (
     <div className="max-w-[640px] mx-auto my-12 rounded-[10px] border border-line bg-surface-white p-10">
       <div className="flex justify-center">
         <div className="flex h-28 w-28 items-center justify-center rounded-full bg-danger-surface">
-          <span className="text-[30px] font-semibold leading-[44px] text-danger">403</span>
+          <span className="text-[30px] font-semibold leading-[44px] text-danger">
+            403
+          </span>
         </div>
       </div>
 
@@ -40,19 +43,23 @@ export const PermissionDenied: React.FC<PermissionDeniedProps> = ({
         Access denied
       </h1>
       <p className="mx-auto mt-3 max-w-[452px] text-center text-sm leading-5 text-ink-muted">
-        You don&rsquo;t have permission to access this area with your current Staffora role.
+        You don&rsquo;t have permission to access this area with your current
+        Staffora role.
       </p>
 
       <div className="mx-auto mt-8 flex max-w-[452px] items-center justify-between gap-4 rounded-lg border border-neutral-border bg-neutral-surface px-3.5 py-2.5">
         <div>
-          <p className="text-[11px] font-medium leading-4 text-ink-muted">Current role</p>
+          <p className="text-[11px] font-medium leading-4 text-ink-muted">
+            Current role
+          </p>
           <p className="text-[13px] font-semibold leading-[19px] text-ink-soft">
             {ROLE_LABELS[role]}
           </p>
         </div>
         {requiredRoles && requiredRoles.length > 0 ? (
           <p className="text-right text-xs font-medium leading-[17px] text-danger">
-            Required: {requiredRoles.map((allowed) => ROLE_LABELS[allowed]).join(' / ')}
+            Required:{" "}
+            {requiredRoles.map((allowed) => ROLE_LABELS[allowed]).join(" / ")}
           </p>
         ) : null}
       </div>
@@ -63,5 +70,5 @@ export const PermissionDenied: React.FC<PermissionDeniedProps> = ({
         </Button>
       </div>
     </div>
-  )
-}
+  );
+};

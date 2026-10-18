@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react'
+import React, { useEffect } from "react";
 
 export interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title: string
-  children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -13,30 +13,30 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
-  size = 'md',
+  size = "md",
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
+      if (e.key === "Escape") onClose();
+    };
     if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'hidden'
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
     }
     return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen, onClose])
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, onClose]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  }[size]
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl",
+  }[size];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim backdrop-blur-sm animate-fadeIn">
@@ -58,5 +58,5 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="mt-4">{children}</div>
       </div>
     </div>
-  )
-}
+  );
+};

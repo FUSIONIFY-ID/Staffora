@@ -1,6 +1,12 @@
-import { evaluateCapacity, toDateString } from '../capacity/capacity.service.js'
-import type { AllocationInterval, CapacityEvaluationResult } from '../capacity/capacity.types.js'
-import type { EmployeeStatus } from '../../generated/prisma/client.js'
+import {
+  evaluateCapacity,
+  toDateString,
+} from "../capacity/capacity.service.js";
+import type {
+  AllocationInterval,
+  CapacityEvaluationResult,
+} from "../capacity/capacity.types.js";
+import type { EmployeeStatus } from "../../generated/prisma/client.js";
 import type {
   EmployeeDetailRecord,
   EmployeeDetail,
@@ -9,25 +15,27 @@ import type {
   EmployeeSkillView,
   AvailabilityState,
   CapacityWindow,
-} from './workforce.types.js'
+} from "./workforce.types.js";
 
 interface AllocationLike {
-  id: string
-  employeeId: string
-  allocationPercentage: number
-  startDate: Date
-  endDate: Date
-  cancelledAt: Date | null
+  id: string;
+  employeeId: string;
+  allocationPercentage: number;
+  startDate: Date;
+  endDate: Date;
+  cancelledAt: Date | null;
 }
 
-function toIntervals(allocations: ReadonlyArray<AllocationLike>): AllocationInterval[] {
+function toIntervals(
+  allocations: ReadonlyArray<AllocationLike>,
+): AllocationInterval[] {
   return allocations.map((allocation) => ({
     id: allocation.id,
     allocationPercentage: allocation.allocationPercentage,
     startDate: toDateString(allocation.startDate),
     endDate: toDateString(allocation.endDate),
     cancelledAt: allocation.cancelledAt,
-  }))
+  }));
 }
 
 /**
@@ -43,7 +51,10 @@ function evaluateDay(
   allocations: ReadonlyArray<AllocationLike>,
   day: string,
 ): CapacityEvaluationResult {
-  return evaluateCapacity(toIntervals(allocations), { startDate: day, endDate: day })
+  return evaluateCapacity(toIntervals(allocations), {
+    startDate: day,
+    endDate: day,
+  });
 }
 
 /**
@@ -56,17 +67,17 @@ function toAvailabilityState(
   status: EmployeeStatus,
   currentRemainingCapacity: number,
 ): AvailabilityState {
-  if (status !== 'ACTIVE') return 'NOT_ASSIGNABLE'
-  if (currentRemainingCapacity <= 0) return 'FULLY_ALLOCATED'
-  if (currentRemainingCapacity >= 100) return 'AVAILABLE'
-  return 'PARTIAL'
+  if (status !== "ACTIVE") return "NOT_ASSIGNABLE";
+  if (currentRemainingCapacity <= 0) return "FULLY_ALLOCATED";
+  if (currentRemainingCapacity >= 100) return "AVAILABLE";
+  return "PARTIAL";
 }
 
 export function toEmployeeView(
   employee: EmployeeSummaryRecord,
   referenceDate: string,
 ): EmployeeView {
-  const today = evaluateDay(employee.allocations, referenceDate)
+  const today = evaluateDay(employee.allocations, referenceDate);
 
   return {
     id: employee.id,
@@ -81,27 +92,29 @@ export function toEmployeeView(
     departmentName: employee.department.name,
     jobRoleId: employee.jobRoleId,
     jobRoleTitle: employee.jobRole.name,
-  }
+  };
 }
 
-function toSkillView(entry: EmployeeDetailRecord['skills'][number]): EmployeeSkillView {
+function toSkillView(
+  entry: EmployeeDetailRecord["skills"][number],
+): EmployeeSkillView {
   return {
     id: entry.id,
     skillId: entry.skillId,
     skillName: entry.skill.name,
     skillIsActive: entry.skill.isActive,
     proficiencyLevel: entry.proficiencyLevel,
-  }
+  };
 }
 
 function resolveAllocationDisplayStatus(
   allocation: { cancelledAt: Date | null; startDate: Date; endDate: Date },
   referenceDate: string,
-): 'PLANNED' | 'ACTIVE' | 'ENDED' | 'CANCELLED' {
-  if (allocation.cancelledAt) return 'CANCELLED'
-  if (toDateString(allocation.startDate) > referenceDate) return 'PLANNED'
-  if (toDateString(allocation.endDate) < referenceDate) return 'ENDED'
-  return 'ACTIVE'
+): "PLANNED" | "ACTIVE" | "ENDED" | "CANCELLED" {
+  if (allocation.cancelledAt) return "CANCELLED";
+  if (toDateString(allocation.startDate) > referenceDate) return "PLANNED";
+  if (toDateString(allocation.endDate) < referenceDate) return "ENDED";
+  return "ACTIVE";
 }
 
 /**
@@ -119,7 +132,7 @@ export function toDetailView(
   const evaluation = evaluateCapacity(toIntervals(employee.allocations), {
     startDate: window.startDate,
     endDate: window.endDate,
-  })
+  });
 
   return {
     ...toEmployeeView(employee, referenceDate),
@@ -136,7 +149,9 @@ export function toDetailView(
       startDate: toDateString(allocation.startDate),
       endDate: toDateString(allocation.endDate),
       displayStatus: resolveAllocationDisplayStatus(allocation, referenceDate),
-      cancelledAt: allocation.cancelledAt ? allocation.cancelledAt.toISOString() : null,
+      cancelledAt: allocation.cancelledAt
+        ? allocation.cancelledAt.toISOString()
+        : null,
     })),
     evaluatedPeriod: {
       startDate: window.startDate,
@@ -144,5 +159,5 @@ export function toDetailView(
       peakConcurrentAllocation: evaluation.peakAllocation,
       remainingCapacity: evaluation.remainingCapacity,
     },
-  }
+  };
 }

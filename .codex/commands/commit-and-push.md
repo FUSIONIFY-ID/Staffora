@@ -51,6 +51,7 @@ without passing all verification gates and receiving approval from Tech Lead Ary
    ```
 
    If conflicts arise, stop and report. Do not resolve conflicts destructively without instruction.
+
 4. Re-run verification (`npm run lint && npm run typecheck && npm test`) if code changed during rebase.
 5. Push with a normal push only:
 

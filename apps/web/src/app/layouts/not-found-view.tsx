@@ -1,6 +1,6 @@
-import React from 'react'
-import { useNavigate } from 'react-router'
-import { Button } from '../../components/ui/button.js'
+import React from "react";
+import { useNavigate } from "react-router";
+import { Button } from "../../components/ui/button.js";
 
 /**
  * 404 Not Found, per design frame 19.
@@ -16,21 +16,23 @@ import { Button } from '../../components/ui/button.js'
  * to, which is the case when the address was opened directly.
  */
 export const NotFoundView: React.FC = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const handleGoBack = () => {
     if (window.history.length > 1) {
-      navigate(-1)
-      return
+      navigate(-1);
+      return;
     }
-    navigate('/')
-  }
+    navigate("/");
+  };
 
   return (
     <div className="max-w-[640px] mx-auto my-12 rounded-[10px] border border-line bg-surface-white p-10">
       <div className="flex justify-center">
         <div className="flex h-28 w-28 items-center justify-center rounded-full bg-info-surface">
-          <span className="text-[30px] font-semibold leading-[44px] text-primary">404</span>
+          <span className="text-[30px] font-semibold leading-[44px] text-primary">
+            404
+          </span>
         </div>
       </div>
 
@@ -42,7 +44,7 @@ export const NotFoundView: React.FC = () => {
       </p>
 
       <div className="mt-8 flex justify-center gap-4">
-        <Button size="md" onClick={() => navigate('/')}>
+        <Button size="md" onClick={() => navigate("/")}>
           Go to Home
         </Button>
         <Button variant="secondary" size="md" onClick={handleGoBack}>
@@ -50,5 +52,5 @@ export const NotFoundView: React.FC = () => {
         </Button>
       </div>
     </div>
-  )
-}
+  );
+};

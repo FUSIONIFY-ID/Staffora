@@ -59,7 +59,10 @@ The agent should then:
     process.exit(0);
   }
 
-  const targetSelection = resolveTargetSelection(liveTarget.originalCwd, liveTarget.targetOptions);
+  const targetSelection = resolveTargetSelection(
+    liveTarget.originalCwd,
+    liveTarget.targetOptions,
+  );
   if (targetSelection) {
     console.log(
       JSON.stringify(
@@ -88,7 +91,9 @@ The agent should then:
           ok: false,
           error: "context_missing",
           missing: missingContext,
-          nextCommand: missingContext.includes("PRODUCT.md") ? "init" : "document",
+          nextCommand: missingContext.includes("PRODUCT.md")
+            ? "init"
+            : "document",
           targetPath: outputTargetPath,
           projectRoot: ctx.projectRoot,
           repoRoot: ctx.repoRoot,
@@ -103,7 +108,9 @@ The agent should then:
   }
 
   // 1. Check config (fail fast if missing — no point starting anything else)
-  const checkOut = runScript("live-inject.mjs", ["--check"], { cwd: activeCwd });
+  const checkOut = runScript("live-inject.mjs", ["--check"], {
+    cwd: activeCwd,
+  });
   const checkResult = safeParse(checkOut);
   if (!checkResult || !checkResult.ok) {
     console.log(
@@ -125,9 +132,13 @@ The agent should then:
   }
 
   // 3. Inject the script tag at the current port
-  const injectOut = runScript("live-inject.mjs", ["--port", String(serverInfo.port)], {
-    cwd: activeCwd,
-  });
+  const injectOut = runScript(
+    "live-inject.mjs",
+    ["--port", String(serverInfo.port)],
+    {
+      cwd: activeCwd,
+    },
+  );
   const injectResult = safeParse(injectOut);
   if (!injectResult || !injectResult.ok) {
     console.log(
@@ -207,13 +218,15 @@ function scanForDrift(rootDir, resolvedFiles, config) {
     "build",
   ]);
 
-  const resolvedSet = new Set(resolvedFiles.map((f) => f.split(path.sep).join("/")));
+  const resolvedSet = new Set(
+    resolvedFiles.map((f) => f.split(path.sep).join("/")),
+  );
 
   // Files matching the user's `exclude` globs are intentional omissions,
   // not drift. Compile them to regexes so the orphan list stays signal.
-  const userExcludeRegexes = (Array.isArray(config.exclude) ? config.exclude : []).map((p) =>
-    globToRegex(p),
-  );
+  const userExcludeRegexes = (
+    Array.isArray(config.exclude) ? config.exclude : []
+  ).map((p) => globToRegex(p));
   const isUserExcluded = (rel) => userExcludeRegexes.some((re) => re.test(rel));
 
   const orphans = [];
@@ -299,7 +312,11 @@ function runScript(name, args, options = {}) {
   const scriptPath = path.join(__dirname, name);
   const cmd = `node "${scriptPath}" ${args.map((a) => `"${a}"`).join(" ")}`;
   try {
-    return execSync(cmd, { encoding: "utf-8", cwd: options.cwd || process.cwd(), timeout: 15_000 });
+    return execSync(cmd, {
+      encoding: "utf-8",
+      cwd: options.cwd || process.cwd(),
+      timeout: 15_000,
+    });
   } catch (err) {
     // execSync throws on non-zero exit; return stdout if any
     return err.stdout || err.message || "";

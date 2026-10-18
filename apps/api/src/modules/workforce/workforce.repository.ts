@@ -1,5 +1,6 @@
-import type { Prisma } from '../../generated/prisma/client.js'
-import { prisma } from '../../common/database/prisma.js'
+import type { Prisma } from "../../generated/prisma/client.js";
+import { prisma } from "../../common/database/prisma.js";
+
 /**
  * Projection for list rows.
  *
@@ -24,40 +25,52 @@ export const employeeSummaryInclude = {
       cancelledAt: true,
     },
   },
-} satisfies Prisma.EmployeeInclude
+} satisfies Prisma.EmployeeInclude;
 
 export const employeeDetailInclude = {
   ...employeeSummaryInclude,
   skills: {
     include: { skill: { select: { id: true, name: true, isActive: true } } },
-    orderBy: { skill: { name: 'asc' } },
+    orderBy: { skill: { name: "asc" } },
   },
   allocations: {
     include: {
       project: { select: { projectCode: true, name: true } },
       jobRole: { select: { id: true, name: true } },
     },
-    orderBy: [{ startDate: 'asc' }, { endDate: 'asc' }],
+    orderBy: [{ startDate: "asc" }, { endDate: "asc" }],
   },
-} satisfies Prisma.EmployeeInclude
+} satisfies Prisma.EmployeeInclude;
 
 export const workforceRepository = {
-  findEmployeeById(
-    id: string,
-  ): Promise<Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }> | null> {
-    return prisma.employee.findUnique({ where: { id }, include: employeeSummaryInclude })
+  findEmployeeById(id: string): Promise<Prisma.EmployeeGetPayload<{
+    include: typeof employeeSummaryInclude;
+  }> | null> {
+    return prisma.employee.findUnique({
+      where: { id },
+      include: employeeSummaryInclude,
+    });
   },
 
   findEmployeeByCode(employeeCode: string): Promise<{ id: string } | null> {
-    return prisma.employee.findUnique({ where: { employeeCode }, select: { id: true } })
+    return prisma.employee.findUnique({
+      where: { employeeCode },
+      select: { id: true },
+    });
   },
 
   findEmployeeByEmail(workEmail: string): Promise<{ id: string } | null> {
-    return prisma.employee.findUnique({ where: { workEmail }, select: { id: true } })
+    return prisma.employee.findUnique({
+      where: { workEmail },
+      select: { id: true },
+    });
   },
 
   findDepartmentById(id: string): Promise<{ id: string; name: string } | null> {
-    return prisma.department.findUnique({ where: { id }, select: { id: true, name: true } })
+    return prisma.department.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
   },
 
   /**
@@ -67,36 +80,43 @@ export const workforceRepository = {
    */
   findDepartmentByName(name: string): Promise<{ id: string } | null> {
     return prisma.department.findFirst({
-      where: { name: { equals: name, mode: 'insensitive' } },
+      where: { name: { equals: name, mode: "insensitive" } },
       select: { id: true },
-    })
+    });
   },
 
   findJobRoleById(id: string): Promise<{ id: string; name: string } | null> {
-    return prisma.jobRole.findUnique({ where: { id }, select: { id: true, name: true } })
+    return prisma.jobRole.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
   },
 
   findJobRoleByName(name: string): Promise<{ id: string } | null> {
     return prisma.jobRole.findFirst({
-      where: { name: { equals: name, mode: 'insensitive' } },
+      where: { name: { equals: name, mode: "insensitive" } },
       select: { id: true },
-    })
+    });
   },
 
-  listDepartments(): Promise<Array<{ id: string; name: string; isActive: boolean }>> {
+  listDepartments(): Promise<
+    Array<{ id: string; name: string; isActive: boolean }>
+  > {
     return prisma.department.findMany({
       where: { isActive: true },
       select: { id: true, name: true, isActive: true },
-      orderBy: { name: 'asc' },
-    })
+      orderBy: { name: "asc" },
+    });
   },
 
-  listJobRoles(): Promise<Array<{ id: string; name: string; isActive: boolean }>> {
+  listJobRoles(): Promise<
+    Array<{ id: string; name: string; isActive: boolean }>
+  > {
     return prisma.jobRole.findMany({
       where: { isActive: true },
       select: { id: true, name: true, isActive: true },
-      orderBy: { name: 'asc' },
-    })
+      orderBy: { name: "asc" },
+    });
   },
 
   createDepartment(
@@ -106,7 +126,7 @@ export const workforceRepository = {
     return prisma.department.create({
       data: { name, createdBy: actorId },
       select: { id: true, name: true, isActive: true },
-    })
+    });
   },
 
   createJobRole(
@@ -116,43 +136,56 @@ export const workforceRepository = {
     return prisma.jobRole.create({
       data: { name, createdBy: actorId },
       select: { id: true, name: true, isActive: true },
-    })
+    });
   },
 
   countEmployees(where: Prisma.EmployeeWhereInput): Promise<number> {
-    return prisma.employee.count({ where })
+    return prisma.employee.count({ where });
   },
 
   listEmployees(
     where: Prisma.EmployeeWhereInput,
     skip: number,
     take: number,
-  ): Promise<Array<Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }>>> {
+  ): Promise<
+    Array<Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }>>
+  > {
     return prisma.employee.findMany({
       where,
       include: employeeSummaryInclude,
-      orderBy: { fullName: 'asc' },
+      orderBy: { fullName: "asc" },
       skip,
       take,
-    })
+    });
   },
 
-  findEmployeeDetail(
-    id: string,
-  ): Promise<Prisma.EmployeeGetPayload<{ include: typeof employeeDetailInclude }> | null> {
-    return prisma.employee.findUnique({ where: { id }, include: employeeDetailInclude })
+  findEmployeeDetail(id: string): Promise<Prisma.EmployeeGetPayload<{
+    include: typeof employeeDetailInclude;
+  }> | null> {
+    return prisma.employee.findUnique({
+      where: { id },
+      include: employeeDetailInclude,
+    });
   },
 
   createEmployee(
     data: Prisma.EmployeeUncheckedCreateInput,
-  ): Promise<Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }>> {
-    return prisma.employee.create({ data, include: employeeSummaryInclude })
+  ): Promise<
+    Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }>
+  > {
+    return prisma.employee.create({ data, include: employeeSummaryInclude });
   },
 
   updateEmployee(
     id: string,
     data: Prisma.EmployeeUncheckedUpdateInput,
-  ): Promise<Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }>> {
-    return prisma.employee.update({ where: { id }, data, include: employeeSummaryInclude })
+  ): Promise<
+    Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }>
+  > {
+    return prisma.employee.update({
+      where: { id },
+      data,
+      include: employeeSummaryInclude,
+    });
   },
-}
+};

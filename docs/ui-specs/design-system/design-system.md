@@ -2,26 +2,26 @@
 
 Implementation contract derived from the approved design reference.
 
-| Item | Value |
-| --- | --- |
-| Source | Figma — Staffora — Product Design & Prototype (MVP v1.0) |
-| Mode | `system` |
-| Screens analysed | 19 |
-| Decision | Arya Isnaidi (Tech Lead), 2026-10-13: the design reference is Figma, light mode only |
-| Supersedes | `docs/development/coding-conventions.md` section 4, which specified dark `#0a0f1d` |
+| Item             | Value                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| Source           | Figma — Staffora — Product Design & Prototype (MVP v1.0)                             |
+| Mode             | `system`                                                                             |
+| Screens analysed | 19                                                                                   |
+| Decision         | Arya Isnaidi (Tech Lead), 2026-10-13: the design reference is Figma, light mode only |
+| Supersedes       | `docs/development/coding-conventions.md` section 4, which specified dark `#0a0f1d`   |
 
 Confidence markers: **EXACT** from Figma metadata, **INFERRED** from repeated patterns, **ESTIMATED** from measurement, **UNKNOWN** where the source cannot prove a value.
 
 ## Layout
 
-| Token | Value | Confidence |
-| --- | --- | --- |
-| Design width | 1440px | EXACT |
-| Sidebar | 240px | EXACT |
-| Header | 72px | EXACT |
-| Content gutter | 36px | EXACT |
-| Content width at 1440 | 1128px | EXACT |
-| Minimum usable | 1280px | EXACT |
+| Token                 | Value  | Confidence |
+| --------------------- | ------ | ---------- |
+| Design width          | 1440px | EXACT      |
+| Sidebar               | 240px  | EXACT      |
+| Header                | 72px   | EXACT      |
+| Content gutter        | 36px   | EXACT      |
+| Content width at 1440 | 1128px | EXACT      |
+| Minimum usable        | 1280px | EXACT      |
 
 Content width is derived: `1440 − 240 − 36 − 36 = 1128`. Frame 02 labels these directly as `Desktop 1440`, `Sidebar 240`, and `Header 72`.
 
@@ -29,60 +29,60 @@ Content width is derived: `1440 − 240 − 36 − 36 = 1128`. Frame 02 labels t
 
 Light surfaces. The only dark surface in the whole design is the login brand panel.
 
-| Token | Value | Use |
-| --- | --- | --- |
-| `surface-page` | `#F7F8FA` | App background |
-| `surface-white` | `#FFFFFF` | Cards, tables, sidebar, header |
-| `surface-table-header` | `#FAFAFA` | Table header row |
-| `surface-chip` | `#F5F5F5` | Neutral chip, filter pill |
-| `surface-divider` | `#F0F0F0` | Table row divider |
-| `surface-brand-panel` | `#111827` | Login brand panel only |
-| `primary` | `#2563EB` | Primary button, active nav, links, progress |
-| `text-primary` | `#171717` | Page titles, card values |
-| `text-secondary` | `#525252` | Table cells, body copy |
-| `text-muted` | `#737373` | Subtitles, breadcrumb, table header labels |
-| `text-placeholder` | `#A3A3A3` | Placeholder, footnote |
-| `border-default` | `#E5E7EB` | Card, table, container |
-| `border-input` | `#D4D4D4` | Form field |
-| `success` | `#16A34A` / `#DCFCE7` / `#166534` | Fulfilled, active chip |
-| `warning` | `#D97706` / `#FEF3C7` | Partially filled |
-| `danger` | `#DC2626` / `#FEE2E2` / `#991B1B` | Fully allocated, 403 badge |
-| `info` | `#EFF6FF` / `#1D4ED8` / `#BFDBFE` | Note panel, active nav fill |
+| Token                  | Value                             | Use                                         |
+| ---------------------- | --------------------------------- | ------------------------------------------- |
+| `surface-page`         | `#F7F8FA`                         | App background                              |
+| `surface-white`        | `#FFFFFF`                         | Cards, tables, sidebar, header              |
+| `surface-table-header` | `#FAFAFA`                         | Table header row                            |
+| `surface-chip`         | `#F5F5F5`                         | Neutral chip, filter pill                   |
+| `surface-divider`      | `#F0F0F0`                         | Table row divider                           |
+| `surface-brand-panel`  | `#111827`                         | Login brand panel only                      |
+| `primary`              | `#2563EB`                         | Primary button, active nav, links, progress |
+| `text-primary`         | `#171717`                         | Page titles, card values                    |
+| `text-secondary`       | `#525252`                         | Table cells, body copy                      |
+| `text-muted`           | `#737373`                         | Subtitles, breadcrumb, table header labels  |
+| `text-placeholder`     | `#A3A3A3`                         | Placeholder, footnote                       |
+| `border-default`       | `#E5E7EB`                         | Card, table, container                      |
+| `border-input`         | `#D4D4D4`                         | Form field                                  |
+| `success`              | `#16A34A` / `#DCFCE7` / `#166534` | Fulfilled, active chip                      |
+| `warning`              | `#D97706` / `#FEF3C7`             | Partially filled                            |
+| `danger`               | `#DC2626` / `#FEE2E2` / `#991B1B` | Fully allocated, 403 badge                  |
+| `info`                 | `#EFF6FF` / `#1D4ED8` / `#BFDBFE` | Note panel, active nav fill                 |
 
 ## Typography
 
 Font is **Exo 2** at weights 400, 500, and 600. Every text style in the file uses it.
 
-| Token | Size / line | Weight |
-| --- | --- | --- |
-| `display` | 32 / 46 | 600 |
-| `badge-hero` | 30 / 44 | 600 |
-| `page-title` | 28 / 41 | 600 |
-| `section-title` | 24 / 35 | 600 |
-| `metric` | 22 / 32 | 600 |
-| `card-title` | 20 / 29 | 600 |
-| `card-heading` | 17 / 25 | 600 |
-| `body` | 14 / 20 | 400 |
-| `button` | 14 / 20 | 600 |
-| `body-sm` | 13 / 19 | 400 |
-| `label` | 12 / 17 | 500 |
-| `table-header` | 12 / 17 | 600 |
-| `chip` | 11 / 16 | 500 |
-| `footnote` | 11 / 16 | 400 |
+| Token           | Size / line | Weight |
+| --------------- | ----------- | ------ |
+| `display`       | 32 / 46     | 600    |
+| `badge-hero`    | 30 / 44     | 600    |
+| `page-title`    | 28 / 41     | 600    |
+| `section-title` | 24 / 35     | 600    |
+| `metric`        | 22 / 32     | 600    |
+| `card-title`    | 20 / 29     | 600    |
+| `card-heading`  | 17 / 25     | 600    |
+| `body`          | 14 / 20     | 400    |
+| `button`        | 14 / 20     | 600    |
+| `body-sm`       | 13 / 19     | 400    |
+| `label`         | 12 / 17     | 500    |
+| `table-header`  | 12 / 17     | 600    |
+| `chip`          | 11 / 16     | 500    |
+| `footnote`      | 11 / 16     | 400    |
 
 ## Radius and controls
 
-| Element | Value |
-| --- | --- |
-| Button, field | 8px |
-| Card | 10px |
-| Content canvas | 12px |
-| Login card | 14px |
-| Chip, progress track | 999px |
-| Field height | 40px |
-| Button padding | `10px 16px`, gap 8px |
-| Table header / row | 46px / 48px |
-| Progress track | 8px tall |
+| Element              | Value                |
+| -------------------- | -------------------- |
+| Button, field        | 8px                  |
+| Card                 | 10px                 |
+| Content canvas       | 12px                 |
+| Login card           | 14px                 |
+| Chip, progress track | 999px                |
+| Field height         | 40px                 |
+| Button padding       | `10px 16px`, gap 8px |
+| Table header / row   | 46px / 48px          |
+| Progress track       | 8px tall             |
 
 ## Components
 
@@ -109,12 +109,12 @@ The design has no quick sign-in buttons. The seeded-account shortcut in the curr
 
 ## Ambiguities
 
-| Topic | Confidence | Note |
-| --- | --- | --- |
-| Hover, focus, active, disabled | UNKNOWN | Static frames; no interaction state depicted |
-| Breakpoints below 1280 | UNKNOWN | No tablet or mobile frame; PRD 17.3 excludes mobile |
-| Shadows | UNKNOWN | Cards use a 1px border, not elevation |
-| Icon set | UNKNOWN | Icons appear as text glyphs; no library named |
+| Topic                          | Confidence | Note                                                |
+| ------------------------------ | ---------- | --------------------------------------------------- |
+| Hover, focus, active, disabled | UNKNOWN    | Static frames; no interaction state depicted        |
+| Breakpoints below 1280         | UNKNOWN    | No tablet or mobile frame; PRD 17.3 excludes mobile |
+| Shadows                        | UNKNOWN    | Cards use a 1px border, not elevation               |
+| Icon set                       | UNKNOWN    | Icons appear as text glyphs; no library named       |
 
 ## Implementation guidance
 

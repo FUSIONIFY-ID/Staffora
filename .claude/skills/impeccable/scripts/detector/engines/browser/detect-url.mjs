@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 
 import { finding } from "../../findings.mjs";
 import { filterByProviders } from "../../registry/antipatterns.mjs";
-import { profileFindingsAsync, profileStep, profileStepAsync } from "../../profile/profiler.mjs";
+import {
+  profileFindingsAsync,
+  profileStep,
+  profileStepAsync,
+} from "../../profile/profiler.mjs";
 import { captureVisualContrastCandidate } from "../visual/screenshot-contrast.mjs";
 
 function serializeDesignSystemForBrowser(designSystem) {
@@ -18,7 +22,10 @@ function serializeDesignSystemForBrowser(designSystem) {
       .map((entry) => entry?.color)
       .filter(
         (color) =>
-          color && Number.isFinite(color.r) && Number.isFinite(color.g) && Number.isFinite(color.b),
+          color &&
+          Number.isFinite(color.r) &&
+          Number.isFinite(color.g) &&
+          Number.isFinite(color.b),
       )
       .map((color) => ({ r: color.r, g: color.g, b: color.b })),
     hasRadii: designSystem.hasRadii === true,
@@ -29,7 +36,13 @@ function serializeDesignSystemForBrowser(designSystem) {
   };
 }
 
-async function runVisualContrastFallback(page, serializedGroups, options, profile, target) {
+async function runVisualContrastFallback(
+  page,
+  serializedGroups,
+  options,
+  profile,
+  target,
+) {
   if (options?.visualContrast === false) return [];
   const maxCandidates = Number.isFinite(options?.visualContrastMaxCandidates)
     ? options.visualContrastMaxCandidates
@@ -56,13 +69,21 @@ async function runVisualContrastFallback(page, serializedGroups, options, profil
       async () => {
         browserAnalyses = await page.evaluate(
           async ({ maxCandidates, scrollOffscreen }) => {
-            if (typeof window.impeccableAnalyzeVisualContrast !== "function") return [];
-            return window.impeccableAnalyzeVisualContrast({ maxCandidates, scrollOffscreen });
+            if (typeof window.impeccableAnalyzeVisualContrast !== "function")
+              return [];
+            return window.impeccableAnalyzeVisualContrast({
+              maxCandidates,
+              scrollOffscreen,
+            });
           },
           { maxCandidates, scrollOffscreen },
         );
         return browserAnalyses
-          .filter((result) => result.finding && !existingLowContrastSelectors.has(result.selector))
+          .filter(
+            (result) =>
+              result.finding &&
+              !existingLowContrastSelectors.has(result.selector),
+          )
           .map((result) => result.finding);
       },
     );
@@ -82,8 +103,14 @@ async function runVisualContrastFallback(page, serializedGroups, options, profil
       () =>
         page.evaluate(
           ({ maxCandidates }) => {
-            if (typeof window.impeccableCollectVisualContrastCandidates !== "function") return [];
-            return window.impeccableCollectVisualContrastCandidates({ maxCandidates });
+            if (
+              typeof window.impeccableCollectVisualContrastCandidates !==
+              "function"
+            )
+              return [];
+            return window.impeccableCollectVisualContrastCandidates({
+              maxCandidates,
+            });
           },
           { maxCandidates },
         ),
@@ -113,7 +140,11 @@ async function runVisualContrastFallback(page, serializedGroups, options, profil
         target,
       },
       async () => {
-        const finding = await captureVisualContrastCandidate(page, candidate, viewport);
+        const finding = await captureVisualContrastCandidate(
+          page,
+          candidate,
+          viewport,
+        );
         return finding ? [finding] : [];
       },
     );
@@ -146,7 +177,9 @@ async function detectUrl(url, options = {}) {
         () => import("puppeteer"),
       );
     } catch {
-      throw new Error("puppeteer is required for URL scanning. Install: npm install puppeteer");
+      throw new Error(
+        "puppeteer is required for URL scanning. Install: npm install puppeteer",
+      );
     }
   }
 
@@ -176,7 +209,9 @@ async function detectUrl(url, options = {}) {
   // CI runners (GitHub Actions Ubuntu) block unprivileged user namespaces, so
   // Chrome can't initialize its sandbox there. Disable the sandbox only when
   // running in CI; local users keep the default hardened launch.
-  const launchArgs = process.env.CI ? ["--no-sandbox", "--disable-setuid-sandbox"] : [];
+  const launchArgs = process.env.CI
+    ? ["--no-sandbox", "--disable-setuid-sandbox"]
+    : [];
   const browser =
     externalBrowser ||
     (await profileStepAsync(
@@ -235,7 +270,9 @@ async function detectUrl(url, options = {}) {
     }
 
     // Inject the browser detection script and collect results
-    const browserDesignSystem = serializeDesignSystemForBrowser(options?.designSystem);
+    const browserDesignSystem = serializeDesignSystemForBrowser(
+      options?.designSystem,
+    );
     await profileStepAsync(
       profile,
       {
@@ -333,10 +370,13 @@ async function createBrowserDetector(options = {}) {
   try {
     puppeteer = await import("puppeteer");
   } catch {
-    throw new Error("puppeteer is required for URL scanning. Install: npm install puppeteer");
+    throw new Error(
+      "puppeteer is required for URL scanning. Install: npm install puppeteer",
+    );
   }
   const launchArgs =
-    options.launchArgs || (process.env.CI ? ["--no-sandbox", "--disable-setuid-sandbox"] : []);
+    options.launchArgs ||
+    (process.env.CI ? ["--no-sandbox", "--disable-setuid-sandbox"] : []);
   const browser =
     options.browser ||
     (await puppeteer.default.launch({

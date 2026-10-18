@@ -37,8 +37,16 @@ export function computeInsertLine(startLine, endLine, position) {
   return position === "before" ? startLine : endLine + 1;
 }
 
-export function buildInsertWrapperLines({ id, count, indent, commentSyntax, isJsx }) {
-  const styleContents = isJsx ? 'style={{ display: "contents" }}' : 'style="display: contents"';
+export function buildInsertWrapperLines({
+  id,
+  count,
+  indent,
+  commentSyntax,
+  isJsx,
+}) {
+  const styleContents = isJsx
+    ? 'style={{ display: "contents" }}'
+    : 'style="display: contents"';
   const attrs =
     'data-impeccable-variants="' +
     id +
@@ -76,11 +84,25 @@ export function buildInsertWrapperLines({ id, count, indent, commentSyntax, isJs
   }
 
   return [
-    indent + commentSyntax.open + " impeccable-variants-start " + id + " " + commentSyntax.close,
+    indent +
+      commentSyntax.open +
+      " impeccable-variants-start " +
+      id +
+      " " +
+      commentSyntax.close,
     indent + "<div " + attrs + ">",
-    indent + "  " + commentSyntax.open + " Variants: insert below this line " + commentSyntax.close,
+    indent +
+      "  " +
+      commentSyntax.open +
+      " Variants: insert below this line " +
+      commentSyntax.close,
     indent + "</div>",
-    indent + commentSyntax.open + " impeccable-variants-end " + id + " " + commentSyntax.close,
+    indent +
+      commentSyntax.open +
+      " impeccable-variants-end " +
+      id +
+      " " +
+      commentSyntax.close,
   ];
 }
 
@@ -95,7 +117,8 @@ function resolveElementMatch({ lines, queries, tag, text }) {
     for (const q of queries) {
       const all = findAllElements(lines, q, tag);
       for (const c of all) {
-        if (!candidates.some((x) => x.startLine === c.startLine)) candidates.push(c);
+        if (!candidates.some((x) => x.startLine === c.startLine))
+          candidates.push(c);
       }
       if (candidates.length === 1) break;
     }
@@ -181,7 +204,10 @@ Output (JSON):
     if (!targetFile) {
       let generatedHit = null;
       for (const q of queries) {
-        generatedHit = findFileWithQuery(q, process.cwd(), { ...genOpts, includeGenerated: true });
+        generatedHit = findFileWithQuery(q, process.cwd(), {
+          ...genOpts,
+          includeGenerated: true,
+        });
         if (generatedHit) break;
       }
       console.error(
@@ -198,7 +224,10 @@ Output (JSON):
       JSON.stringify({
         error: "file_is_generated",
         fallback: "agent-driven",
-        file: path.relative(process.cwd(), path.resolve(process.cwd(), targetFile)),
+        file: path.relative(
+          process.cwd(),
+          path.resolve(process.cwd(), targetFile),
+        ),
       }),
     );
     process.exit(1);
@@ -223,7 +252,9 @@ Output (JSON):
     process.exit(1);
   }
   if (!resolved.match) {
-    console.error(JSON.stringify({ error: "element_not_found", fallback: "agent-driven" }));
+    console.error(
+      JSON.stringify({ error: "element_not_found", fallback: "agent-driven" }),
+    );
     process.exit(1);
   }
 
@@ -232,7 +263,10 @@ Output (JSON):
   const styleMode = detectStyleMode(targetFile);
   const isJsx = commentSyntax.open === "{/*";
   const spliceIndex = computeInsertLine(startLine, endLine, position);
-  const relTargetFile = path.relative(process.cwd(), targetFile).split(path.sep).join("/");
+  const relTargetFile = path
+    .relative(process.cwd(), targetFile)
+    .split(path.sep)
+    .join("/");
 
   if (shouldUseSvelteComponentInjection(targetFile)) {
     const session = scaffoldSvelteComponentInsertSession({
@@ -270,7 +304,9 @@ Output (JSON):
   }
 
   const indent =
-    lines[spliceIndex]?.match(/^(\s*)/)?.[1] ?? lines[startLine]?.match(/^(\s*)/)?.[1] ?? "";
+    lines[spliceIndex]?.match(/^(\s*)/)?.[1] ??
+    lines[startLine]?.match(/^(\s*)/)?.[1] ??
+    "";
 
   const wrapperLines = buildInsertWrapperLines({
     id,
@@ -280,7 +316,11 @@ Output (JSON):
     isJsx,
   });
 
-  const newLines = [...lines.slice(0, spliceIndex), ...wrapperLines, ...lines.slice(spliceIndex)];
+  const newLines = [
+    ...lines.slice(0, spliceIndex),
+    ...wrapperLines,
+    ...lines.slice(spliceIndex),
+  ];
   fs.writeFileSync(targetFile, newLines.join("\n"), "utf-8");
 
   const insertLine = spliceIndex + 3;
@@ -294,13 +334,19 @@ Output (JSON):
       commentSyntax,
       styleMode: styleMode.mode,
       styleTag: styleMode.styleTag,
-      cssSelectorPrefixExamples: buildCssSelectorPrefixExamples(styleMode.mode, count),
+      cssSelectorPrefixExamples: buildCssSelectorPrefixExamples(
+        styleMode.mode,
+        count,
+      ),
       cssAuthoring: buildCssAuthoring(styleMode, count),
     }),
   );
 }
 
 const _running = process.argv[1];
-if (_running?.endsWith("live-insert.mjs") || _running?.endsWith("live-insert.mjs/")) {
+if (
+  _running?.endsWith("live-insert.mjs") ||
+  _running?.endsWith("live-insert.mjs/")
+) {
   insertCli();
 }

@@ -24,7 +24,10 @@ import {
 } from "./live/sveltekit-adapter.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_PATH = resolveLiveConfigPath({ cwd: process.cwd(), scriptsDir: __dirname });
+const CONFIG_PATH = resolveLiveConfigPath({
+  cwd: process.cwd(),
+  scriptsDir: __dirname,
+});
 const MARKER_OPEN_TEXT = "impeccable-live-start";
 const MARKER_CLOSE_TEXT = "impeccable-live-end";
 const IGNORE_MARKER_OPEN = "# impeccable-live-ignore-start";
@@ -80,7 +83,13 @@ Output (JSON):
 
   if (args.includes("--check")) {
     if (!fs.existsSync(CONFIG_PATH)) {
-      console.log(JSON.stringify({ ok: false, error: "config_missing", path: CONFIG_PATH }));
+      console.log(
+        JSON.stringify({
+          ok: false,
+          error: "config_missing",
+          path: CONFIG_PATH,
+        }),
+      );
       process.exit(0);
     }
     let cfg;
@@ -116,7 +125,9 @@ Output (JSON):
 
   // Load config
   if (!fs.existsSync(CONFIG_PATH)) {
-    console.error(JSON.stringify({ ok: false, error: "config_missing", path: CONFIG_PATH }));
+    console.error(
+      JSON.stringify({ ok: false, error: "config_missing", path: CONFIG_PATH }),
+    );
     process.exit(1);
   }
   const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
@@ -127,17 +138,28 @@ Output (JSON):
 
   if (args.includes("--remove")) {
     if (svelteKit) {
-      const adapterResult = removeSvelteKitLiveAdapter({ cwd: process.cwd(), config });
-      console.log(JSON.stringify({ ok: true, adapter: "sveltekit", results: [adapterResult] }));
+      const adapterResult = removeSvelteKitLiveAdapter({
+        cwd: process.cwd(),
+        config,
+      });
+      console.log(
+        JSON.stringify({
+          ok: true,
+          adapter: "sveltekit",
+          results: [adapterResult],
+        }),
+      );
       return;
     }
     const results = resolvedFiles.map((relFile) => {
       const absFile = path.resolve(process.cwd(), relFile);
-      if (!fs.existsSync(absFile)) return { file: relFile, error: "file_not_found" };
+      if (!fs.existsSync(absFile))
+        return { file: relFile, error: "file_not_found" };
       const content = fs.readFileSync(absFile, "utf-8");
       const detagged = removeTag(content, config.commentSyntax);
       const updated = revertCspMeta(detagged);
-      if (updated === content) return { file: relFile, removed: false, note: "no tag present" };
+      if (updated === content)
+        return { file: relFile, removed: false, note: "no tag present" };
       fs.writeFileSync(absFile, updated, "utf-8");
       return {
         file: relFile,
@@ -159,16 +181,27 @@ Output (JSON):
   const gitIgnore = ensureLiveGitIgnores(process.cwd());
 
   if (svelteKit) {
-    const adapterResult = applySvelteKitLiveAdapter({ cwd: process.cwd(), port, config });
+    const adapterResult = applySvelteKitLiveAdapter({
+      cwd: process.cwd(),
+      port,
+      config,
+    });
     console.log(
-      JSON.stringify({ ok: true, port, adapter: "sveltekit", gitIgnore, results: [adapterResult] }),
+      JSON.stringify({
+        ok: true,
+        port,
+        adapter: "sveltekit",
+        gitIgnore,
+        results: [adapterResult],
+      }),
     );
     return;
   }
 
   const results = resolvedFiles.map((relFile) => {
     const absFile = path.resolve(process.cwd(), relFile);
-    if (!fs.existsSync(absFile)) return { file: relFile, error: "file_not_found" };
+    if (!fs.existsSync(absFile))
+      return { file: relFile, error: "file_not_found" };
     const content = fs.readFileSync(absFile, "utf-8");
     const withoutOld = revertCspMeta(removeTag(content, config.commentSyntax));
     const withTag = insertTag(withoutOld, config, port, relFile);
@@ -194,8 +227,14 @@ Output (JSON):
 
 export function ensureLiveGitIgnores(cwd = process.cwd()) {
   const target = resolveIgnoreTarget(cwd);
-  const existing = fs.existsSync(target.path) ? fs.readFileSync(target.path, "utf-8") : "";
-  const block = [IGNORE_MARKER_OPEN, ...LIVE_IGNORE_PATTERNS, IGNORE_MARKER_CLOSE].join("\n");
+  const existing = fs.existsSync(target.path)
+    ? fs.readFileSync(target.path, "utf-8")
+    : "";
+  const block = [
+    IGNORE_MARKER_OPEN,
+    ...LIVE_IGNORE_PATTERNS,
+    IGNORE_MARKER_CLOSE,
+  ].join("\n");
   const markerRe = new RegExp(
     `${escapeRegExp(IGNORE_MARKER_OPEN)}[\\s\\S]*?${escapeRegExp(IGNORE_MARKER_CLOSE)}`,
   );
@@ -205,7 +244,11 @@ export function ensureLiveGitIgnores(cwd = process.cwd()) {
     updated = existing.replace(markerRe, block);
   } else {
     const prefix =
-      existing.length === 0 ? "" : existing.endsWith("\n") ? existing : existing + "\n";
+      existing.length === 0
+        ? ""
+        : existing.endsWith("\n")
+          ? existing
+          : existing + "\n";
     updated = `${prefix}${prefix.endsWith("\n\n") || prefix === "" ? "" : "\n"}${block}\n`;
   }
 
@@ -241,7 +284,9 @@ function resolveGitInfoExcludePath(cwd) {
   const body = fs.readFileSync(dotGit, "utf-8").trim();
   const match = body.match(/^gitdir:\s*(.+)$/i);
   if (!match) return null;
-  const gitDir = path.isAbsolute(match[1]) ? match[1] : path.resolve(cwd, match[1]);
+  const gitDir = path.isAbsolute(match[1])
+    ? match[1]
+    : path.resolve(cwd, match[1]);
   return path.join(gitDir, "info", "exclude");
 }
 
@@ -343,7 +388,8 @@ function globToRegex(pattern) {
 // ---------------------------------------------------------------------------
 
 function validateConfig(cfg) {
-  if (!cfg || typeof cfg !== "object") throw new Error("config.json must be an object");
+  if (!cfg || typeof cfg !== "object")
+    throw new Error("config.json must be an object");
   if (!Array.isArray(cfg.files) || cfg.files.length === 0) {
     throw new Error("config.files (non-empty string array) required");
   }
@@ -358,8 +404,13 @@ function validateConfig(cfg) {
       throw new Error("config.exclude must contain only non-empty strings");
     }
   }
-  if (typeof cfg.insertBefore !== "string" && typeof cfg.insertAfter !== "string") {
-    throw new Error("config.insertBefore or config.insertAfter (string) required");
+  if (
+    typeof cfg.insertBefore !== "string" &&
+    typeof cfg.insertAfter !== "string"
+  ) {
+    throw new Error(
+      "config.insertBefore or config.insertAfter (string) required",
+    );
   }
   if (cfg.commentSyntax !== "html" && cfg.commentSyntax !== "jsx") {
     throw new Error("config.commentSyntax must be 'html' or 'jsx'");
@@ -511,7 +562,12 @@ function findCspMetaTags(content) {
   let m;
   while ((m = tagRe.exec(content)) !== null) {
     const attrs = m[1];
-    if (!/(http-equiv|httpEquiv)\s*=\s*(['"])Content-Security-Policy\2/i.test(attrs)) continue;
+    if (
+      !/(http-equiv|httpEquiv)\s*=\s*(['"])Content-Security-Policy\2/i.test(
+        attrs,
+      )
+    )
+      continue;
     out.push({ start: m.index, end: m.index + m[0].length, full: m[0], attrs });
   }
   return out;
@@ -529,7 +585,10 @@ function appendOriginToDirective(csp, directive, origin) {
   if (m) {
     const tokens = m[4].trim().split(/\s+/);
     if (tokens.includes(origin)) return csp;
-    return csp.replace(re, `${m[1]}${m[2]}${m[3]} ${[...tokens, origin].join(" ")}`);
+    return csp.replace(
+      re,
+      `${m[1]}${m[2]}${m[3]} ${[...tokens, origin].join(" ")}`,
+    );
   }
   // Directive missing — add it. Use 'self' + origin so we don't inadvertently
   // narrow the policy compared to the default-src fallback (most users with
@@ -573,7 +632,10 @@ export function patchCspMeta(content, port) {
     const trailingWs = (attrs.match(/[ \t]*$/) || [""])[0];
     const attrsBody = attrs.slice(0, attrs.length - trailingWs.length);
     const newAttrs =
-      attrsBody.replace(contentAttr.full, newContentAttr) + " " + marker + trailingWs;
+      attrsBody.replace(contentAttr.full, newContentAttr) +
+      " " +
+      marker +
+      trailingWs;
     const newTag = tag.full.replace(attrs, newAttrs);
 
     result = result.slice(0, tag.start) + newTag + result.slice(tag.end);
@@ -616,7 +678,10 @@ export function revertCspMeta(content) {
 // ---------------------------------------------------------------------------
 
 const _running = process.argv[1];
-if (_running?.endsWith("live-inject.mjs") || _running?.endsWith("live-inject.mjs/")) {
+if (
+  _running?.endsWith("live-inject.mjs") ||
+  _running?.endsWith("live-inject.mjs/")
+) {
   injectCli();
 }
 

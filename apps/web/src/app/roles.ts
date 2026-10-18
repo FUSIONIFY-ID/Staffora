@@ -1,4 +1,4 @@
-import type { Role } from './providers/auth-provider.js'
+import type { Role } from "./providers/auth-provider.js";
 
 /**
  * Human-readable role names, shared by every screen that shows a role.
@@ -8,11 +8,11 @@ import type { Role } from './providers/auth-provider.js'
  * "Admin", and frame 18 writes "Required: Admin / Resource Manager".
  */
 export const ROLE_LABELS: Record<Role, string> = {
-  ADMIN: 'Admin',
-  PROJECT_MANAGER: 'Project Manager',
-  RESOURCE_MANAGER: 'Resource Manager',
-  EMPLOYEE: 'Employee',
-}
+  ADMIN: "Admin",
+  PROJECT_MANAGER: "Project Manager",
+  RESOURCE_MANAGER: "Resource Manager",
+  EMPLOYEE: "Employee",
+};
 
 /**
  * Initials for an avatar, one letter per word: "Arya Isnaidi" becomes "AI", as
@@ -24,11 +24,14 @@ export const ROLE_LABELS: Record<Role, string> = {
  * non-null assertion, which CODING_STANDARD 2.2 forbids.
  */
 export function initialsOf(name: string): string {
-  const words = name.trim().split(/\s+/).filter((word) => word.length > 0)
-  const first = words[0]
-  const last = words.at(-1)
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+  const first = words[0];
+  const last = words.at(-1);
 
-  if (first === undefined || last === undefined) return '?'
-  if (words.length === 1) return first.slice(0, 2).toUpperCase()
-  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
+  if (first === undefined || last === undefined) return "?";
+  if (words.length === 1) return first.slice(0, 2).toUpperCase();
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
 }

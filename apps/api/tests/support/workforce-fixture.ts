@@ -1,25 +1,25 @@
-import { randomBytes } from 'node:crypto'
-import request from 'supertest'
-import { expect } from 'vitest'
-import { createApp } from '../../src/app.js'
-import { prisma } from '../../src/common/database/prisma.js'
-import { hashPassword } from '../../src/common/auth/password.js'
-import { identityRepository } from '../../src/modules/identity/identity.repository.js'
-import { postLogin, sessionCookieFrom } from './auth-login.js'
+import { randomBytes } from "node:crypto";
+import request from "supertest";
+import { expect } from "vitest";
+import { createApp } from "../../src/app.js";
+import { prisma } from "../../src/common/database/prisma.js";
+import { hashPassword } from "../../src/common/auth/password.js";
+import { identityRepository } from "../../src/modules/identity/identity.repository.js";
+import { postLogin, sessionCookieFrom } from "./auth-login.js";
 
-export type Role = 'admin' | 'projectManager' | 'resourceManager' | 'employee'
+export type Role = "admin" | "projectManager" | "resourceManager" | "employee";
 
-export const MISSING_ID = '00000000-0000-4000-8000-000000000000'
+export const MISSING_ID = "00000000-0000-4000-8000-000000000000";
 
 export interface Session {
-  cookie: string
-  csrfToken: string
-  employeeId: string
+  cookie: string;
+  csrfToken: string;
+  employeeId: string;
 }
 
-export const app = createApp({ useMemorySession: true })
+export const app = createApp({ useMemorySession: true });
 
-const sessions: Partial<Record<Role, Session>> = {}
+const sessions: Partial<Record<Role, Session>> = {};
 
 /**
  * Accounts are created by this fixture on every run, with a password generated
@@ -28,13 +28,13 @@ const sessions: Partial<Record<Role, Session>> = {}
  * on `db:seed` nor commits a credential.
  */
 interface Account {
-  id: string
-  email: string
-  password: string
-  employeeId: string
+  id: string;
+  email: string;
+  password: string;
+  employeeId: string;
 }
 
-const accounts: Partial<Record<Role, Account>> = {}
+const accounts: Partial<Record<Role, Account>> = {};
 
 /** Ids of every row this fixture created, so teardown can remove exactly those. */
 const created = {
@@ -44,26 +44,29 @@ const created = {
   jobRoleIds: [] as string[],
   skillIds: [] as string[],
   projectIds: [] as string[],
-}
+};
 
 export function unique(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
+  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
 }
 
 /** ISO date (YYYY-MM-DD) offset from today in UTC. */
 export function isoDate(offsetDays: number): string {
-  const date = new Date()
-  date.setUTCDate(date.getUTCDate() + offsetDays)
-  return date.toISOString().slice(0, 10)
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
 }
 
 function generatePassword(): string {
-  return `${randomBytes(18).toString('base64url')}Aa1!`
+  return `${randomBytes(18).toString("base64url")}Aa1!`;
 }
 
-async function createAccount(role: Role, employeeId?: string): Promise<Account> {
-  const email = `${unique(`wf.${role}`)}@staffora.test`
-  const password = generatePassword()
+async function createAccount(
+  role: Role,
+  employeeId?: string,
+): Promise<Account> {
+  const email = `${unique(`wf.${role}`)}@staffora.test`;
+  const password = generatePassword();
 
   // Created through the identity repository so the stored email is normalised
   // exactly as a real signup normalises it; writing the row directly would skip
@@ -73,20 +76,28 @@ async function createAccount(role: Role, employeeId?: string): Promise<Account> 
     passwordHash: await hashPassword(password),
     role: ROLE_NAMES[role],
     ...(employeeId === undefined ? {} : { employeeId }),
-  })
-  created.userIds.push(user.id)
+  });
+  created.userIds.push(user.id);
 
-  const account: Account = { id: user.id, email, password, employeeId: employeeId ?? '' }
-  accounts[role] = account
-  return account
+  const account: Account = {
+    id: user.id,
+    email,
+    password,
+    employeeId: employeeId ?? "",
+  };
+  accounts[role] = account;
+  return account;
 }
 
-const ROLE_NAMES: Record<Role, 'ADMIN' | 'PROJECT_MANAGER' | 'RESOURCE_MANAGER' | 'EMPLOYEE'> = {
-  admin: 'ADMIN',
-  projectManager: 'PROJECT_MANAGER',
-  resourceManager: 'RESOURCE_MANAGER',
-  employee: 'EMPLOYEE',
-}
+const ROLE_NAMES: Record<
+  Role,
+  "ADMIN" | "PROJECT_MANAGER" | "RESOURCE_MANAGER" | "EMPLOYEE"
+> = {
+  admin: "ADMIN",
+  projectManager: "PROJECT_MANAGER",
+  resourceManager: "RESOURCE_MANAGER",
+  employee: "EMPLOYEE",
+};
 
 async function createEmployeeRow(
   departmentId: string,
@@ -96,46 +107,57 @@ async function createEmployeeRow(
   const employee = await prisma.employee.create({
     data: {
       employeeCode: unique(codePrefix),
-      fullName: 'Workforce Fixture Employee',
-      workEmail: `${unique('wf.employee')}@staffora.test`,
+      fullName: "Workforce Fixture Employee",
+      workEmail: `${unique("wf.employee")}@staffora.test`,
       departmentId,
       jobRoleId,
     },
     select: { id: true },
-  })
-  created.employeeIds.push(employee.id)
-  return employee.id
+  });
+  created.employeeIds.push(employee.id);
+  return employee.id;
 }
 
 export async function login(role: Role): Promise<Session> {
-  const existing = sessions[role]
+  const existing = sessions[role];
   if (existing) {
-    return existing
+    return existing;
   }
 
-  const account = accounts[role]
+  const account = accounts[role];
   if (!account) {
-    throw new Error(`The ${role} account was not created; call setupWorkforceFixture first.`)
+    throw new Error(
+      `The ${role} account was not created; call setupWorkforceFixture first.`,
+    );
   }
 
   // POST /auth/login is CSRF-protected, so the fixture does what the browser does: take a
   // token on the anonymous session, sign in with it, then keep the rotated session and token.
-  const res = await postLogin(app, { email: account.email, password: account.password })
-  expect(res.status).toBe(200)
+  const res = await postLogin(app, {
+    email: account.email,
+    password: account.password,
+  });
+  expect(res.status).toBe(200);
 
   const session: Session = {
     cookie: sessionCookieFrom(res.headers),
     csrfToken: res.body.data.csrfToken as string,
     employeeId: account.employeeId,
-  }
-  sessions[role] = session
-  return session
+  };
+  sessions[role] = session;
+  return session;
 }
 
-export function writeReq(session: Session, method: 'post' | 'patch', path: string): request.Test {
-  const agent = request(app)
-  const call = method === 'post' ? agent.post(path) : agent.patch(path)
-  return call.set('Cookie', session.cookie).set('X-CSRF-Token', session.csrfToken)
+export function writeReq(
+  session: Session,
+  method: "post" | "patch",
+  path: string,
+): request.Test {
+  const agent = request(app);
+  const call = method === "post" ? agent.post(path) : agent.patch(path);
+  return call
+    .set("Cookie", session.cookie)
+    .set("X-CSRF-Token", session.csrfToken);
 }
 
 /**
@@ -148,41 +170,41 @@ export function writeReq(session: Session, method: 'post' | 'patch', path: strin
  * setupWorkforceFixture and removed in teardownWorkforceFixture.
  */
 export const fixture = {
-  departmentId: '',
-  departmentName: '',
-  jobRoleId: '',
-  jobRoleName: '',
+  departmentId: "",
+  departmentName: "",
+  jobRoleId: "",
+  jobRoleName: "",
   /** Has 50% allocation effective today. */
-  employeeId: '',
+  employeeId: "",
   /** Has 100% allocation that only starts in 30 days. */
-  futureOnlyEmployeeId: '',
-  skillId: '',
-  projectId: '',
+  futureOnlyEmployeeId: "",
+  skillId: "",
+  projectId: "",
   createdEmployeeIds: [] as string[],
-}
+};
 
 export async function createEmployeeViaApi(
   session: Session,
   overrides: { employeeCode?: string; workEmail?: string } = {},
 ): Promise<{ id: string; employeeCode: string; workEmail: string }> {
-  const res = await writeReq(session, 'post', '/api/v1/employees').send({
-    employeeCode: overrides.employeeCode ?? unique('TST'),
-    fullName: 'Workforce Test Employee',
-    workEmail: overrides.workEmail ?? `${unique('workforce')}@staffora.test`,
+  const res = await writeReq(session, "post", "/api/v1/employees").send({
+    employeeCode: overrides.employeeCode ?? unique("TST"),
+    fullName: "Workforce Test Employee",
+    workEmail: overrides.workEmail ?? `${unique("workforce")}@staffora.test`,
     departmentId: fixture.departmentId,
     jobRoleId: fixture.jobRoleId,
-    status: 'ACTIVE',
-  })
+    status: "ACTIVE",
+  });
 
-  expect(res.status).toBe(201)
-  const id = res.body.data.id as string
-  fixture.createdEmployeeIds.push(id)
+  expect(res.status).toBe(201);
+  const id = res.body.data.id as string;
+  fixture.createdEmployeeIds.push(id);
 
   return {
     id,
     employeeCode: res.body.data.employeeCode as string,
     workEmail: res.body.data.workEmail as string,
-  }
+  };
 }
 
 export async function setupWorkforceFixture(): Promise<void> {
@@ -191,59 +213,68 @@ export async function setupWorkforceFixture(): Promise<void> {
   // linked employee. Creating them directly keeps setup independent of the
   // seeded accounts; the API paths are covered by the suite itself.
   const department = await prisma.department.create({
-    data: { name: unique('WF Dept') },
+    data: { name: unique("WF Dept") },
     select: { id: true, name: true },
-  })
-  created.departmentIds.push(department.id)
-  fixture.departmentId = department.id
-  fixture.departmentName = department.name
+  });
+  created.departmentIds.push(department.id);
+  fixture.departmentId = department.id;
+  fixture.departmentName = department.name;
 
   const jobRole = await prisma.jobRole.create({
-    data: { name: unique('WF Role') },
+    data: { name: unique("WF Role") },
     select: { id: true, name: true },
-  })
-  created.jobRoleIds.push(jobRole.id)
-  fixture.jobRoleId = jobRole.id
-  fixture.jobRoleName = jobRole.name
+  });
+  created.jobRoleIds.push(jobRole.id);
+  fixture.jobRoleId = jobRole.id;
+  fixture.jobRoleName = jobRole.name;
 
-  await createAccount('admin')
-  await createAccount('projectManager')
-  await createAccount('resourceManager')
+  await createAccount("admin");
+  await createAccount("projectManager");
+  await createAccount("resourceManager");
 
   const employeeAccountEmployeeId = await createEmployeeRow(
     fixture.departmentId,
     fixture.jobRoleId,
-    'WF-ACCT',
-  )
-  await createAccount('employee', employeeAccountEmployeeId)
+    "WF-ACCT",
+  );
+  await createAccount("employee", employeeAccountEmployeeId);
 
-  const admin = await login('admin')
+  const admin = await login("admin");
 
-  fixture.employeeId = (await createEmployeeViaApi(admin, { employeeCode: unique('WF-EMP') })).id
+  fixture.employeeId = (
+    await createEmployeeViaApi(admin, { employeeCode: unique("WF-EMP") })
+  ).id;
   fixture.futureOnlyEmployeeId = (
-    await createEmployeeViaApi(admin, { employeeCode: unique('WF-FUTURE') })
-  ).id
+    await createEmployeeViaApi(admin, { employeeCode: unique("WF-FUTURE") })
+  ).id;
 
-  const skill = await prisma.skill.create({ data: { name: unique('WF Skill') }, select: { id: true } })
-  created.skillIds.push(skill.id)
-  fixture.skillId = skill.id
+  const skill = await prisma.skill.create({
+    data: { name: unique("WF Skill") },
+    select: { id: true },
+  });
+  created.skillIds.push(skill.id);
+  fixture.skillId = skill.id;
 
   await prisma.employeeSkill.create({
-    data: { employeeId: fixture.employeeId, skillId: fixture.skillId, proficiencyLevel: 4 },
-  })
+    data: {
+      employeeId: fixture.employeeId,
+      skillId: fixture.skillId,
+      proficiencyLevel: 4,
+    },
+  });
 
   const project = await prisma.project.create({
     data: {
-      projectCode: unique('WF-PRJ'),
-      name: 'Workforce Fixture Project',
+      projectCode: unique("WF-PRJ"),
+      name: "Workforce Fixture Project",
       projectManagerEmployeeId: fixture.employeeId,
       startDate: new Date(`${isoDate(-30)}T00:00:00.000Z`),
       endDate: new Date(`${isoDate(180)}T00:00:00.000Z`),
     },
     select: { id: true },
-  })
-  created.projectIds.push(project.id)
-  fixture.projectId = project.id
+  });
+  created.projectIds.push(project.id);
+  fixture.projectId = project.id;
 
   await prisma.allocation.create({
     data: {
@@ -254,7 +285,7 @@ export async function setupWorkforceFixture(): Promise<void> {
       startDate: new Date(`${isoDate(-10)}T00:00:00.000Z`),
       endDate: new Date(`${isoDate(60)}T00:00:00.000Z`),
     },
-  })
+  });
 
   // Starts in the future only: must not move the current availability indicator.
   await prisma.allocation.create({
@@ -266,7 +297,7 @@ export async function setupWorkforceFixture(): Promise<void> {
       startDate: new Date(`${isoDate(30)}T00:00:00.000Z`),
       endDate: new Date(`${isoDate(90)}T00:00:00.000Z`),
     },
-  })
+  });
 }
 
 /**
@@ -283,49 +314,82 @@ export async function teardownWorkforceFixture(): Promise<void> {
     fixture.futureOnlyEmployeeId,
     ...fixture.createdEmployeeIds,
     ...created.employeeIds,
-  ].filter((id) => id !== '')
+  ].filter((id) => id !== "");
 
-  const userIds = created.userIds.filter((id) => id !== '')
+  const userIds = created.userIds.filter((id) => id !== "");
 
   const steps: Array<[string, () => Promise<unknown>]> = [
     [
-      'allocations',
+      "allocations",
       () =>
         prisma.allocation.deleteMany({
           where: {
             OR: [
-              ...(employeeIds.length > 0 ? [{ employeeId: { in: employeeIds } }] : []),
-              ...(created.projectIds.length > 0 ? [{ projectId: { in: created.projectIds } }] : []),
+              ...(employeeIds.length > 0
+                ? [{ employeeId: { in: employeeIds } }]
+                : []),
+              ...(created.projectIds.length > 0
+                ? [{ projectId: { in: created.projectIds } }]
+                : []),
             ],
           },
         }),
     ],
-    ['projects', () => prisma.project.deleteMany({ where: { id: { in: created.projectIds } } })],
     [
-      'employee skills',
-      () => prisma.employeeSkill.deleteMany({ where: { employeeId: { in: employeeIds } } }),
+      "projects",
+      () =>
+        prisma.project.deleteMany({
+          where: { id: { in: created.projectIds } },
+        }),
     ],
-    ['users', () => prisma.user.deleteMany({ where: { id: { in: userIds } } })],
-    ['employees', () => prisma.employee.deleteMany({ where: { id: { in: employeeIds } } })],
-    ['skills', () => prisma.skill.deleteMany({ where: { id: { in: created.skillIds } } })],
-    ['job roles', () => prisma.jobRole.deleteMany({ where: { id: { in: created.jobRoleIds } } })],
     [
-      'departments',
-      () => prisma.department.deleteMany({ where: { id: { in: created.departmentIds } } }),
+      "employee skills",
+      () =>
+        prisma.employeeSkill.deleteMany({
+          where: { employeeId: { in: employeeIds } },
+        }),
     ],
-  ]
+    ["users", () => prisma.user.deleteMany({ where: { id: { in: userIds } } })],
+    [
+      "employees",
+      () => prisma.employee.deleteMany({ where: { id: { in: employeeIds } } }),
+    ],
+    [
+      "skills",
+      () =>
+        prisma.skill.deleteMany({ where: { id: { in: created.skillIds } } }),
+    ],
+    [
+      "job roles",
+      () =>
+        prisma.jobRole.deleteMany({
+          where: { id: { in: created.jobRoleIds } },
+        }),
+    ],
+    [
+      "departments",
+      () =>
+        prisma.department.deleteMany({
+          where: { id: { in: created.departmentIds } },
+        }),
+    ],
+  ];
 
-  const failures: string[] = []
+  const failures: string[] = [];
 
   for (const [label, step] of steps) {
     try {
-      await step()
+      await step();
     } catch (error) {
-      failures.push(`${label}: ${error instanceof Error ? error.message : String(error)}`)
+      failures.push(
+        `${label}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   if (failures.length > 0) {
-    throw new Error(`Workforce fixture teardown failed for ${failures.join('; ')}`)
+    throw new Error(
+      `Workforce fixture teardown failed for ${failures.join("; ")}`,
+    );
   }
 }

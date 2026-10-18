@@ -1,21 +1,25 @@
-import type { EmployeeStatus, Prisma } from '../../generated/prisma/client.js'
-import type { employeeDetailInclude, employeeSummaryInclude } from './workforce.repository.js'
+import type { EmployeeStatus, Prisma } from "../../generated/prisma/client.js";
+import type {
+  employeeDetailInclude,
+  employeeSummaryInclude,
+} from "./workforce.repository.js";
 
 export type EmployeeSummaryRecord = Prisma.EmployeeGetPayload<{
-  include: typeof employeeSummaryInclude
-}>
+  include: typeof employeeSummaryInclude;
+}>;
 
 export type EmployeeDetailRecord = Prisma.EmployeeGetPayload<{
-  include: typeof employeeDetailInclude
-}>
+  include: typeof employeeDetailInclude;
+}>;
 
 /** Inclusive ISO date window (YYYY-MM-DD) used for a capacity evaluation. */
 export interface CapacityWindow {
-  startDate: string
-  endDate: string
+  startDate: string;
+  endDate: string;
 }
 
-export type AvailabilityState = 'AVAILABLE' | 'PARTIAL' | 'FULLY_ALLOCATED' | 'NOT_ASSIGNABLE'
+export type AvailabilityState =
+  "AVAILABLE" | "PARTIAL" | "FULLY_ALLOCATED" | "NOT_ASSIGNABLE";
 
 /**
  * Employee row in a list response. Mirrors the `Employee` schema in
@@ -28,28 +32,28 @@ export type AvailabilityState = 'AVAILABLE' | 'PARTIAL' | 'FULLY_ALLOCATED' | 'N
  * each entry.
  */
 export interface EmployeeView {
-  id: string
-  employeeCode: string
-  fullName: string
-  workEmail: string
-  status: EmployeeStatus
+  id: string;
+  employeeCode: string;
+  fullName: string;
+  workEmail: string;
+  status: EmployeeStatus;
   /** Peak concurrent allocation effective today, per PRD US02.01 - AC01.03. */
-  currentAllocation: number
+  currentAllocation: number;
   /** 100 minus currentAllocation, floored at 0. */
-  currentRemainingCapacity: number
-  availability: AvailabilityState
-  departmentId: string
-  departmentName: string
-  jobRoleId: string
-  jobRoleTitle: string
+  currentRemainingCapacity: number;
+  availability: AvailabilityState;
+  departmentId: string;
+  departmentName: string;
+  jobRoleId: string;
+  jobRoleTitle: string;
 }
 
 export interface EmployeeSkillView {
-  id: string
-  skillId: string
-  skillName: string
-  skillIsActive: boolean
-  proficiencyLevel: number
+  id: string;
+  skillId: string;
+  skillName: string;
+  skillIsActive: boolean;
+  proficiencyLevel: number;
 }
 
 /**
@@ -59,18 +63,18 @@ export interface EmployeeSkillView {
  * them, so a consumer of the contract on `dev` keeps working.
  */
 interface EmployeeAllocationView {
-  id: string
-  employeeId: string
-  projectId: string
-  projectCode: string
-  projectName: string
-  jobRoleId: string
-  jobRoleTitle: string
-  allocationPercentage: number
-  startDate: string
-  endDate: string
-  displayStatus: 'PLANNED' | 'ACTIVE' | 'ENDED' | 'CANCELLED'
-  cancelledAt: string | null
+  id: string;
+  employeeId: string;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  jobRoleId: string;
+  jobRoleTitle: string;
+  allocationPercentage: number;
+  startDate: string;
+  endDate: string;
+  displayStatus: "PLANNED" | "ACTIVE" | "ENDED" | "CANCELLED";
+  cancelledAt: string | null;
 }
 
 /**
@@ -82,10 +86,10 @@ interface EmployeeAllocationView {
  * not part of the contract on `dev`.
  */
 export interface EmployeeDetail extends EmployeeView {
-  skills: EmployeeSkillView[]
-  allocations: EmployeeAllocationView[]
+  skills: EmployeeSkillView[];
+  allocations: EmployeeAllocationView[];
   evaluatedPeriod: CapacityWindow & {
-    peakConcurrentAllocation: number
-    remainingCapacity: number
-  }
+    peakConcurrentAllocation: number;
+    remainingCapacity: number;
+  };
 }

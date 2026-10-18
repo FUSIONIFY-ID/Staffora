@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&display=swap');
-@import 'tailwindcss';
+@import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&display=swap");
+@import "tailwindcss";
 
 /**
  * Design tokens, from docs/ui-specs/design-system/design-system.md.
@@ -10,7 +10,7 @@
  * in one place.
  */
 @theme {
-  --font-sans: 'Exo 2', system-ui, -apple-system, sans-serif;
+  --font-sans: "Exo 2", system-ui, -apple-system, sans-serif;
 
   /* Surfaces */
   --color-surface-page: #f7f8fa;

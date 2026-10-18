@@ -42,6 +42,7 @@ Allowed types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`.
 Staffora scopes: `auth`, `workforce`, `skills`, `projects`, `staffing`, `allocations`, `capacity`, `dashboard`, `web`, `api`, `db`, `ci`, `docs`.
 
 Examples:
+
 - `feat(allocations): add row-lock capacity concurrency guard [US04.01 - AC03.08]`
 - `fix(projects): disallow end date before start date [US03.01 - AC02.05]`
 - `test(capacity): add all 15 mandatory capacity scenarios [US05.01 - AC02.03]`

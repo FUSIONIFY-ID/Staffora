@@ -1,7 +1,7 @@
-import React from 'react'
-import { PageHeader } from '../../components/page-header.js'
-import { EmptyState } from '../../components/empty-state.js'
-import { Badge } from '../../components/ui/badge.js'
+import React from "react";
+import { PageHeader } from "../../components/page-header.js";
+import { EmptyState } from "../../components/empty-state.js";
+import { Badge } from "../../components/ui/badge.js";
 
 export const CapacityPage: React.FC = () => {
   return (
@@ -18,5 +18,5 @@ export const CapacityPage: React.FC = () => {
         description="Halaman ini siap diimplementasikan untuk visualisasi heatmap/timeline kapasitas karyawan dan deteksi over-allocation."
       />
     </div>
-  )
-}
+  );
+};

@@ -21,11 +21,11 @@ tidak lagi punya pemakai dan dihapus.
 
 ## Bukti
 
-| Skenario | Hasil |
-| --- | --- |
-| Admin, sidebar `/dashboard` | Tidak ada entri My Profile: `Overview, Resources, Skills, Capacity, Projects, Allocations, Users` |
-| Admin, buka `/my-profile` langsung | Heading `Access denied`, tanpa heading `My Profile` |
-| Employee, buka `/` | Dialihkan ke `/my-profile`, heading `My Profile`, sidebar `Projects` + `My Profile` |
+| Skenario                           | Hasil                                                                                             |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Admin, sidebar `/dashboard`        | Tidak ada entri My Profile: `Overview, Resources, Skills, Capacity, Projects, Allocations, Users` |
+| Admin, buka `/my-profile` langsung | Heading `Access denied`, tanpa heading `My Profile`                                               |
+| Employee, buka `/`                 | Dialihkan ke `/my-profile`, heading `My Profile`, sidebar `Projects` + `My Profile`               |
 
 Screenshot pada 1440x900:
 
