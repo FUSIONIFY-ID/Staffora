@@ -80,7 +80,7 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
               const allocation = res.currentAllocation ?? (hasCapacity ? 100 - (remaining || 0) : 0)
 
               return (
-                <tr key={res.id} className="transition-colors hover:bg-slate-50/60">
+                <tr key={res.id} className="group transition-colors hover:bg-slate-50/60">
                   <td className="px-6 py-4 font-semibold text-slate-900">
                     <Link
                       to={`/resources/${res.id}`}
@@ -118,7 +118,7 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
                     {res.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                   </td>
                   <td className="px-6 py-4 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Link to={`/resources/${res.id}`}>
                         <button
                           type="button"

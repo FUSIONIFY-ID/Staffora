@@ -3,7 +3,7 @@ import { prisma } from '../src/common/database/prisma.js'
 import { hashPassword } from '../src/common/auth/password.js'
 
 async function main() {
-  console.log('Seeding Staffora database...')
+  console.log('Seeding Staffora database according to Figma specification...')
 
   // 1. Departments
   const deptEngineering = await prisma.department.upsert({
@@ -12,23 +12,23 @@ async function main() {
     create: { name: 'Engineering', isActive: true },
   })
 
-  await prisma.department.upsert({
-    where: { name: 'Product & Design' },
+  const deptProduct = await prisma.department.upsert({
+    where: { name: 'Product' },
     update: {},
-    create: { name: 'Product & Design', isActive: true },
+    create: { name: 'Product', isActive: true },
   })
 
-  await prisma.department.upsert({
-    where: { name: 'Quality Assurance' },
+  const deptQuality = await prisma.department.upsert({
+    where: { name: 'Quality' },
     update: {},
-    create: { name: 'Quality Assurance', isActive: true },
+    create: { name: 'Quality', isActive: true },
   })
 
   // 2. Job Roles
-  const roleFE = await prisma.jobRole.upsert({
-    where: { name: 'Frontend Engineer' },
+  const roleSE = await prisma.jobRole.upsert({
+    where: { name: 'Software Engineer' },
     update: {},
-    create: { name: 'Frontend Engineer', isActive: true },
+    create: { name: 'Software Engineer', isActive: true },
   })
 
   const roleBE = await prisma.jobRole.upsert({
@@ -37,29 +37,26 @@ async function main() {
     create: { name: 'Backend Engineer', isActive: true },
   })
 
-  const rolePM = await prisma.jobRole.upsert({
-    where: { name: 'Project Manager' },
+  const rolePD = await prisma.jobRole.upsert({
+    where: { name: 'Product Designer' },
     update: {},
-    create: { name: 'Project Manager', isActive: true },
+    create: { name: 'Product Designer', isActive: true },
   })
 
-  const roleRM = await prisma.jobRole.upsert({
-    where: { name: 'Resource Manager' },
+  const roleQA = await prisma.jobRole.upsert({
+    where: { name: 'QA Engineer' },
     update: {},
-    create: { name: 'Resource Manager', isActive: true },
+    create: { name: 'QA Engineer', isActive: true },
+  })
+
+  const roleTS = await prisma.jobRole.upsert({
+    where: { name: 'Technical Support' },
+    update: {},
+    create: { name: 'Technical Support', isActive: true },
   })
 
   // 3. Skills
-  const skillsList = [
-    'React',
-    'TypeScript',
-    'Node.js',
-    'PostgreSQL',
-    'Prisma ORM',
-    'Tailwind CSS',
-    'System Architecture',
-  ]
-
+  const skillsList = ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Docker']
   const createdSkills: Record<string, string> = {}
   for (const s of skillsList) {
     const skill = await prisma.skill.upsert({
@@ -70,204 +67,289 @@ async function main() {
     createdSkills[s] = skill.id
   }
 
-  // 4. Employees
-  const empAdmin = await prisma.employee.upsert({
+  // 4. Employees matching Figma table
+  // 1. Arya Isnaidi | EMP-001 | Software Engineer | Engineering | Active
+  const empArya = await prisma.employee.upsert({
     where: { employeeCode: 'EMP-001' },
-    update: {},
+    update: {
+      fullName: 'Arya Isnaidi',
+      workEmail: 'arya@company.com',
+      departmentId: deptEngineering.id,
+      jobRoleId: roleSE.id,
+      status: 'ACTIVE',
+    },
     create: {
       employeeCode: 'EMP-001',
-      fullName: 'Chief Administrator',
-      workEmail: 'admin@staffora.internal',
+      fullName: 'Arya Isnaidi',
+      workEmail: 'arya@company.com',
       departmentId: deptEngineering.id,
-      jobRoleId: roleBE.id,
+      jobRoleId: roleSE.id,
       status: 'ACTIVE',
     },
   })
 
-  const empPM = await prisma.employee.upsert({
+  // 2. Budi Santoso | EMP-002 | Backend Engineer | Engineering | Active
+  const empBudi = await prisma.employee.upsert({
     where: { employeeCode: 'EMP-002' },
-    update: {},
+    update: {
+      fullName: 'Budi Santoso',
+      workEmail: 'budi@staffora.internal',
+      departmentId: deptEngineering.id,
+      jobRoleId: roleBE.id,
+      status: 'ACTIVE',
+    },
     create: {
       employeeCode: 'EMP-002',
-      fullName: 'Sarah Jenkins',
-      workEmail: 'pm@staffora.internal',
-      departmentId: deptEngineering.id,
-      jobRoleId: rolePM.id,
-      status: 'ACTIVE',
-    },
-  })
-
-  const empRM = await prisma.employee.upsert({
-    where: { employeeCode: 'EMP-003' },
-    update: {},
-    create: {
-      employeeCode: 'EMP-003',
-      fullName: 'Alex Vance',
-      workEmail: 'rm@staffora.internal',
-      departmentId: deptEngineering.id,
-      jobRoleId: roleRM.id,
-      status: 'ACTIVE',
-    },
-  })
-
-  const empDev1 = await prisma.employee.upsert({
-    where: { employeeCode: 'EMP-004' },
-    update: {},
-    create: {
-      employeeCode: 'EMP-004',
-      fullName: 'David Kurnia',
-      workEmail: 'david.kurnia@staffora.internal',
-      departmentId: deptEngineering.id,
-      jobRoleId: roleFE.id,
-      status: 'ACTIVE',
-    },
-  })
-
-  const empDev2 = await prisma.employee.upsert({
-    where: { employeeCode: 'EMP-005' },
-    update: {},
-    create: {
-      employeeCode: 'EMP-005',
-      fullName: 'Rian Pratama',
-      workEmail: 'employee@staffora.internal',
+      fullName: 'Budi Santoso',
+      workEmail: 'budi@staffora.internal',
       departmentId: deptEngineering.id,
       jobRoleId: roleBE.id,
       status: 'ACTIVE',
     },
   })
 
-  // 5. Employee Skills
-  if (createdSkills['React']) {
-    await prisma.employeeSkill.upsert({
-      where: {
-        employeeId_skillId: {
-          employeeId: empDev1.id,
-          skillId: createdSkills['React'],
+  // 3. Citra Lestari | EMP-003 | Product Designer | Product | Active
+  const empCitra = await prisma.employee.upsert({
+    where: { employeeCode: 'EMP-003' },
+    update: {
+      fullName: 'Citra Lestari',
+      workEmail: 'citra@staffora.internal',
+      departmentId: deptProduct.id,
+      jobRoleId: rolePD.id,
+      status: 'ACTIVE',
+    },
+    create: {
+      employeeCode: 'EMP-003',
+      fullName: 'Citra Lestari',
+      workEmail: 'citra@staffora.internal',
+      departmentId: deptProduct.id,
+      jobRoleId: rolePD.id,
+      status: 'ACTIVE',
+    },
+  })
+
+  // 4. Dimas Putra | EMP-004 | Backend Engineer | Engineering | Active
+  const empDimas = await prisma.employee.upsert({
+    where: { employeeCode: 'EMP-004' },
+    update: {
+      fullName: 'Dimas Putra',
+      workEmail: 'dimas@staffora.internal',
+      departmentId: deptEngineering.id,
+      jobRoleId: roleBE.id,
+      status: 'ACTIVE',
+    },
+    create: {
+      employeeCode: 'EMP-004',
+      fullName: 'Dimas Putra',
+      workEmail: 'dimas@staffora.internal',
+      departmentId: deptEngineering.id,
+      jobRoleId: roleBE.id,
+      status: 'ACTIVE',
+    },
+  })
+
+  // 5. Nadia Putri | EMP-005 | QA Engineer | Quality | Inactive
+  const empNadia = await prisma.employee.upsert({
+    where: { employeeCode: 'EMP-005' },
+    update: {
+      fullName: 'Nadia Putri',
+      workEmail: 'nadia@staffora.internal',
+      departmentId: deptQuality.id,
+      jobRoleId: roleQA.id,
+      status: 'INACTIVE',
+    },
+    create: {
+      employeeCode: 'EMP-005',
+      fullName: 'Nadia Putri',
+      workEmail: 'nadia@staffora.internal',
+      departmentId: deptQuality.id,
+      jobRoleId: roleQA.id,
+      status: 'INACTIVE',
+    },
+  })
+
+  // 5. Skills for Arya Isnaidi (5 React, 5 TypeScript, 4 Node.js, 4 PostgreSQL, 3 Docker)
+  const aryaSkills = [
+    { name: 'React', level: 5 },
+    { name: 'TypeScript', level: 5 },
+    { name: 'Node.js', level: 4 },
+    { name: 'PostgreSQL', level: 4 },
+    { name: 'Docker', level: 3 },
+  ]
+  for (const s of aryaSkills) {
+    const skillId = createdSkills[s.name]
+    if (skillId) {
+      await prisma.employeeSkill.upsert({
+        where: {
+          employeeId_skillId: {
+            employeeId: empArya.id,
+            skillId,
+          },
         },
-      },
-      update: {},
-      create: {
-        employeeId: empDev1.id,
-        skillId: createdSkills['React'],
-        proficiencyLevel: 4, // Advanced
-      },
-    })
+        update: { proficiencyLevel: s.level },
+        create: {
+          employeeId: empArya.id,
+          skillId,
+          proficiencyLevel: s.level,
+        },
+      })
+    }
   }
 
-  if (createdSkills['Node.js']) {
-    await prisma.employeeSkill.upsert({
-      where: {
-        employeeId_skillId: {
-          employeeId: empDev2.id,
-          skillId: createdSkills['Node.js'],
-        },
-      },
-      update: {},
-      create: {
-        employeeId: empDev2.id,
-        skillId: createdSkills['Node.js'],
-        proficiencyLevel: 5, // Expert
-      },
-    })
-  }
-
-  // 6. User Accounts
-  const adminPasswordHash = await hashPassword('StafforaAdmin2026!')
+  // 6. User Accounts for Authentication (1-to-1 mapping with employees)
+  const adminPass = await hashPassword('StafforaAdmin2026!')
   await prisma.user.upsert({
     where: { normalizedEmail: 'admin@staffora.internal' },
-    update: {},
+    update: { employeeId: empArya.id },
     create: {
       normalizedEmail: 'admin@staffora.internal',
-      passwordHash: adminPasswordHash,
+      passwordHash: adminPass,
       role: 'ADMIN',
       isActive: true,
-      employeeId: empAdmin.id,
+      employeeId: empArya.id,
     },
   })
 
-  const pmPasswordHash = await hashPassword('StafforaPM2026!')
-  await prisma.user.upsert({
-    where: { normalizedEmail: 'pm@staffora.internal' },
-    update: {},
-    create: {
-      normalizedEmail: 'pm@staffora.internal',
-      passwordHash: pmPasswordHash,
-      role: 'PROJECT_MANAGER',
-      isActive: true,
-      employeeId: empPM.id,
-    },
-  })
-
-  const rmPasswordHash = await hashPassword('StafforaRM2026!')
+  const rmPass = await hashPassword('StafforaRM2026!')
   await prisma.user.upsert({
     where: { normalizedEmail: 'rm@staffora.internal' },
-    update: {},
+    update: { employeeId: empCitra.id },
     create: {
       normalizedEmail: 'rm@staffora.internal',
-      passwordHash: rmPasswordHash,
+      passwordHash: rmPass,
       role: 'RESOURCE_MANAGER',
       isActive: true,
-      employeeId: empRM.id,
+      employeeId: empCitra.id,
     },
   })
 
-  const empPasswordHash = await hashPassword('StafforaEmp2026!')
+  const pmPass = await hashPassword('StafforaPM2026!')
+  await prisma.user.upsert({
+    where: { normalizedEmail: 'pm@staffora.internal' },
+    update: { employeeId: empBudi.id },
+    create: {
+      normalizedEmail: 'pm@staffora.internal',
+      passwordHash: pmPass,
+      role: 'PROJECT_MANAGER',
+      isActive: true,
+      employeeId: empBudi.id,
+    },
+  })
+
+  const empPass = await hashPassword('StafforaEmp2026!')
   await prisma.user.upsert({
     where: { normalizedEmail: 'employee@staffora.internal' },
-    update: {},
+    update: { employeeId: empNadia.id },
     create: {
       normalizedEmail: 'employee@staffora.internal',
-      passwordHash: empPasswordHash,
+      passwordHash: empPass,
       role: 'EMPLOYEE',
       isActive: true,
-      employeeId: empDev2.id,
+      employeeId: empNadia.id,
     },
   })
 
-  // 7. Sample Project & Staffing Requirements
-  const project = await prisma.project.upsert({
-    where: { projectCode: 'PRJ-STAFFORA-01' },
+  // 7. Projects
+  const prjAlpha = await prisma.project.upsert({
+    where: { projectCode: 'PRJ-ALPHA' },
     update: {},
     create: {
-      projectCode: 'PRJ-STAFFORA-01',
-      name: 'Staffora Resource Allocation Platform',
-      projectManagerEmployeeId: empPM.id,
+      projectCode: 'PRJ-ALPHA',
+      name: 'Project Alpha',
+      projectManagerEmployeeId: empArya.id,
       startDate: new Date('2026-10-01T00:00:00Z'),
       endDate: new Date('2026-12-31T00:00:00Z'),
       status: 'ACTIVE',
     },
   })
 
-  const requirement = await prisma.staffingRequirement.create({
-    data: {
-      projectId: project.id,
-      jobRoleId: roleFE.id,
-      headcount: 1,
-      allocationPercentage: 50,
-      startDate: new Date('2026-10-05T00:00:00Z'),
-      endDate: new Date('2026-12-15T00:00:00Z'),
+  const prjInternal = await prisma.project.upsert({
+    where: { projectCode: 'PRJ-INTERNAL' },
+    update: {},
+    create: {
+      projectCode: 'PRJ-INTERNAL',
+      name: 'Internal Platform',
+      projectManagerEmployeeId: empArya.id,
+      startDate: new Date('2026-09-15T00:00:00Z'),
+      endDate: new Date('2026-12-31T00:00:00Z'),
+      status: 'ACTIVE',
     },
   })
 
-  // 8. Sample Allocation (50% David Kurnia on PRJ-STAFFORA-01)
+  // 8. Clear previous allocations and recreate exact allocations matching table
+  await prisma.allocation.deleteMany({})
+
+  // Arya Isnaidi: 50% Project Alpha, 20% Internal Platform -> 70% Allocated, 30% Availability
   await prisma.allocation.create({
     data: {
-      employeeId: empDev1.id,
-      projectId: project.id,
-      jobRoleId: roleFE.id,
-      staffingRequirementId: requirement.id,
+      employeeId: empArya.id,
+      projectId: prjAlpha.id,
+      jobRoleId: roleSE.id,
       allocationPercentage: 50,
-      startDate: new Date('2026-10-05T00:00:00Z'),
-      endDate: new Date('2026-12-15T00:00:00Z'),
+      startDate: new Date('2026-10-01T00:00:00Z'),
+      endDate: new Date('2026-12-31T00:00:00Z'),
+    },
+  })
+  await prisma.allocation.create({
+    data: {
+      employeeId: empArya.id,
+      projectId: prjInternal.id,
+      jobRoleId: roleTS.id,
+      allocationPercentage: 20,
+      startDate: new Date('2026-09-15T00:00:00Z'),
+      endDate: new Date('2026-11-15T00:00:00Z'),
+    },
+  })
+
+  // Budi Santoso: 80% Project Alpha -> 80% Allocated, 20% Availability
+  await prisma.allocation.create({
+    data: {
+      employeeId: empBudi.id,
+      projectId: prjAlpha.id,
+      jobRoleId: roleBE.id,
+      allocationPercentage: 80,
+      startDate: new Date('2026-10-01T00:00:00Z'),
+      endDate: new Date('2026-12-31T00:00:00Z'),
+    },
+  })
+
+  // Citra Lestari: 50% Project Alpha -> 50% Allocated, 50% Availability
+  await prisma.allocation.create({
+    data: {
+      employeeId: empCitra.id,
+      projectId: prjAlpha.id,
+      jobRoleId: rolePD.id,
+      allocationPercentage: 50,
+      startDate: new Date('2026-10-01T00:00:00Z'),
+      endDate: new Date('2026-12-31T00:00:00Z'),
+    },
+  })
+
+  // Dimas Putra: 100% Internal Platform -> 100% Allocated, 0% Availability
+  await prisma.allocation.create({
+    data: {
+      employeeId: empDimas.id,
+      projectId: prjInternal.id,
+      jobRoleId: roleBE.id,
+      allocationPercentage: 100,
+      startDate: new Date('2026-09-15T00:00:00Z'),
+      endDate: new Date('2026-12-31T00:00:00Z'),
+    },
+  })
+
+  // Nadia Putri: 40% Internal Platform -> 40% Allocated, 60% Availability (Inactive)
+  await prisma.allocation.create({
+    data: {
+      employeeId: empNadia.id,
+      projectId: prjInternal.id,
+      jobRoleId: roleQA.id,
+      allocationPercentage: 40,
+      startDate: new Date('2026-09-15T00:00:00Z'),
+      endDate: new Date('2026-12-31T00:00:00Z'),
     },
   })
 
   console.log('Seeding completed successfully!')
-  console.log('Credentials seeded:')
-  console.log('  Admin:            admin@staffora.internal / StafforaAdmin2026!')
-  console.log('  Project Manager:  pm@staffora.internal / StafforaPM2026!')
-  console.log('  Resource Manager: rm@staffora.internal / StafforaRM2026!')
-  console.log('  Employee:         employee@staffora.internal / StafforaEmp2026!')
 }
 
 main()

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { ActiveFilterChips } from './active-filter-chips.js'
 import type { DepartmentItem, JobRoleItem, ResourceFiltersState } from './types.js'
 
 export interface ResourceFiltersProps {
@@ -49,12 +50,6 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
     setSearchTerm(filters.search)
   }
 
-  const activeDept = departments.find((d) => d.id === filters.departmentId)
-  const activeRole = jobRoles.find((r) => r.id === filters.jobRoleId)
-  const hasActiveFilters = Boolean(
-    filters.search || filters.departmentId || filters.jobRoleId || filters.status !== 'ALL',
-  )
-
   const toggleStatus = (): void => {
     const nextStatus = filters.status === 'ALL' ? 'ACTIVE' : filters.status === 'ACTIVE' ? 'INACTIVE' : 'ALL'
     onFilterChange({ status: nextStatus, page: 1 })
@@ -91,14 +86,12 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
             type="button"
             onClick={toggleStatus}
             className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer select-none ${
-              filters.status === 'ACTIVE'
-                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                : filters.status === 'INACTIVE'
+              filters.status === 'INACTIVE'
                 ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                : 'bg-[#EAF8ED] text-[#1E7E34] hover:bg-[#DCF3E2]'
             }`}
           >
-            {filters.status === 'ACTIVE' ? 'Active' : filters.status === 'INACTIVE' ? 'Inactive' : 'All Status'}
+            {filters.status === 'INACTIVE' ? 'Inactive' : 'Active'}
           </button>
 
           {/* Department Dropdown Pill */}
@@ -184,81 +177,18 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
         )}
       </div>
 
-      {/* Active Filter Chips Bar (collapsible) */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
-          <div className="flex flex-wrap items-center gap-1.5 text-slate-500">
-            <span className="font-semibold text-slate-700">Filter Aktif:</span>
-            {filters.search && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-blue-700 font-medium">
-                Cari: &ldquo;{filters.search}&rdquo;
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchTerm('')
-                    onFilterChange({ search: '', page: 1 })
-                  }}
-                  className="hover:text-blue-900 ml-0.5 font-bold cursor-pointer"
-                  aria-label="Hapus filter pencarian"
-                >
-                  &times;
-                </button>
-              </span>
-            )}
-            {activeDept && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-blue-700 font-medium">
-                Dept: {activeDept.name}
-                <button
-                  type="button"
-                  onClick={() => onFilterChange({ departmentId: '', page: 1 })}
-                  className="hover:text-blue-900 ml-0.5 font-bold cursor-pointer"
-                  aria-label="Hapus filter departemen"
-                >
-                  &times;
-                </button>
-              </span>
-            )}
-            {activeRole && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-blue-700 font-medium">
-                Peran: {activeRole.name}
-                <button
-                  type="button"
-                  onClick={() => onFilterChange({ jobRoleId: '', page: 1 })}
-                  className="hover:text-blue-900 ml-0.5 font-bold cursor-pointer"
-                  aria-label="Hapus filter peran"
-                >
-                  &times;
-                </button>
-              </span>
-            )}
-            {filters.status !== 'ALL' && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-blue-700 font-medium">
-                Status: {filters.status === 'ACTIVE' ? 'Aktif' : 'Non-Aktif'}
-                <button
-                  type="button"
-                  onClick={() => onFilterChange({ status: 'ALL', page: 1 })}
-                  className="hover:text-blue-900 ml-0.5 font-bold cursor-pointer"
-                  aria-label="Hapus filter status"
-                >
-                  &times;
-                </button>
-              </span>
-            )}
-          </div>
-
-          <button
-            id="resource-reset-filter"
-            type="button"
-            onClick={() => {
-              setSearchTerm('')
-              onReset()
-            }}
-            className="text-xs font-medium text-slate-500 hover:text-blue-600 cursor-pointer"
-          >
-            Reset Filter
-          </button>
-        </div>
-      )}
+      {/* Active Filter Chips Bar */}
+      <ActiveFilterChips
+        filters={filters}
+        departments={departments}
+        jobRoles={jobRoles}
+        onFilterChange={onFilterChange}
+        onReset={onReset}
+        onClearSearch={() => {
+          setSearchTerm('')
+          onFilterChange({ search: '', page: 1 })
+        }}
+      />
     </div>
   )
 }
