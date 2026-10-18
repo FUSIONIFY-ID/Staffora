@@ -3,9 +3,7 @@ import { useSearchParams } from 'react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client.js'
 import { useAuth } from '../../app/providers/auth-provider.js'
-import { Button } from '../../components/ui/button.js'
 import { Alert } from '../../components/ui/alert.js'
-import { Badge } from '../../components/ui/badge.js'
 import { ResourceFilters } from './components/resource-filters.js'
 import { ResourceTable } from './components/resource-table.js'
 import { ResourceErrorAlert } from './components/resource-error-alert.js'
@@ -55,7 +53,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
     setSearchParams(newParams, { replace: true })
   }
 
-  // 1. Fetch Departments with error/loading tracking
+  // 1. Fetch Departments
   const departmentsQuery = useQuery({
     queryKey: ['departments'],
     queryFn: async () => {
@@ -64,7 +62,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
     },
   })
 
-  // 2. Fetch Job Roles with error/loading tracking
+  // 2. Fetch Job Roles
   const jobRolesQuery = useQuery({
     queryKey: ['job-roles'],
     queryFn: async () => {
@@ -115,7 +113,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
     },
   })
 
-  // 5. Update Employee Mutation - Invalidates specific detail query ['employee', id]
+  // 5. Update Employee Mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, input }: { id: string; input: ResourceFormData }) => {
       return apiClient(`/employees/${id}`, {
@@ -168,33 +166,14 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl font-extrabold tracking-tight text-white">Direktori Karyawan & Sumber Daya</h1>
-            <Badge variant="blue">Workforce</Badge>
-            {typeof pagination.total === 'number' && (
-              <span className="inline-flex items-center rounded-full bg-slate-800/90 border border-slate-700/60 px-2.5 py-0.5 text-xs font-medium text-slate-300 shadow-sm">
-                {pagination.total} Total Karyawan
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-slate-400 mt-1.5 max-w-2xl">
-            Kelola visibilitas karyawan, peran kerja, departemen, dan ketersediaan kapasitas kerja secara real-time.
-          </p>
-        </div>
-
-        {canManage && (
-          <Button
-            id="resource-create-button"
-            variant="primary"
-            onClick={handleOpenCreate}
-            className="w-full sm:w-auto shadow-lg shadow-blue-600/30 font-semibold"
-          >
-            + Tambah Karyawan
-          </Button>
-        )}
+      {/* Page Title & Subtitle matching Figma */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+          Resources
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Search, filter, and manage employee resource profiles.
+        </p>
       </div>
 
       {feedback && (
@@ -206,7 +185,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
         </Alert>
       )}
 
-      {/* Filter Component */}
+      {/* Filter Row matching Figma */}
       <ResourceFilters
         filters={filters}
         departments={departmentsQuery.data ?? []}
@@ -219,9 +198,11 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
         onRetryJobRoles={() => void jobRolesQuery.refetch()}
         onFilterChange={updateFilters}
         onReset={handleResetFilters}
+        canManage={canManage}
+        onAddResource={handleOpenCreate}
       />
 
-      {/* Distinct Error Handling: 403 Forbidden vs Network vs Server */}
+      {/* Error Handling */}
       {employeesQuery.isError && (
         <ResourceErrorAlert
           error={employeesQuery.error}
@@ -229,7 +210,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
         />
       )}
 
-      {/* Data Table */}
+      {/* Resources Table matching Figma */}
       <ResourceTable
         resources={resources}
         isLoading={employeesQuery.isLoading}
@@ -239,7 +220,7 @@ export const ResourcesPage: React.FC = (): React.JSX.Element => {
         onEdit={handleOpenEdit}
       />
 
-      {/* Modal Form Create / Edit */}
+      {/* Form Modal Create / Edit */}
       {isModalOpen && (
         <ResourceFormModal
           isOpen={isModalOpen}

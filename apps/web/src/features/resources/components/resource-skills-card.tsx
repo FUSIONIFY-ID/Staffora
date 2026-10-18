@@ -15,7 +15,7 @@ const PROFICIENCY_LABELS: Record<number, string> = {
 
 export const ResourceSkillsCard: React.FC<ResourceSkillsCardProps> = ({ skills }): React.JSX.Element => {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between h-full">
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs flex flex-col justify-between h-full">
       <div>
         <h2 className="text-base font-bold text-slate-900 mb-6">Skills & proficiency</h2>
 
@@ -34,12 +34,12 @@ export const ResourceSkillsCard: React.FC<ResourceSkillsCardProps> = ({ skills }
                   key={skill.id || skill.skillId}
                   className="flex items-center justify-between gap-4"
                 >
-                  {/* Skill Pill */}
-                  <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-medium min-w-[96px] text-center">
+                  {/* Skill Pill matching Figma */}
+                  <span className="inline-flex items-center px-3.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium min-w-[80px]">
                     {skill.skillName}
                   </span>
 
-                  {/* 5 Circular Dots Indicator matching Figma Design */}
+                  {/* 5 Dots Indicator matching Figma */}
                   <div className="flex items-center gap-1.5 shrink-0" title={label}>
                     {[1, 2, 3, 4, 5].map((lvl) => (
                       <span
@@ -51,7 +51,6 @@ export const ResourceSkillsCard: React.FC<ResourceSkillsCardProps> = ({ skills }
                         }`}
                       />
                     ))}
-                    {/* Accessible text label for testing and screen readers */}
                     <span className="sr-only">{label}</span>
                   </div>
                 </div>

@@ -10,12 +10,7 @@ import { ResourceSkillsCard } from './components/resource-skills-card.js'
 import { ResourceAllocationsTable } from './components/resource-allocations-table.js'
 import { ResourceCapacityCard } from './components/resource-capacity-card.js'
 import { ResourceFormModal, type ResourceFormData } from './components/resource-form-modal.js'
-import type {
-  ResourceDetailItem,
-  DepartmentItem,
-  JobRoleItem,
-  EvaluatedCapacity,
-} from './components/types.js'
+import type { ResourceDetailItem, DepartmentItem, JobRoleItem, EvaluatedCapacity } from './components/types.js'
 
 export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
   const { employeeId } = useParams<{ employeeId: string }>()
@@ -35,7 +30,6 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
       const params = new URLSearchParams()
       if (dateRange.startDate) params.set('startDate', dateRange.startDate)
       if (dateRange.endDate) params.set('endDate', dateRange.endDate)
-
       const queryStr = params.toString() ? `?${params.toString()}` : ''
       const res = await apiClient<{ data: ResourceDetailItem }>(`/employees/${employeeId}${queryStr}`)
       return res.data
@@ -46,19 +40,13 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
   // 2. Auxiliary Queries for Edit Modal
   const departmentsQuery = useQuery({
     queryKey: ['departments'],
-    queryFn: async () => {
-      const res = await apiClient<{ data: DepartmentItem[] }>('/departments')
-      return res.data ?? []
-    },
+    queryFn: async () => (await apiClient<{ data: DepartmentItem[] }>('/departments')).data ?? [],
     enabled: canManage,
   })
 
   const jobRolesQuery = useQuery({
     queryKey: ['job-roles'],
-    queryFn: async () => {
-      const res = await apiClient<{ data: JobRoleItem[] }>('/job-roles')
-      return res.data ?? []
-    },
+    queryFn: async () => (await apiClient<{ data: JobRoleItem[] }>('/job-roles')).data ?? [],
     enabled: canManage,
   })
 
@@ -85,11 +73,6 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
     },
   })
 
-  const handleEditSubmit = async (data: ResourceFormData): Promise<void> => {
-    await updateMutation.mutateAsync(data)
-  }
-
-  // Handle Loading
   if (detailQuery.isLoading) {
     return (
       <div className="flex min-h-96 flex-col items-center justify-center gap-3">
@@ -99,33 +82,19 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
     )
   }
 
-  // Handle Error States
   if (detailQuery.isError) {
     const error = detailQuery.error
     const is404 = error instanceof ApiError && error.status === 404
     const is403 = error instanceof ApiError && error.status === 403
-
     return (
       <div className="space-y-6">
         <Link to="/resources" className="text-xs font-semibold text-blue-500 hover:underline">
           &larr; Kembali ke Direktori Karyawan
         </Link>
-        <Alert
-          type="error"
-          title={is404 ? 'Karyawan Tidak Ditemukan' : is403 ? 'Akses Ditolak' : 'Gagal Memuat Profil'}
-        >
-          {is404
-            ? 'Profil karyawan yang diminta tidak ditemukan dalam basis data sistem.'
-            : is403
-            ? 'Anda tidak memiliki wewenang untuk melihat profil sumber daya ini.'
-            : error?.message || 'Terjadi kesalahan jaringan atau server saat memuat profil karyawan.'}
+        <Alert type="error" title={is404 ? 'Karyawan Tidak Ditemukan' : is403 ? 'Akses Ditolak' : 'Gagal Memuat Profil'}>
+          {is404 ? 'Profil karyawan yang diminta tidak ditemukan dalam basis data sistem.' : is403 ? 'Anda tidak memiliki wewenang untuk melihat profil sumber daya ini.' : error?.message || 'Terjadi kesalahan jaringan atau server saat memuat profil karyawan.'}
           {!is404 && !is403 && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="ml-2 mt-2 block"
-              onClick={() => void detailQuery.refetch()}
-            >
+            <Button size="sm" variant="outline" className="ml-2 mt-2 block" onClick={() => void detailQuery.refetch()}>
               Coba Lagi
             </Button>
           )}
@@ -144,13 +113,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
   }
 
   const initials = employee.fullName
-    ? employee.fullName
-        .split(' ')
-        .filter(Boolean)
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
+    ? employee.fullName.split(' ').filter(Boolean).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
     : 'EM'
 
   const evaluated: EvaluatedCapacity | undefined = employee.evaluatedPeriod ?? {
@@ -161,28 +124,16 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
   }
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-6 sm:-my-8 px-4 sm:px-6 lg:px-8 py-8 bg-slate-50/90 text-slate-900 min-h-[calc(100vh-4rem)] space-y-6">
-      {/* Top Breadcrumb Navigation matching Figma Design */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-slate-500">
-        <Link to="/resources" className="hover:text-blue-600 transition-colors">Workforce</Link>
-        <span>/</span>
-        <Link to="/resources" className="hover:text-blue-600 transition-colors">Resources</Link>
-        <span>/</span>
-        <span className="font-medium text-slate-900">{employee.employeeCode} &bull; {employee.fullName}</span>
-      </nav>
-
+    <div className="space-y-6">
       {feedback && (
-        <Alert
-          type={feedback.type}
-          title={feedback.type === 'success' ? 'Berhasil' : 'Kesalahan'}
-        >
+        <Alert type={feedback.type} title={feedback.type === 'success' ? 'Berhasil' : 'Kesalahan'}>
           {feedback.message}
         </Alert>
       )}
 
       {/* Inactive Employee Warning Banner */}
       {employee.status === 'INACTIVE' && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 shadow-sm">
+        <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 shadow-xs">
           <span className="text-base">⚠️</span>
           <div>
             <strong>Karyawan Berstatus Non-Aktif:</strong> Karyawan ini tidak dapat dialokasikan pada proyek baru. Seluruh data historis alokasi proyek dan keahlian tetap disimpan untuk kebutuhan pelaporan dan audit.
@@ -190,12 +141,12 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
         </div>
       )}
 
-      {/* Page Title & Subtitle Header matching Figma Design */}
+      {/* Page Title & Subtitle matching Figma */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">{employee.fullName}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{employee.fullName}</h1>
           <p className="text-sm text-slate-500 mt-1">
-            {employee.employeeCode} &bull; {employee.jobRoleTitle ?? 'Software Engineer'} &bull; {employee.departmentName ?? 'Engineering'}
+            {employee.employeeCode} &middot; {employee.jobRoleTitle ?? 'Software Engineer'} &middot; {employee.departmentName ?? 'Engineering'}
           </p>
         </div>
 
@@ -204,38 +155,38 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
             id="resource-detail-edit-button"
             variant="secondary"
             onClick={() => setIsEditModalOpen(true)}
-            className="w-full sm:w-auto bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
+            className="w-full sm:w-auto bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs font-medium text-xs sm:text-sm"
           >
             Edit Profil
           </Button>
         )}
       </div>
 
-      {/* Row 1: Profile Information Card (Left) & Skills & Proficiency (Right) */}
+      {/* Row 1: Profile Info Card (Left) & Skills & Proficiency Card (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* Left: Profile Card */}
-        <div className="lg:col-span-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+        {/* Left Card: Profile Details matching Figma */}
+        <div className="lg:col-span-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs flex flex-col justify-between">
           <div>
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-2xl shadow-inner">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-xl">
               {initials}
             </div>
-            <div className="mt-5">
+            <div className="mt-4">
               <p className="text-sm text-slate-600 font-medium">{employee.workEmail}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 pt-6 mt-6 border-t border-slate-100">
             <div>
-              <span className="block text-xs font-medium text-slate-400 uppercase tracking-wider">Department</span>
-              <p className="text-sm font-semibold text-slate-900 mt-1">{employee.departmentName ?? '—'}</p>
+              <span className="block text-xs font-medium text-slate-400">Department</span>
+              <p className="text-sm font-semibold text-slate-900 mt-1">{employee.departmentName ?? 'Engineering'}</p>
             </div>
             <div>
-              <span className="block text-xs font-medium text-slate-400 uppercase tracking-wider">Employment</span>
+              <span className="block text-xs font-medium text-slate-400">Employment</span>
               <div className="mt-1">
-                <span className={`inline-flex items-center rounded-full px-3 py-0.5 text-xs font-medium border ${
+                <span className={`inline-flex items-center rounded-full px-3 py-0.5 text-xs font-medium ${
                   employee.status === 'ACTIVE'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
-                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-slate-100 text-slate-600'
                 }`}>
                   {employee.status === 'ACTIVE' ? 'Active' : 'Non-Aktif'}
                 </span>
@@ -244,7 +195,7 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
           </div>
         </div>
 
-        {/* Right: Skills & Proficiency Card */}
+        {/* Right Card: Skills & Proficiency */}
         <div className="lg:col-span-7">
           <ResourceSkillsCard skills={employee.skills ?? []} />
         </div>
@@ -269,7 +220,9 @@ export const ResourceDetailPage: React.FC = (): React.JSX.Element => {
           resourceToEdit={employee}
           departments={departmentsQuery.data ?? []}
           jobRoles={jobRolesQuery.data ?? []}
-          onSubmit={handleEditSubmit}
+          onSubmit={async (data) => {
+            await updateMutation.mutateAsync(data)
+          }}
         />
       )}
     </div>

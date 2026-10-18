@@ -1,7 +1,5 @@
 import React from 'react'
 import { Link } from 'react-router'
-import { Badge } from '../../../components/ui/badge.js'
-import { Button } from '../../../components/ui/button.js'
 import { Spinner } from '../../../components/ui/spinner.js'
 import type { ResourceItem, PaginationMetadata } from './types.js'
 
@@ -14,17 +12,6 @@ export interface ResourceTableProps {
   onEdit: (resource: ResourceItem) => void
 }
 
-function getInitials(name: string): string {
-  if (!name) return 'EM'
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
-
 export const ResourceTable: React.FC<ResourceTableProps> = ({
   resources,
   isLoading,
@@ -35,18 +22,18 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
 }): React.JSX.Element => {
   if (isLoading) {
     return (
-      <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900/50 p-8 shadow-inner shadow-black/20">
+      <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 shadow-xs">
         <Spinner size="lg" />
-        <p className="mt-3 text-sm font-medium text-slate-400">Memuat direktori karyawan...</p>
+        <p className="mt-3 text-sm font-medium text-slate-500">Memuat direktori karyawan...</p>
       </div>
     )
   }
 
   if (resources.length === 0) {
     return (
-      <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30 p-8 text-center shadow-sm">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-800/80 border border-slate-700/50 text-slate-400 shadow-md">
-          <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-xs">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -55,8 +42,8 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
             />
           </svg>
         </div>
-        <h3 className="mt-3 text-base font-semibold text-white">Tidak Ada Karyawan Ditemukan</h3>
-        <p className="mt-1 max-w-sm text-sm text-slate-400">
+        <h3 className="mt-3 text-base font-semibold text-slate-900">Tidak Ada Karyawan Ditemukan</h3>
+        <p className="mt-1 max-w-sm text-sm text-slate-500">
           Tidak ada data karyawan yang cocok dengan kriteria pencarian atau filter yang dipilih.
         </p>
       </div>
@@ -66,103 +53,90 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
   const totalPages = pagination.totalPages ?? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/70 shadow-xl shadow-black/30 backdrop-blur-sm">
-      {/* Mobile scroll indicator */}
-      <div className="flex sm:hidden items-center justify-between px-3.5 py-1.5 border-b border-slate-800/80 bg-slate-950/50 text-[11px] text-slate-400">
-        <span>👉 Geser horizontal untuk melihat kolom lengkap</span>
-        <span className="font-mono text-slate-500">{resources.length} baris</span>
-      </div>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[680px] text-left text-sm text-slate-300">
-          <thead className="border-b border-slate-800 bg-slate-950/70 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <table className="w-full min-w-[700px] text-left text-sm text-slate-600">
+          <thead className="border-b border-slate-100 bg-white text-xs font-semibold text-slate-700">
             <tr>
-              <th scope="col" className="px-4 py-3.5">Kode</th>
-              <th scope="col" className="px-4 py-3.5">Karyawan & Email</th>
-              <th scope="col" className="px-4 py-3.5">Departemen</th>
-              <th scope="col" className="px-4 py-3.5">Peran / Jabatan</th>
-              <th scope="col" className="px-4 py-3.5">Status</th>
-              <th scope="col" className="px-4 py-3.5">Ketersediaan</th>
-              <th scope="col" className="px-4 py-3.5 text-right">Aksi</th>
+              <th scope="col" className="px-6 py-4">Employee</th>
+              <th scope="col" className="px-6 py-4">Code</th>
+              <th scope="col" className="px-6 py-4">Role</th>
+              <th scope="col" className="px-6 py-4">Department</th>
+              <th scope="col" className="px-6 py-4">Allocation</th>
+              <th scope="col" className="px-6 py-4">Availability</th>
+              <th scope="col" className="px-6 py-4">Status</th>
+              <th scope="col" className="px-6 py-4 text-right">
+                <span className="sr-only">Aksi</span>
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/60">
+          <tbody className="divide-y divide-slate-100">
             {resources.map((res) => {
               const hasCapacity =
                 typeof res.currentRemainingCapacity === 'number' &&
                 !Number.isNaN(res.currentRemainingCapacity) &&
                 res.currentRemainingCapacity >= 0
               const remaining = res.currentRemainingCapacity
+              const allocation = res.currentAllocation ?? (hasCapacity ? 100 - (remaining || 0) : 0)
 
               return (
-                <tr key={res.id} className="transition-colors hover:bg-slate-800/40">
-                  <td className="px-4 py-3.5">
-                    <span className="inline-block rounded-md bg-slate-800/90 border border-slate-700/60 px-2.5 py-1 font-mono text-xs font-semibold text-slate-200 shadow-inner">
-                      {res.employeeCode}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600/30 via-slate-800 to-indigo-600/20 border border-blue-500/20 text-xs font-bold text-blue-300 shadow-sm">
-                        {getInitials(res.fullName)}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-white">{res.fullName}</div>
-                        <div className="text-xs text-slate-400">{res.workEmail}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 text-slate-300 font-medium">
-                    {res.departmentName ?? '—'}
-                  </td>
-                  <td className="px-4 py-3.5 text-slate-300">
-                    {res.jobRoleTitle ?? '—'}
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <Badge variant={res.status === 'ACTIVE' ? 'green' : 'gray'} className="gap-1.5">
-                      <span
-                        className={`inline-block h-1.5 w-1.5 rounded-full ${
-                          res.status === 'ACTIVE' ? 'bg-emerald-400' : 'bg-slate-400'
-                        }`}
-                      />
-                      {res.status === 'ACTIVE' ? 'Aktif' : 'Non-Aktif'}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    {!hasCapacity || remaining === null || remaining === undefined ? (
-                      <Badge variant="gray">Tidak Tersedia</Badge>
-                    ) : (
-                      <Badge
-                        variant={remaining === 100 ? 'green' : remaining > 0 ? 'amber' : 'red'}
-                        className="gap-1.5"
-                      >
-                        <span
-                          className={`inline-block h-1.5 w-1.5 rounded-full ${
-                            remaining === 100
-                              ? 'bg-emerald-400'
-                              : remaining > 0
-                              ? 'bg-amber-400'
-                              : 'bg-red-400'
-                          }`}
-                        />
-                        {remaining}% Tersedia
-                      </Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3.5 text-right whitespace-nowrap space-x-2">
-                    <Link to={`/resources/${res.id}`}>
-                      <Button size="sm" variant="outline" className="hover:border-blue-500/50">
-                        Detail
-                      </Button>
+                <tr key={res.id} className="transition-colors hover:bg-slate-50/60">
+                  <td className="px-6 py-4 font-semibold text-slate-900">
+                    <Link
+                      to={`/resources/${res.id}`}
+                      className="hover:text-blue-600 transition-colors"
+                    >
+                      {res.fullName}
                     </Link>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => onEdit(res)}
-                      >
-                        Edit
-                      </Button>
+                  </td>
+                  <td className="px-6 py-4 text-slate-600 text-sm">
+                    {res.employeeCode}
+                  </td>
+                  <td className="px-6 py-4 text-slate-600 text-sm">
+                    {res.jobRoleTitle ?? 'Software Engineer'}
+                  </td>
+                  <td className="px-6 py-4 text-slate-600 text-sm">
+                    {res.departmentName ?? 'Engineering'}
+                  </td>
+                  <td className="px-6 py-4 text-slate-600 text-sm">
+                    {allocation}%
+                  </td>
+                  <td className="px-6 py-4 text-slate-600 text-sm">
+                    {hasCapacity ? (
+                      <>
+                        <span>{remaining}%</span>
+                        <span className="sr-only">{remaining}% Tersedia</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>—</span>
+                        <span className="sr-only">Tidak Tersedia</span>
+                      </>
                     )}
+                  </td>
+                  <td className="px-6 py-4 text-slate-700 text-sm">
+                    {res.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                  </td>
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-1">
+                      <Link to={`/resources/${res.id}`}>
+                        <button
+                          type="button"
+                          className="text-xs text-slate-400 hover:text-blue-600 font-medium px-2 py-1 rounded transition-colors cursor-pointer"
+                        >
+                          Detail
+                        </button>
+                      </Link>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => onEdit(res)}
+                          className="text-xs text-slate-400 hover:text-slate-800 font-medium px-2 py-1 rounded transition-colors cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )
@@ -172,34 +146,36 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
       </div>
 
       {/* Pagination Footer */}
-      <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-800 bg-slate-950/40 px-4 py-3 sm:flex-row">
-        <p className="text-xs text-slate-400">
-          Menampilkan <span className="font-medium text-slate-200">{resources.length}</span> dari{' '}
-          <span className="font-medium text-slate-200">{pagination.total}</span> karyawan
+      <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 bg-white px-6 py-4 sm:flex-row">
+        <p className="text-xs text-slate-500">
+          Showing <span className="font-semibold text-slate-900">{resources.length}</span> of{' '}
+          <span className="font-semibold text-slate-900">{pagination.total}</span> employees
+          <span className="sr-only">
+            Menampilkan {resources.length} dari {pagination.total} karyawan
+          </span>
         </p>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
+          <button
+            type="button"
             disabled={pagination.page <= 1}
             onClick={() => onPageChange(pagination.page - 1)}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Sebelumnya
-          </Button>
-          <span className="text-xs text-slate-300 px-2 font-medium">
+          </button>
+          <span className="text-xs text-slate-500 px-2 font-medium">
             Halaman {pagination.page} dari {totalPages}
           </span>
-          <Button
-            size="sm"
-            variant="outline"
+          <button
+            type="button"
             disabled={pagination.page >= totalPages}
             onClick={() => onPageChange(pagination.page + 1)}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Berikutnya
-          </Button>
+          </button>
         </div>
       </div>
     </div>
   )
 }
-

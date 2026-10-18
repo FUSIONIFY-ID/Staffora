@@ -38,28 +38,28 @@ export const ResourceCapacityCard: React.FC<ResourceCapacityCardProps> = ({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold text-slate-900">Current capacity</h2>
         <button
           type="button"
           onClick={() => setShowEvaluationForm((prev) => !prev)}
-          className="text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors"
+          className="text-xs font-medium text-slate-400 hover:text-blue-600 transition-colors"
         >
           {showEvaluationForm ? 'Tutup Filter Periode' : '⚙️ Evaluasi Periode'}
         </button>
       </div>
 
-      {/* Capacity Progress Bar matching Figma Design */}
-      <div className="space-y-2.5">
-        <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+      {/* Capacity Progress Bar matching Figma */}
+      <div className="space-y-3">
+        <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
           <div
             className="h-full rounded-full bg-blue-600 transition-all duration-500"
             style={{ width: `${Math.min(100, Math.max(0, peak))}%` }}
           />
         </div>
 
-        {/* Labels matching Figma Design + satisfying acceptance criteria */}
+        {/* Labels matching Figma */}
         <div className="flex items-center justify-between text-sm">
           <div>
             <span className="font-semibold text-blue-600">{peak}% allocated</span>
@@ -73,9 +73,9 @@ export const ResourceCapacityCard: React.FC<ResourceCapacityCardProps> = ({
         </div>
       </div>
 
-      {/* Date Range Evaluation Form (Collapsible / Accessible) */}
-      <div className={showEvaluationForm ? 'block pt-4 border-t border-slate-100' : 'hidden'}>
-        <form onSubmit={handleApply} className="grid grid-cols-1 gap-3 sm:grid-cols-3 items-end">
+      {/* Date Range Evaluation Form */}
+      {showEvaluationForm && (
+        <form onSubmit={handleApply} className="pt-4 border-t border-slate-100 grid grid-cols-1 gap-3 sm:grid-cols-3 items-end">
           <Input
             id="capacity-start-date"
             label="Tanggal Mulai"
@@ -102,7 +102,7 @@ export const ResourceCapacityCard: React.FC<ResourceCapacityCardProps> = ({
             Evaluasi Rentang Waktu
           </Button>
         </form>
-      </div>
+      )}
     </div>
   )
 }
