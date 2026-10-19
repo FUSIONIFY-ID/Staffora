@@ -26,7 +26,7 @@ necessary but does not prove authorization, data consistency, capacity locks, or
    - `npm run typecheck`
    - `npm test`
    - `npm run build`
-   Full verification is strictly required before Tech Lead Arya Isnaidi approves any PR into `dev`.
+     Full verification is strictly required before Tech Lead Arya Isnaidi approves any PR into `dev`.
 
 ## Findings Format
 
@@ -37,12 +37,14 @@ Group findings by risk level:
 - **Low:** Maintainability, naming clarity, type refinement, or minor documentation improvement.
 
 For each finding include:
+
 - File path and line number link (`file:///...#Lxx`)
 - Why it matters (impact on system or security)
 - Concrete evidence (code snippet, log, or test output)
 - Specific recommended remediation
 
 End with one explicit recommendation:
+
 - **Approve** (Ready for merge into `dev` by Tech Lead Arya Isnaidi)
 - **Approve with Follow-up** (Non-blocking improvements logged as follow-up cards)
 - **Request Changes** (Must be fixed and re-verified before merge)

@@ -32,7 +32,8 @@
  * of the parsed rule list).
  */
 
-const DIRECTIVE_RE = /impeccable-(disable-next-line|disable-line|disable)\b[ \t]*([^\n\r]*)/gi;
+const DIRECTIVE_RE =
+  /impeccable-(disable-next-line|disable-line|disable)\b[ \t]*([^\n\r]*)/gi;
 
 // Trailing comment closers, so `*/`, `*/}`, `-->`, `*}`, `#}`, `%>`, `}}` don't
 // leak into the rule list. Anchored to end-of-line; the leading `\s*` mops up the
@@ -136,7 +137,11 @@ function isInlineIgnored(finding, directives) {
 }
 
 function hasDirectives(directives) {
-  return directives.file.size > 0 || directives.line.size > 0 || directives.nextLine.size > 0;
+  return (
+    directives.file.size > 0 ||
+    directives.line.size > 0 ||
+    directives.nextLine.size > 0
+  );
 }
 
 /**

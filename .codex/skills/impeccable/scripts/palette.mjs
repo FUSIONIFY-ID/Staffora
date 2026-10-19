@@ -1030,7 +1030,9 @@ const [L, C, H] = seed.oklch;
 // originally judged it. We surface them as *hints*, not commands —
 // the brief should still drive what the seed becomes.
 const moodHint = seed.mood ? ` (one read: "${seed.mood}")` : "";
-const strategyHint = seed.strategy ? `\n  - one example strategy: ${seed.strategy}` : "";
+const strategyHint = seed.strategy
+  ? `\n  - one example strategy: ${seed.strategy}`
+  : "";
 
 // ---------------------------------------------------------------
 // Fat tool-exit response — what the model sees on stdout.

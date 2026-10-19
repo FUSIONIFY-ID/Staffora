@@ -20,11 +20,13 @@ export const ResourceFinderPage: React.FC = () => {
   const query = useQuery({
     queryKey: ['resource-finder', submitted],
     enabled: submitted !== null,
-    queryFn: () => {
-      if (!submitted) return Promise.resolve([] as FinderItem[])
+    queryFn: async () => {
+      if (!submitted) return [] as FinderItem[]
       const params = new URLSearchParams({ startDate: submitted.startDate, endDate: submitted.endDate })
       if (submitted.minRemainingCapacity) params.set('minRemainingCapacity', submitted.minRemainingCapacity)
-      return apiClient<{ data: FinderItem[] }>(`/resource-finder?${params.toString()}`).then((result) => result.data)
+      const res = await apiClient<{ data: FinderItem[] } | FinderItem[]>(`/resource-finder?${params.toString()}`)
+      if (Array.isArray(res)) return res
+      return (res as { data: FinderItem[] })?.data ?? []
     },
   })
   const invalidRange = filters.startDate > filters.endDate

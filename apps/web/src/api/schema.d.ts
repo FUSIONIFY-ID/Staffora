@@ -112,7 +112,14 @@ export interface paths {
         put?: never;
         /**
          * Sign in user
-         * @description Authenticates user credentials, rotates session ID, and establishes an HTTP-only session cookie.
+         * @description Authenticates user credentials, rotates the session ID (session fixation protection), and
+         *     establishes the `staffora.sid` session cookie (HttpOnly, SameSite=Lax, Path=/, Secure in
+         *     staging/production, 8-hour rolling inactivity timeout).
+         *     Requires the `X-CSRF-Token` header like every other state-changing request: call
+         *     `GET /auth/csrf-token` first to get a token on the anonymous session, then send it here.
+         *     A successful login rotates the session and returns a new token in `data.csrfToken`.
+         *     Unknown email and wrong password return the same generic 401 response.
+         *     Limited to 5 attempts per 15 minutes per IP address and email.
          */
         post: {
             parameters: {
@@ -129,7 +136,10 @@ export interface paths {
                          * @example admin@staffora.internal
                          */
                         email: string;
-                        /** @example SuperSecret123! */
+                        /**
+                         * @description Not checked against the 12-character creation policy, so the policy is never disclosed on sign-in.
+                         * @example SuperSecret123!
+                         */
                         password: string;
                     };
                 };
@@ -138,16 +148,36 @@ export interface paths {
                 /** @description Login successful */
                 200: {
                     headers: {
+                        /** @description New `staffora.sid` session cookie. */
+                        "Set-Cookie"?: string;
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            data?: components["schemas"]["UserIdentity"];
+                            data: components["schemas"]["LoginResult"];
                         };
                     };
                 };
-                /** @description Invalid credentials */
+                /** @description Invalid credentials (generic message) or inactive account */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid CSRF token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Request body validation failed */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -183,7 +213,7 @@ export interface paths {
         put?: never;
         /**
          * Sign out user
-         * @description Destroys current session and clears the session cookie.
+         * @description Destroys the server-side session row (immediate revocation) and clears the session cookie.
          */
         post: {
             parameters: {
@@ -200,6 +230,24 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content?: never;
+                };
+                /** @description Unauthenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Missing or invalid CSRF token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
                 };
             };
         };
@@ -218,7 +266,7 @@ export interface paths {
         };
         /**
          * Current authenticated identity
-         * @description Retrieves the currently logged-in user profile, role, and linked employee details.
+         * @description Retrieves the currently logged-in user profile, role, and linked employee details. Sessions of deactivated accounts are destroyed and receive 401.
          */
         get: {
             parameters: {
@@ -268,7 +316,10 @@ export interface paths {
         };
         /**
          * Retrieve CSRF token
-         * @description Returns the active synchronizer CSRF token stored in the current session.
+         * @description Returns the synchronizer CSRF token stored in the current session, issuing one first if the
+         *     session has none. Works without a login session: an anonymous session is created and its
+         *     cookie returned, so the token can protect `POST /auth/login`. Send the token as
+         *     `X-CSRF-Token` on every POST, PUT, PATCH, and DELETE request.
          */
         get: {
             parameters: {
@@ -282,12 +333,14 @@ export interface paths {
                 /** @description CSRF token value */
                 200: {
                     headers: {
+                        /** @description `staffora.sid` cookie of the anonymous session, when the request had none. */
+                        "Set-Cookie"?: string;
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
                             data?: {
-                                csrfToken?: string;
+                                csrfToken: string;
                             };
                         };
                     };
@@ -300,6 +353,130 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List users (Admin only) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of users */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserListResponse"];
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+            };
+        };
+        put?: never;
+        /** Create user (Admin only) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateUserInput"];
+                };
+            };
+            responses: {
+                /** @description User created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["UserIdentity"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                /** @description User email already exists or employee already linked */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                422: components["responses"]["ValidationErrorResponse"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update user (Admin only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateUserInput"];
+                };
+            };
+            responses: {
+                /** @description User updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["UserIdentity"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+            };
+        };
         trace?: never;
     };
     "/departments": {
@@ -328,6 +505,8 @@ export interface paths {
                         "application/json": components["schemas"]["DepartmentListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -356,6 +535,34 @@ export interface paths {
                         "application/json": {
                             data?: components["schemas"]["Department"];
                         };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                /** @description Insufficient role. Only ADMIN may create master data. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description A department with this name already exists. The name is compared on a normalised, case-insensitive basis, so "IT" and "it" collide. Code is DUPLICATE_DEPARTMENT_NAME. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed body */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -392,6 +599,8 @@ export interface paths {
                         "application/json": components["schemas"]["JobRoleListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -420,6 +629,34 @@ export interface paths {
                         "application/json": {
                             data?: components["schemas"]["JobRole"];
                         };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                /** @description Insufficient role. Only ADMIN may create master data. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description A job role with this title already exists, compared on a normalised, case-insensitive basis. Code is DUPLICATE_JOB_ROLE_NAME. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed body */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -463,6 +700,25 @@ export interface paths {
                         "application/json": components["schemas"]["EmployeeListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                /** @description Insufficient role. The directory is readable by ADMIN, PROJECT_MANAGER and RESOURCE_MANAGER; an EMPLOYEE receives 403 here. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed query parameters, for example an unknown status value */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -491,6 +747,34 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                /** @description Insufficient role. Only ADMIN and RESOURCE_MANAGER may create. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The employee code or work email already exists. Code is DUPLICATE_EMPLOYEE_CODE or DUPLICATE_WORK_EMAIL. The check is not atomic, so two concurrent creates with the same code resolve to one 201 and one 409 carrying the same specific code. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed body, or a departmentId / jobRoleId that does not exist */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -506,11 +790,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get employee detail */
+        /**
+         * Get employee detail
+         * @description Returns the employee profile with department, job role, skills, allocations, and the capacity evaluation for the requested window. An EMPLOYEE may only read their own record.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description First day of the capacity evaluation window (US02.01 - AC04.04). Defaults to today, taken as the current UTC calendar date; the window is a range of calendar days, not instants. When only startDate is given the window is that single day. */
                     startDate?: string;
+                    /** @description Last day of the capacity evaluation window, inclusive. Defaults to startDate, or to today (UTC) when startDate is also absent. Must not be before the effective startDate: a past endDate with no startDate is rejected with 422 on `endDate`, because the default startDate of today would otherwise sit after it. */
                     endDate?: string;
                 };
                 header?: never;
@@ -530,6 +819,26 @@ export interface paths {
                         "application/json": {
                             data?: components["schemas"]["EmployeeDetail"];
                         };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                /** @description Employee not found, or a record the caller may not see. An EMPLOYEE requesting another employee's profile receives the same 404 as an unknown id, so the response cannot be used to enumerate employee ids. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed employee id, or an invalid capacity date range */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -566,6 +875,43 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                /** @description Insufficient role */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Employee not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description The update collides with an existing unique value. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed employee id or body, an empty body, or a departmentId / jobRoleId that does not exist */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         trace?: never;
@@ -596,6 +942,8 @@ export interface paths {
                         "application/json": components["schemas"]["SkillListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -626,6 +974,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
@@ -664,6 +1016,9 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -698,12 +1053,92 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/employees/{id}/skills/{skillId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove skill from employee */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    skillId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Skill removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update employee skill proficiency */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    skillId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        proficiencyLevel: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Proficiency updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["EmployeeSkill"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
+            };
+        };
         trace?: never;
     };
     "/projects": {
@@ -738,6 +1173,9 @@ export interface paths {
                         "application/json": components["schemas"]["ProjectListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -766,6 +1204,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
@@ -804,6 +1246,9 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
             };
         };
         put?: never;
@@ -838,6 +1283,10 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
             };
         };
         trace?: never;
@@ -872,6 +1321,9 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
             };
         };
         put?: never;
@@ -902,12 +1354,95 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
             };
         };
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/staffing-requirements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete staffing requirement (Not Implemented)
+         * @description Staffing requirement physical deletion is disabled per BR-G15. Soft-delete / archival will be designed in Sprint 2 (US03).
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                /** @description Not Implemented (pending soft-delete design in US03) */
+                501: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Update staffing requirement
+         * @description Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager. Passing an empty array for skills removes all existing required skills.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateStaffingRequirementInput"];
+                };
+            };
+            responses: {
+                /** @description Staffing requirement updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["StaffingRequirement"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+            };
+        };
         trace?: never;
     };
     "/allocations": {
@@ -941,6 +1476,17 @@ export interface paths {
                         "application/json": components["schemas"]["AllocationListResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                /** @description Not Implemented (pending full implementation in US04) */
+                501: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -972,6 +1518,8 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
                 /** @description Capacity conflict or validation conflict */
                 409: {
                     headers: {
@@ -979,6 +1527,16 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["CapacityConflictResponse"];
+                    };
+                };
+                422: components["responses"]["ValidationErrorResponse"];
+                /** @description Not Implemented (pending full implementation in US04) */
+                501: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -996,7 +1554,36 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get allocation detail */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Allocation detail */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["Allocation"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
+            };
+        };
         put?: never;
         post?: never;
         delete?: never;
@@ -1029,6 +1616,9 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
                 /** @description Capacity conflict */
                 409: {
                     headers: {
@@ -1036,6 +1626,16 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["CapacityConflictResponse"];
+                    };
+                };
+                422: components["responses"]["ValidationErrorResponse"];
+                /** @description Not Implemented (pending full implementation in US04) */
+                501: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1081,6 +1681,19 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                /** @description Not Implemented (pending full implementation in US04) */
+                501: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -1119,6 +1732,19 @@ export interface paths {
                         "application/json": {
                             data?: components["schemas"]["Allocation"];
                         };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                404: components["responses"]["NotFoundResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                /** @description Not Implemented (pending full implementation in US04) */
+                501: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -1163,6 +1789,10 @@ export interface paths {
                         "application/json": components["schemas"]["ResourceFinderResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -1203,6 +1833,57 @@ export interface paths {
                         "application/json": components["schemas"]["OrganizationCapacityResponse"];
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                501: components["responses"]["NotImplementedResponse"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capacity/employees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Single employee capacity timeline */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Employee capacity timeline */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: {
+                                /** Format: uuid */
+                                employeeId?: string;
+                                timeline?: Record<string, never>[];
+                            };
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                403: components["responses"]["ForbiddenResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -1244,6 +1925,8 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -1285,6 +1968,8 @@ export interface paths {
                         };
                     };
                 };
+                401: components["responses"]["UnauthorizedResponse"];
+                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
@@ -1350,9 +2035,37 @@ export interface components {
                 employeeCode?: string;
                 fullName?: string;
                 workEmail?: string;
+                /** Format: uuid */
+                departmentId?: string;
                 departmentName?: string;
+                /** Format: uuid */
+                jobRoleId?: string;
                 jobRoleTitle?: string;
             } | null;
+        };
+        LoginResult: {
+            user: components["schemas"]["UserIdentity"];
+            /** @description Synchronizer token for the new session; send as `X-CSRF-Token` on state-changing requests. */
+            csrfToken: string;
+        };
+        CreateUserInput: {
+            /** Format: email */
+            email: string;
+            password: string;
+            /** @enum {string} */
+            role: "ADMIN" | "PROJECT_MANAGER" | "RESOURCE_MANAGER" | "EMPLOYEE";
+            /** Format: uuid */
+            employeeId?: string | null;
+        };
+        UpdateUserInput: {
+            /** @enum {string} */
+            role?: "ADMIN" | "PROJECT_MANAGER" | "RESOURCE_MANAGER" | "EMPLOYEE";
+            isActive?: boolean;
+            /** Format: uuid */
+            employeeId?: string | null;
+        };
+        UserListResponse: {
+            data: components["schemas"]["UserIdentity"][];
         };
         Department: {
             /** Format: uuid */
@@ -1387,6 +2100,7 @@ export interface components {
             /** Format: uuid */
             skillId: string;
             skillName: string;
+            skillIsActive?: boolean;
             proficiencyLevel: number;
         };
         CreateEmployeeInput: {
@@ -1419,29 +2133,35 @@ export interface components {
             employeeCode: string;
             fullName: string;
             workEmail: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            /** @description Peak concurrent allocation effective today, computed by the shared sweep-line capacity engine over the single-day window [today, today]: allocations that are not cancelled and whose inclusive start and end dates contain today. Because it is a peak and not a sum, sequential allocations that do not overlap are never added together (TSD 10.3 / BR-G17). This is the figure behind the current availability indicator required by US02.01 - AC01.03. */
+            currentAllocation?: number;
+            /** @description 100 minus currentAllocation, floored at 0. */
+            currentRemainingCapacity?: number;
+            /**
+             * @description Current availability for US02.01 - AC01.03, derived from currentRemainingCapacity. NOT_ASSIGNABLE is reported for INACTIVE employees per US05.01 - AC03.04. AVAILABLE, PARTIAL and FULLY_ALLOCATED follow US05.01 - AC03.01 to AC03.03.
+             * @enum {string}
+             */
+            availability: "AVAILABLE" | "PARTIAL" | "FULLY_ALLOCATED" | "NOT_ASSIGNABLE";
             /** Format: uuid */
             departmentId: string;
             departmentName?: string;
             /** Format: uuid */
             jobRoleId: string;
             jobRoleTitle?: string;
-            /** @enum {string} */
-            status: "ACTIVE" | "INACTIVE";
-            /** @default 0 */
-            currentAllocation: number;
-            /** @default 100 */
-            currentRemainingCapacity: number;
         };
         EmployeeDetail: components["schemas"]["Employee"] & {
             skills?: components["schemas"]["EmployeeSkill"][];
             allocations?: components["schemas"]["Allocation"][];
+            /** @description Capacity window result (US02.01 - AC04.04). peakConcurrentAllocation is the highest simultaneous allocation inside the window, computed by the shared sweep-line engine, and remainingCapacity is 100 minus that peak. Allocations that overlap the window without overlapping each other are never summed (TSD 10.3 / BR-G17). */
             evaluatedPeriod?: {
                 /** Format: date */
-                startDate?: string;
+                startDate: string;
                 /** Format: date */
-                endDate?: string;
-                peakConcurrentAllocation?: number;
-                remainingCapacity?: number;
+                endDate: string;
+                peakConcurrentAllocation: number;
+                remainingCapacity: number;
             };
         };
         EmployeeListResponse: {
@@ -1510,6 +2230,21 @@ export interface components {
             startDate: string;
             /** Format: date */
             endDate: string;
+            skills?: {
+                /** Format: uuid */
+                skillId: string;
+                minimumProficiencyLevel: number;
+            }[];
+        };
+        UpdateStaffingRequirementInput: {
+            /** Format: uuid */
+            jobRoleId?: string;
+            headcount?: number;
+            allocationPercentage?: number;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            endDate?: string;
             skills?: {
                 /** Format: uuid */
                 skillId: string;
@@ -1624,7 +2359,10 @@ export interface components {
                 departmentName?: string;
                 peakConcurrentAllocation?: number;
                 remainingCapacity?: number;
-                /** @enum {string} */
+                /**
+                 * @description Availability as used by the capacity and resource-finder views. It is a different vocabulary from `Employee.availability`, which reports AVAILABLE / PARTIAL / FULLY_ALLOCATED / NOT_ASSIGNABLE: this enum has no inactive case, and names the free states differently. Both describe the same underlying figure, `remainingCapacity`, so a future revision should collapse them into one shared enum. It is left as is here because no card has implemented the resource-finder or capacity response yet, and the workforce module does not own those contracts.
+                 * @enum {string}
+                 */
                 availabilityStatus?: "FULLY_AVAILABLE" | "PARTIALLY_AVAILABLE" | "FULLY_ALLOCATED";
             }[];
         };
@@ -1656,7 +2394,53 @@ export interface components {
             totalPages: number;
         };
     };
-    responses: never;
+    responses: {
+        /** @description Authentication required or session expired */
+        UnauthorizedResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Access forbidden (RBAC or CSRF violation) */
+        ForbiddenResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Resource not found */
+        NotFoundResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Validation failed for request parameters or body */
+        ValidationErrorResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Feature not implemented in Sprint 1 */
+        NotImplementedResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;

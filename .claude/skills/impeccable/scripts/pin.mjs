@@ -13,7 +13,14 @@
  * in the project root and creates/removes the pin in all of them.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  rmSync,
+  readdirSync,
+} from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -93,7 +100,10 @@ function findHarnessDirs(projectRoot) {
     const skillsDir = join(projectRoot, harness, "skills");
     // Only pin in harness dirs that already have impeccable installed
     const impeccableDir = join(skillsDir, "impeccable");
-    if (existsSync(impeccableDir) || existsSync(join(skillsDir, "i-impeccable"))) {
+    if (
+      existsSync(impeccableDir) ||
+      existsSync(join(skillsDir, "i-impeccable"))
+    ) {
       dirs.push(skillsDir);
     }
   }
@@ -115,7 +125,8 @@ function loadCommandMetadata() {
  * Generate a pinned skill's SKILL.md content.
  */
 function generatePinnedSkill(command, metadata) {
-  const desc = metadata[command]?.description || `Shortcut for /impeccable ${command}.`;
+  const desc =
+    metadata[command]?.description || `Shortcut for /impeccable ${command}.`;
   const hint = metadata[command]?.argumentHint || "[target]";
 
   return `---
@@ -169,7 +180,9 @@ function pin(command, projectRoot) {
   }
 
   if (created > 0) {
-    console.log(`\nPinned '${command}' as a standalone shortcut in ${created} location(s).`);
+    console.log(
+      `\nPinned '${command}' as a standalone shortcut in ${created} location(s).`,
+    );
     console.log(`You can now use /${command} directly.`);
   }
 

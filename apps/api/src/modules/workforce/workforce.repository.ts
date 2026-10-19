@@ -1,153 +1,191 @@
-import { prisma } from '../../common/database/prisma.js'
+import type { Prisma } from "../../generated/prisma/client.js";
+import { prisma } from "../../common/database/prisma.js";
 
-export interface QueryEmployeesFilter {
-  search?: string
-  departmentId?: string
-  jobRoleId?: string
-  status?: 'ACTIVE' | 'INACTIVE'
-  page: number
-  pageSize: number
-}
+/**
+ * Projection for list rows.
+ *
+ * Only cancelled allocations are dropped in the query. The date filter that
+ * used to live here compared against `new Date()` evaluated once at module
+ * load, which both froze "now" for the lifetime of the process and excluded an
+ * allocation whose end date is today. Whether an allocation is effective today
+ * is decided by the capacity engine from the reference date passed to the view,
+ * so it is computed in one place (PRD US02.01 - AC01.03).
+ */
+export const employeeSummaryInclude = {
+  department: { select: { id: true, name: true } },
+  jobRole: { select: { id: true, name: true } },
+  allocations: {
+    where: { cancelledAt: null },
+    select: {
+      id: true,
+      employeeId: true,
+      allocationPercentage: true,
+      startDate: true,
+      endDate: true,
+      cancelledAt: true,
+    },
+  },
+} satisfies Prisma.EmployeeInclude;
+
+export const employeeDetailInclude = {
+  ...employeeSummaryInclude,
+  skills: {
+    include: { skill: { select: { id: true, name: true, isActive: true } } },
+    orderBy: { skill: { name: "asc" } },
+  },
+  allocations: {
+    include: {
+      project: { select: { projectCode: true, name: true } },
+      jobRole: { select: { id: true, name: true } },
+    },
+    orderBy: [{ startDate: "asc" }, { endDate: "asc" }],
+  },
+} satisfies Prisma.EmployeeInclude;
 
 export const workforceRepository = {
-  async findDepartments() {
-    return prisma.department.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
-    })
-  },
-
-  async createDepartment(data: { name: string }) {
-    return prisma.department.create({
-      data: { name: data.name, isActive: true },
-    })
-  },
-
-  async findJobRoles(_departmentId?: string) {
-    return prisma.jobRole.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
-    })
-  },
-
-  async createJobRole(data: { name: string }) {
-    return prisma.jobRole.create({
-      data: { name: data.name, isActive: true },
-    })
-  },
-
-  async findEmployees(filter: QueryEmployeesFilter) {
-    const { search, departmentId, jobRoleId, status, page, pageSize } = filter
-
-    const where: Record<string, unknown> = {}
-
-    if (departmentId) {
-      where.departmentId = departmentId
-    }
-
-    if (jobRoleId) {
-      where.jobRoleId = jobRoleId
-    }
-
-    if (status) {
-      where.status = status
-    }
-
-    if (search && search.trim()) {
-      const term = search.trim()
-      where.OR = [
-        { fullName: { contains: term, mode: 'insensitive' } },
-        { employeeCode: { contains: term, mode: 'insensitive' } },
-        { workEmail: { contains: term, mode: 'insensitive' } },
-      ]
-    }
-
-    const [total, data] = await Promise.all([
-      prisma.employee.count({ where }),
-      prisma.employee.findMany({
-        where,
-        include: {
-          department: true,
-          jobRole: true,
-          allocations: {
-            where: { cancelledAt: null },
-            include: {
-              project: true,
-              jobRole: true,
-            },
-          },
-        },
-        orderBy: { employeeCode: 'asc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-    ])
-
-    return { data, total, page, pageSize }
-  },
-
-  async findEmployeeById(id: string) {
+  findEmployeeById(id: string): Promise<Prisma.EmployeeGetPayload<{
+    include: typeof employeeSummaryInclude;
+  }> | null> {
     return prisma.employee.findUnique({
       where: { id },
-      include: {
-        department: true,
-        jobRole: true,
-        skills: {
-          include: {
-            skill: true,
-          },
-        },
-        allocations: {
-          include: {
-            project: true,
-            jobRole: true,
-          },
-          orderBy: { startDate: 'desc' },
-        },
-      },
-    })
+      include: employeeSummaryInclude,
+    });
   },
 
-  async createEmployee(data: {
-    employeeCode: string
-    fullName: string
-    workEmail: string
-    departmentId: string
-    jobRoleId: string
-    status?: 'ACTIVE' | 'INACTIVE'
-  }) {
-    return prisma.employee.create({
-      data: {
-        employeeCode: data.employeeCode,
-        fullName: data.fullName,
-        workEmail: data.workEmail,
-        departmentId: data.departmentId,
-        jobRoleId: data.jobRoleId,
-        status: data.status || 'ACTIVE',
-      },
-      include: {
-        department: true,
-        jobRole: true,
-      },
-    })
+  findEmployeeByCode(employeeCode: string): Promise<{ id: string } | null> {
+    return prisma.employee.findUnique({
+      where: { employeeCode },
+      select: { id: true },
+    });
   },
 
-  async updateEmployee(
+  findEmployeeByEmail(workEmail: string): Promise<{ id: string } | null> {
+    return prisma.employee.findUnique({
+      where: { workEmail },
+      select: { id: true },
+    });
+  },
+
+  findDepartmentById(id: string): Promise<{ id: string; name: string } | null> {
+    return prisma.department.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+  },
+
+  /**
+   * Case-insensitive lookup for a friendly pre-flight message. The database
+   * unique index is what actually enforces the rule; this only turns the common
+   * sequential case into a specific 409 without touching the constraint.
+   */
+  findDepartmentByName(name: string): Promise<{ id: string } | null> {
+    return prisma.department.findFirst({
+      where: { name: { equals: name, mode: "insensitive" } },
+      select: { id: true },
+    });
+  },
+
+  findJobRoleById(id: string): Promise<{ id: string; name: string } | null> {
+    return prisma.jobRole.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+  },
+
+  findJobRoleByName(name: string): Promise<{ id: string } | null> {
+    return prisma.jobRole.findFirst({
+      where: { name: { equals: name, mode: "insensitive" } },
+      select: { id: true },
+    });
+  },
+
+  listDepartments(): Promise<
+    Array<{ id: string; name: string; isActive: boolean }>
+  > {
+    return prisma.department.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, isActive: true },
+      orderBy: { name: "asc" },
+    });
+  },
+
+  listJobRoles(): Promise<
+    Array<{ id: string; name: string; isActive: boolean }>
+  > {
+    return prisma.jobRole.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, isActive: true },
+      orderBy: { name: "asc" },
+    });
+  },
+
+  createDepartment(
+    name: string,
+    actorId?: string,
+  ): Promise<{ id: string; name: string; isActive: boolean }> {
+    return prisma.department.create({
+      data: { name, createdBy: actorId },
+      select: { id: true, name: true, isActive: true },
+    });
+  },
+
+  createJobRole(
+    name: string,
+    actorId?: string,
+  ): Promise<{ id: string; name: string; isActive: boolean }> {
+    return prisma.jobRole.create({
+      data: { name, createdBy: actorId },
+      select: { id: true, name: true, isActive: true },
+    });
+  },
+
+  countEmployees(where: Prisma.EmployeeWhereInput): Promise<number> {
+    return prisma.employee.count({ where });
+  },
+
+  listEmployees(
+    where: Prisma.EmployeeWhereInput,
+    skip: number,
+    take: number,
+  ): Promise<
+    Array<Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }>>
+  > {
+    return prisma.employee.findMany({
+      where,
+      include: employeeSummaryInclude,
+      orderBy: { fullName: "asc" },
+      skip,
+      take,
+    });
+  },
+
+  findEmployeeDetail(id: string): Promise<Prisma.EmployeeGetPayload<{
+    include: typeof employeeDetailInclude;
+  }> | null> {
+    return prisma.employee.findUnique({
+      where: { id },
+      include: employeeDetailInclude,
+    });
+  },
+
+  createEmployee(
+    data: Prisma.EmployeeUncheckedCreateInput,
+  ): Promise<
+    Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }>
+  > {
+    return prisma.employee.create({ data, include: employeeSummaryInclude });
+  },
+
+  updateEmployee(
     id: string,
-    data: {
-      fullName?: string
-      departmentId?: string
-      jobRoleId?: string
-      status?: 'ACTIVE' | 'INACTIVE'
-    },
-  ) {
+    data: Prisma.EmployeeUncheckedUpdateInput,
+  ): Promise<
+    Prisma.EmployeeGetPayload<{ include: typeof employeeSummaryInclude }>
+  > {
     return prisma.employee.update({
       where: { id },
       data,
-      include: {
-        department: true,
-        jobRole: true,
-      },
-    })
+      include: employeeSummaryInclude,
+    });
   },
-}
+};

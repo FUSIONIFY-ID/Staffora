@@ -1262,7 +1262,12 @@ But that is **web glassmorphism / frosted-glass approximation**, not official Ap
   border-radius: inherit;
   background:
     radial-gradient(circle at 20% 0%, rgb(255 255 255 / 0.55), transparent 34%),
-    linear-gradient(90deg, rgb(255 255 255 / 0.18), transparent 42%, rgb(255 255 255 / 0.14));
+    linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0.18),
+      transparent 42%,
+      rgb(255 255 255 / 0.14)
+    );
   pointer-events: none;
 }
 

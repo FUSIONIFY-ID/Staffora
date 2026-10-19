@@ -1,10 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getLegacyLiveSessionsDir, getLiveSessionsDir } from "../lib/impeccable-paths.mjs";
+import {
+  getLegacyLiveSessionsDir,
+  getLiveSessionsDir,
+} from "../lib/impeccable-paths.mjs";
 
 const COMPLETED_PHASES = new Set(["completed", "discarded"]);
 
-export function createLiveSessionStore({ cwd = process.cwd(), sessionId } = {}) {
+export function createLiveSessionStore({
+  cwd = process.cwd(),
+  sessionId,
+} = {}) {
   const rootDir = getLiveSessionsDir(cwd);
   const legacyRootDir = getLegacyLiveSessionsDir(cwd);
   fs.mkdirSync(rootDir, { recursive: true });
@@ -64,7 +70,11 @@ export function createLiveSessionStore({ cwd = process.cwd(), sessionId } = {}) 
       const rebuilt = rebuildSnapshotFromJournal(journalPath, id);
       snapshotCache.set(id, rebuilt);
       writeSnapshot(snapshotPath, rebuilt.snapshot);
-      if (!opts.includeCompleted && COMPLETED_PHASES.has(rebuilt.snapshot.phase)) return null;
+      if (
+        !opts.includeCompleted &&
+        COMPLETED_PHASES.has(rebuilt.snapshot.phase)
+      )
+        return null;
       return rebuilt.snapshot;
     },
     listActiveSessions() {
@@ -84,10 +94,12 @@ export function createLiveSessionStore({ cwd = process.cwd(), sessionId } = {}) 
 }
 
 function normalizeEvent(event, fallbackId) {
-  if (!event || typeof event !== "object") throw new Error("event object required");
+  if (!event || typeof event !== "object")
+    throw new Error("event object required");
   const id = event.id || fallbackId;
   if (!id || typeof id !== "string") throw new Error("event id required");
-  if (!event.type || typeof event.type !== "string") throw new Error("event type required");
+  if (!event.type || typeof event.type !== "string")
+    throw new Error("event type required");
   return { ...event, id };
 }
 
@@ -100,7 +112,8 @@ function getSnapshotPath(rootDir, id) {
 }
 
 function safeSessionId(id) {
-  if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) throw new Error("invalid session id: " + id);
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(id))
+    throw new Error("invalid session id: " + id);
   return id;
 }
 
@@ -141,8 +154,10 @@ function rebuildSnapshotFromJournal(journalPath, id) {
     if (!line.trim()) continue;
     try {
       const entry = JSON.parse(line);
-      if (!entry || typeof entry !== "object") throw new Error("entry is not object");
-      if (Number.isInteger(entry.seq)) nextSeq = Math.max(nextSeq, entry.seq + 1);
+      if (!entry || typeof entry !== "object")
+        throw new Error("entry is not object");
+      if (Number.isInteger(entry.seq))
+        nextSeq = Math.max(nextSeq, entry.seq + 1);
       snapshot = applyEvent(snapshot, entry);
     } catch (err) {
       diagnostics.push({
@@ -186,12 +201,14 @@ function applyEvent(snapshot, entry, inheritedDiagnostics = []) {
       break;
     case "variants_ready":
     case "agent_done":
-      next.phase = event.carbonize === true ? "carbonize_required" : "variants_ready";
+      next.phase =
+        event.carbonize === true ? "carbonize_required" : "variants_ready";
       next.sourceFile = event.sourceFile ?? event.file ?? next.sourceFile;
       next.previewFile = event.previewFile ?? next.previewFile;
       next.previewMode = event.previewMode ?? next.previewMode;
       next.arrivedVariants =
-        event.arrivedVariants ?? (next.expectedVariants || next.arrivedVariants || 0);
+        event.arrivedVariants ??
+        (next.expectedVariants || next.arrivedVariants || 0);
       next.pendingEventSeq = null;
       next.pendingEvent = null;
       if (event.carbonize === true) {
@@ -223,7 +240,10 @@ function applyEvent(snapshot, entry, inheritedDiagnostics = []) {
         next.previewMode = event.previewMode ?? next.previewMode;
         if (event.paramValues) next.paramValues = { ...event.paramValues };
       } else {
-        next.diagnostics.push({ error: "stale_checkpoint_ignored", revision: event.revision });
+        next.diagnostics.push({
+          error: "stale_checkpoint_ignored",
+          revision: event.revision,
+        });
       }
       break;
     case "accept":
@@ -298,7 +318,8 @@ function toPendingEvent(event) {
 function upsertArtifact(artifacts, artifact) {
   if (
     !artifacts.some(
-      (existing) => existing.path === artifact.path && existing.type === artifact.type,
+      (existing) =>
+        existing.path === artifact.path && existing.type === artifact.type,
     )
   ) {
     artifacts.push(artifact);

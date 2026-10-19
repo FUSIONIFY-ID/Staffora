@@ -10,7 +10,7 @@ Read @CLAUDE.md, @AGENTS.md, @GEMINI.md
    - Architecture & standards: `docs/architecture/overview.md`, `docs/CODING_STANDARD.md`
    - Data & API contracts: `docs/database/erd.md`, `docs/api/openapi.yaml`, `apps/api/prisma/schema.prisma`
    - PRD specifications: Approved PRD v1.0 (`Staffora — Product Requirements, User Stories & Acceptance Criteria MVP v1.0`)
-   NEVER write code blindly without structural understanding of the task boundaries.
+     NEVER write code blindly without structural understanding of the task boundaries.
 
 2. **Absolute Ban on `git push` (Agents Stop at `git commit`):**
    - AI agents are **STRICTLY PROHIBITED** from executing `git push` to ANY remote branch (`origin dev`, `origin main`, or feature branches).

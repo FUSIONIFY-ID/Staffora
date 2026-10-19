@@ -46,6 +46,7 @@
 
 The workspace uses TypeScript strict mode across both `apps/web` and `apps/api`.
 Required compiler settings:
+
 - `"strict": true`
 - `"noImplicitAny": true`
 - `"strictNullChecks": true`
@@ -87,6 +88,7 @@ apps/api/src/modules/<module>/
 ### 3.2 Controller Pattern
 
 Controllers:
+
 - Read Express `req.params`, `req.query`, and `req.body`.
 - Input validation is handled by Zod middleware prior to controller execution.
 - Call application service functions.
@@ -96,6 +98,7 @@ Controllers:
 ### 3.3 Service Pattern
 
 Services:
+
 - Accept strongly-typed inputs.
 - Own business rules, use cases, and transaction boundaries.
 - Call repositories for data persistence.
@@ -106,6 +109,7 @@ Services:
 ### 3.4 Repository Pattern
 
 Repositories:
+
 - Are the ONLY layer permitted to invoke Prisma Client.
 - Accept optional transaction client parameter (`Prisma.TransactionClient`).
 - Return typed Prisma models or DTOs.
@@ -114,11 +118,13 @@ Repositories:
 ### 3.5 API Envelopes (TSD 11.4 & 11.5)
 
 Single Resource Response:
+
 ```json
 { "data": { ... } }
 ```
 
 List Response:
+
 ```json
 {
   "data": [ ... ],
@@ -127,6 +133,7 @@ List Response:
 ```
 
 Standard Error Response:
+
 ```json
 {
   "message": "Human-readable summary.",
@@ -144,6 +151,7 @@ Standard Error Response:
 ### 4.1 Feature Structure
 
 Features live under `apps/web/src/features/<feature>/`:
+
 - Component views render clean JSX with design system primitives.
 - Form management uses **React Hook Form 7 + Zod 4**.
 - Server state caching and mutations use **TanStack Query 5**.
@@ -163,6 +171,7 @@ Features live under `apps/web/src/features/<feature>/`:
 ### 4.3 API Client
 
 All API requests go through `apps/web/src/api/client.ts`:
+
 - Native `fetch` with `credentials: "include"` for session cookies.
 - Automated `X-CSRF-Token` header injection on mutation requests (POST, PUT, PATCH, DELETE).
 - Centralized 401 handling redirecting to `/login`.
@@ -239,13 +248,16 @@ All API requests go through `apps/web/src/api/client.ts`:
 ## 9. Git Workflow, Branching & Team Governance
 
 ### 9.1 Team Responsibilities
+
 - **Tech Lead**: **Arya Isnaidi** (Arsitektur, approval PR/release, dan final sign-off).
 - **QA & DevOps**: **Fikri** (Testing regresi, E2E, Docker, dan CI/CD).
 - **Frontend Engineers**: **Wahyu & Nabil** (Web UI, presentation, dan TanStack Query).
 - **Backend Engineers**: **Saiful & Jundy** (Express API, Prisma migrations, dan Capacity engine).
 
 ### 9.2 Rebase Workflow (Mandatory)
+
 Seluruh branch fitur dibuat dari `dev` menggunakan rebase:
+
 ```bash
 git checkout dev
 git pull --rebase origin dev
@@ -253,6 +265,7 @@ git checkout -b [FE/BE/DB/QA]-S<SprintNumber>-[Kode]-subjudultask
 ```
 
 ### 9.3 Branch Naming Standard
+
 - Format: `[FE/BE/DB/QA]-S<SprintNumber>-[Kode]-subjudultask`
 - Contoh:
   - `FE-S1-US01-login-screen`
@@ -263,6 +276,7 @@ git checkout -b [FE/BE/DB/QA]-S<SprintNumber>-[Kode]-subjudultask
   - `QA-S1-US01-verify-auth-session-flow`
 
 ### 9.4 Commit & Push Safety Gate
+
 - **Dilarang push langsung** ke `dev` atau `main`.
 - **Dilarang `git add .` secara buta**: Stage hanya file yang relevan dengan tugas.
 - **Wajib rebase ke `dev`** sebelum mengajukan Pull Request.
@@ -272,20 +286,21 @@ git checkout -b [FE/BE/DB/QA]-S<SprintNumber>-[Kode]-subjudultask
 
 ## 10. File and Folder Naming
 
-| Item | Convention | Example |
-| :--- | :--- | :--- |
-| Folders | `kebab-case` | `resource-finder/`, `components/ui/` |
-| Backend Module Files | `<domain>.<role>.ts` | `workforce.service.ts`, `projects.routes.ts` |
-| Frontend Component Files | `kebab-case.tsx` | `project-detail-page.tsx`, `app-layout.tsx` |
-| Test Files | `<name>.test.ts(x)` | `capacity.test.ts`, `auth-ui.test.tsx` |
-| Database Models / Tables | plural `snake_case` | `staffing_requirements`, `allocations` |
-| JSON API Properties | `camelCase` | `startDate`, `allocationPercentage` |
+| Item                     | Convention           | Example                                      |
+| :----------------------- | :------------------- | :------------------------------------------- |
+| Folders                  | `kebab-case`         | `resource-finder/`, `components/ui/`         |
+| Backend Module Files     | `<domain>.<role>.ts` | `workforce.service.ts`, `projects.routes.ts` |
+| Frontend Component Files | `kebab-case.tsx`     | `project-detail-page.tsx`, `app-layout.tsx`  |
+| Test Files               | `<name>.test.ts(x)`  | `capacity.test.ts`, `auth-ui.test.tsx`       |
+| Database Models / Tables | plural `snake_case`  | `staffing_requirements`, `allocations`       |
+| JSON API Properties      | `camelCase`          | `startDate`, `allocationPercentage`          |
 
 ---
 
 ## 11. Code Formatting and Quality Gates
 
 Required local verification gate before commit:
+
 ```powershell
 npm run lint          # ESLint (0 errors, 0 warnings)
 npm run typecheck     # TypeScript strict check (tsc)

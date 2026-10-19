@@ -1,54 +1,31 @@
-import type { RequestHandler } from 'express'
-import { prisma } from '../database/prisma.js'
+import type { RequestHandler } from "express";
+import { identityService } from "../../modules/identity/identity.service.js";
+import { regenerateSession } from "./session.js";
 
-export const identityLoaderMiddleware: RequestHandler = async (req, _res, next) => {
-  const userId = req.session?.userId
+export const identityLoaderMiddleware: RequestHandler = async (
+  req,
+  _res,
+  next,
+) => {
+  const userId = req.session?.userId;
 
   if (!userId) {
-    return next()
+    return next();
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        employee: {
-          include: {
-            department: true,
-            jobRole: true,
-          },
-        },
-      },
-    })
+    const user = await identityService.resolveSessionUser(userId);
 
-    if (!user || !user.isActive) {
-      // Inactive user or user not found - destroy session
-      req.session.destroy(() => {})
-      return next()
+    if (!user) {
+      // AC02.05 - Deactivated or deleted accounts lose their session on the next request.
+      // Regenerate rather than destroy: downstream handlers (login) require req.session to exist.
+      await regenerateSession(req);
+      return next();
     }
 
-    req.user = {
-      id: user.id,
-      email: user.normalizedEmail,
-      role: user.role,
-      isActive: user.isActive,
-      employeeId: user.employeeId,
-      employee: user.employee
-        ? {
-            id: user.employee.id,
-            employeeCode: user.employee.employeeCode,
-            fullName: user.employee.fullName,
-            workEmail: user.employee.workEmail,
-            departmentId: user.employee.departmentId,
-            departmentName: user.employee.department.name,
-            jobRoleId: user.employee.jobRoleId,
-            jobRoleTitle: user.employee.jobRole.name,
-          }
-        : null,
-    }
-
-    next()
+    req.user = user;
+    next();
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};

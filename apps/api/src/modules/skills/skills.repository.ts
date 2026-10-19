@@ -1,4 +1,4 @@
-import { prisma } from '../../common/database/prisma.js'
+import { prisma } from "../../common/database/prisma.js";
 
 export const skillsRepository = {
   // Database helper methods for skills module
@@ -6,6 +6,6 @@ export const skillsRepository = {
   async findById(id: string) {
     return prisma.skill.findUnique({
       where: { id },
-    })
+    });
   },
-}
+};

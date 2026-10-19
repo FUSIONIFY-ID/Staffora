@@ -2,7 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { loadDesignSystemForCwd } from "../design-system.mjs";
-import { createBrowserDetector, detectUrl } from "../engines/browser/detect-url.mjs";
+import {
+  createBrowserDetector,
+  detectUrl,
+} from "../engines/browser/detect-url.mjs";
 import { detectHtml } from "../engines/static-html/detect-html.mjs";
 import { detectText } from "../engines/regex/detect-text.mjs";
 import {
@@ -41,7 +44,9 @@ function formatFindings(findings, jsonMode) {
       : "";
     out.push(`\n${file}${importNote}`);
     for (const item of items) {
-      out.push(`  ${item.line ? `line ${item.line}: ` : ""}[${item.antipattern}] ${item.snippet}`);
+      out.push(
+        `  ${item.line ? `line ${item.line}: ` : ""}[${item.antipattern}] ${item.snippet}`,
+      );
       out.push(`    → ${item.description}`);
     }
   }
@@ -160,11 +165,14 @@ async function detectCli() {
     configEnabled &&
     !args.includes("--no-design-system") &&
     detectionConfig.designSystem?.enabled !== false;
-  const designSystem = designSystemEnabled ? loadDesignSystemForCwd(process.cwd()) : null;
+  const designSystem = designSystemEnabled
+    ? loadDesignSystemForCwd(process.cwd())
+    : null;
   // Inline `impeccable-disable*` waivers are part of the scanned file, so they
   // apply by default. `--no-config` (raw scan) and the dedicated
   // `--no-inline-ignores` both turn them off.
-  const inlineIgnoresEnabled = configEnabled && !args.includes("--no-inline-ignores");
+  const inlineIgnoresEnabled =
+    configEnabled && !args.includes("--no-inline-ignores");
   const scanOptions = { providers, inlineIgnores: inlineIgnoresEnabled };
   if (designSystem) scanOptions.designSystem = designSystem;
   const targets = args.filter((a) => !a.startsWith("--"));
@@ -180,8 +188,11 @@ async function detectCli() {
     allFindings = await handleStdin(scanOptions);
   } else {
     const paths = targets.length > 0 ? targets : [process.cwd()];
-    const urlTargetCount = paths.filter((target) => /^https?:\/\//i.test(target)).length;
-    const browserDetector = urlTargetCount > 1 ? await createBrowserDetector() : null;
+    const urlTargetCount = paths.filter((target) =>
+      /^https?:\/\//i.test(target),
+    ).length;
+    const browserDetector =
+      urlTargetCount > 1 ? await createBrowserDetector() : null;
 
     try {
       for (const target of paths) {
@@ -211,7 +222,10 @@ async function detectCli() {
           if (!jsonMode && !quietMode) {
             const fwConfig = detectFrameworkConfig(resolved);
             if (fwConfig) {
-              const probe = await isPortListening(fwConfig.port, fwConfig.fingerprint);
+              const probe = await isPortListening(
+                fwConfig.port,
+                fwConfig.fingerprint,
+              );
               if (probe.listening && probe.matched) {
                 process.stderr.write(
                   `\n${fwConfig.name} dev server detected on localhost:${fwConfig.port}.\n` +
@@ -234,14 +248,20 @@ async function detectCli() {
           }
 
           const files = walkDir(resolved).filter(
-            (file) => !shouldIgnoreDetectionFile(file, process.cwd(), detectionConfig),
+            (file) =>
+              !shouldIgnoreDetectionFile(file, process.cwd(), detectionConfig),
           );
           const htmlCount = files.filter((f) =>
             HTML_EXTENSIONS.has(path.extname(f).toLowerCase()),
           ).length;
 
           // Warn and confirm if scanning many files (static HTML/CSS processes each HTML file)
-          if (files.length > 50 && process.stdin.isTTY && !jsonMode && !quietMode) {
+          if (
+            files.length > 50 &&
+            process.stdin.isTTY &&
+            !jsonMode &&
+            !quietMode
+          ) {
             process.stderr.write(
               `\nFound ${files.length} files (${htmlCount} HTML) in ${target}.\n` +
                 `Scanning may take a while${htmlCount > 10 ? " (static HTML/CSS processes each HTML file individually)" : ""}.\n` +
@@ -260,7 +280,8 @@ async function detectCli() {
           const importedByMap = new Map();
           for (const [importer, imports] of graph) {
             for (const imported of imports) {
-              if (!importedByMap.has(imported)) importedByMap.set(imported, new Set());
+              if (!importedByMap.has(imported))
+                importedByMap.set(imported, new Set());
               importedByMap.get(imported).add(importer);
             }
           }
@@ -271,7 +292,11 @@ async function detectCli() {
             if (HTML_EXTENSIONS.has(ext)) {
               fileFindings = await detectHtml(file, scanOptions);
             } else {
-              fileFindings = detectText(fs.readFileSync(file, "utf-8"), file, scanOptions);
+              fileFindings = detectText(
+                fs.readFileSync(file, "utf-8"),
+                file,
+                scanOptions,
+              );
             }
             // Annotate findings with import context
             const importers = importedByMap.get(file);
@@ -284,13 +309,20 @@ async function detectCli() {
             allFindings.push(...fileFindings);
           }
         } else if (stat.isFile()) {
-          if (shouldIgnoreDetectionFile(resolved, process.cwd(), detectionConfig)) continue;
+          if (
+            shouldIgnoreDetectionFile(resolved, process.cwd(), detectionConfig)
+          )
+            continue;
           const ext = path.extname(resolved).toLowerCase();
           if (HTML_EXTENSIONS.has(ext)) {
             allFindings.push(...(await detectHtml(resolved, scanOptions)));
           } else {
             allFindings.push(
-              ...detectText(fs.readFileSync(resolved, "utf-8"), resolved, scanOptions),
+              ...detectText(
+                fs.readFileSync(resolved, "utf-8"),
+                resolved,
+                scanOptions,
+              ),
             );
           }
         }
@@ -303,8 +335,10 @@ async function detectCli() {
   allFindings = filterDetectionFindings(allFindings, detectionConfig);
 
   if (allFindings.length > 0) {
-    if (jsonMode) process.stdout.write(formatFindings(allFindings, true) + "\n");
-    else if (quietMode) process.stderr.write(formatFindingSummary(allFindings.length) + "\n");
+    if (jsonMode)
+      process.stdout.write(formatFindings(allFindings, true) + "\n");
+    else if (quietMode)
+      process.stderr.write(formatFindingSummary(allFindings.length) + "\n");
     else process.stderr.write(formatFindings(allFindings, false) + "\n");
     process.exit(2);
   }

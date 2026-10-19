@@ -1,68 +1,106 @@
-import { identityRepository } from './identity.repository.js'
-import { hashPassword, verifyPassword } from '../../common/auth/password.js'
-import { UnauthorizedError, ConflictError, NotFoundError } from '../../common/errors/app-error.js'
-import type { Role, AuthenticatedUser } from '../../common/auth/types.js'
+import { identityRepository } from "./identity.repository.js";
+import { hashPassword, verifyPassword } from "../../common/auth/password.js";
+import {
+  UnauthorizedError,
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "../../common/errors/app-error.js";
+import type { Role, AuthenticatedUser } from "../../common/auth/types.js";
+import { validateUserEmployeeLinkage } from "../../common/auth/policy.js";
 
 export const identityService = {
-  async authenticate(email: string, plainTextPassword: string): Promise<AuthenticatedUser> {
-    const user = await identityRepository.findByNormalizedEmail(email)
+  async authenticate(
+    email: string,
+    plainTextPassword: string,
+  ): Promise<AuthenticatedUser> {
+    const user = await identityRepository.findByNormalizedEmail(email);
 
-    // BR02 - Authentication errors must not expose credential validation details
-    if (!user) {
-      throw new UnauthorizedError('Invalid email or password.')
+    // BR02 - Authentication errors must not expose credential validation details.
+    // Unknown emails still pay the bcrypt cost so timing does not reveal registered accounts.
+    const isMatch = await verifyPassword(
+      plainTextPassword,
+      user?.passwordHash ?? null,
+    );
+    if (!user || !isMatch) {
+      throw new UnauthorizedError("Invalid email or password.");
     }
 
-    const isMatch = await verifyPassword(plainTextPassword, user.passwordHash)
-    if (!isMatch) {
-      throw new UnauthorizedError('Invalid email or password.')
-    }
-
-    // AC02.05 - An inactive user account must not be allowed to sign in
+    // AC02.05 / BR01 - Inactive accounts cannot sign in. The message stays generic (BR02) because a
+    // distinct message would confirm the password was correct.
     if (!user.isActive) {
-      throw new UnauthorizedError('User account is inactive.')
+      throw new UnauthorizedError("Invalid email or password.");
     }
 
-    return {
-      id: user.id,
-      email: user.normalizedEmail,
-      role: user.role,
-      isActive: user.isActive,
-      employeeId: user.employeeId,
-      employee: user.employee
-        ? {
-            id: user.employee.id,
-            employeeCode: user.employee.employeeCode,
-            fullName: user.employee.fullName,
-            workEmail: user.employee.workEmail,
-            departmentId: user.employee.departmentId,
-            departmentName: user.employee.department.name,
-            jobRoleId: user.employee.jobRoleId,
-            jobRoleTitle: user.employee.jobRole.name,
-          }
-        : null,
+    return toAuthenticatedUser(user);
+  },
+
+  async resolveSessionUser(userId: string): Promise<AuthenticatedUser | null> {
+    const user = await identityRepository.findById(userId);
+    if (!user || !user.isActive) {
+      return null;
     }
+    return toAuthenticatedUser(user);
   },
 
   async createUser(input: {
-    email: string
-    password: string
-    role: Role
-    employeeId?: string
-    actorId?: string
+    email: string;
+    password: string;
+    role: Role;
+    employeeId?: string;
+    actorId?: string;
   }) {
-    const existing = await identityRepository.findByNormalizedEmail(input.email)
+    const existing = await identityRepository.findByNormalizedEmail(
+      input.email,
+    );
     if (existing) {
-      throw new ConflictError('A user with this email already exists.')
+      throw new ConflictError("A user with this email already exists.");
     }
 
-    const passwordHash = await hashPassword(input.password)
+    // Validate employee linkage if provided
+    if (input.employeeId) {
+      const employee = await identityRepository.findEmployeeById(
+        input.employeeId,
+      );
+      if (!employee) {
+        throw new NotFoundError("Linked employee record not found.");
+      }
+      const existingLink = await identityRepository.findByEmployeeId(
+        input.employeeId,
+      );
+      if (existingLink) {
+        throw new ConflictError(
+          "This employee is already linked to another user account.",
+        );
+      }
+      if (employee.status !== "ACTIVE") {
+        throw new ValidationError(
+          "Cannot link user account to an inactive employee.",
+          {
+            employeeId: ["Employee must be active for user linkage."],
+          },
+        );
+      }
+    }
+
+    const linkageCheck = validateUserEmployeeLinkage({
+      role: input.role,
+      employeeId: input.employeeId,
+    });
+    if (!linkageCheck.valid) {
+      throw new ValidationError(
+        linkageCheck.reason ?? "Invalid employee linkage.",
+      );
+    }
+
+    const passwordHash = await hashPassword(input.password);
     const user = await identityRepository.createUser({
       normalizedEmail: input.email,
       passwordHash,
       role: input.role,
       employeeId: input.employeeId,
       createdBy: input.actorId,
-    })
+    });
 
     return {
       id: user.id,
@@ -82,27 +120,65 @@ export const identityService = {
             jobRoleTitle: user.employee.jobRole.name,
           }
         : null,
-    }
+    };
   },
 
   async updateUser(
     id: string,
     input: {
-      role?: Role
-      isActive?: boolean
-      employeeId?: string | null
-      actorId?: string
+      role?: Role;
+      isActive?: boolean;
+      employeeId?: string | null;
+      actorId?: string;
     },
   ) {
-    const existing = await identityRepository.findById(id)
+    const existing = await identityRepository.findById(id);
     if (!existing) {
-      throw new NotFoundError('User not found.')
+      throw new NotFoundError("User not found.");
+    }
+
+    if (input.employeeId) {
+      const employee = await identityRepository.findEmployeeById(
+        input.employeeId,
+      );
+      if (!employee) {
+        throw new NotFoundError("Linked employee record not found.");
+      }
+      const existingLink = await identityRepository.findByEmployeeId(
+        input.employeeId,
+      );
+      if (existingLink && existingLink.id !== id) {
+        throw new ConflictError(
+          "This employee is already linked to another user account.",
+        );
+      }
+      if (employee.status !== "ACTIVE") {
+        throw new ValidationError(
+          "Cannot link user account to an inactive employee.",
+          {
+            employeeId: ["Employee must be active for user linkage."],
+          },
+        );
+      }
+    }
+
+    const targetRole = input.role ?? existing.role;
+    const targetEmployeeId =
+      input.employeeId !== undefined ? input.employeeId : existing.employeeId;
+    const linkageCheck = validateUserEmployeeLinkage({
+      role: targetRole,
+      employeeId: targetEmployeeId,
+    });
+    if (!linkageCheck.valid) {
+      throw new ValidationError(
+        linkageCheck.reason ?? "Invalid employee linkage.",
+      );
     }
 
     const user = await identityRepository.updateUser(id, {
       ...input,
       updatedBy: input.actorId,
-    })
+    });
 
     return {
       id: user.id,
@@ -110,11 +186,11 @@ export const identityService = {
       role: user.role,
       isActive: user.isActive,
       employeeId: user.employeeId,
-    }
+    };
   },
 
   async listUsers() {
-    const users = await identityRepository.findAll()
+    const users = await identityRepository.findAll();
     return users.map((u) => ({
       id: u.id,
       email: u.normalizedEmail,
@@ -123,6 +199,32 @@ export const identityService = {
       employeeId: u.employeeId,
       employeeName: u.employee?.fullName,
       createdAt: u.createdAt,
-    }))
+    }));
   },
+};
+
+type UserWithEmployeeProfile = NonNullable<
+  Awaited<ReturnType<typeof identityRepository.findById>>
+>;
+
+function toAuthenticatedUser(user: UserWithEmployeeProfile): AuthenticatedUser {
+  return {
+    id: user.id,
+    email: user.normalizedEmail,
+    role: user.role,
+    isActive: user.isActive,
+    employeeId: user.employeeId,
+    employee: user.employee
+      ? {
+          id: user.employee.id,
+          employeeCode: user.employee.employeeCode,
+          fullName: user.employee.fullName,
+          workEmail: user.employee.workEmail,
+          departmentId: user.employee.departmentId,
+          departmentName: user.employee.department.name,
+          jobRoleId: user.employee.jobRoleId,
+          jobRoleTitle: user.employee.jobRole.name,
+        }
+      : null,
+  };
 }

@@ -1,43 +1,54 @@
-import { Router } from 'express'
-import { allocationsController } from './allocations.controller.js'
-import { validateBody } from '../../common/validation/validate.js'
+import { Router } from "express";
+import { allocationsController } from "./allocations.controller.js";
+import {
+  validateBody,
+  validateParams,
+  uuidParamSchema,
+} from "../../common/validation/validate.js";
 import {
   createAllocationSchema,
   updateAllocationSchema,
   endAllocationSchema,
-} from './allocations.schema.js'
-import { requireAuth, requireRole } from '../../common/auth/rbac.js'
+} from "./allocations.schema.js";
+import { requireAuth, requireRole } from "../../common/auth/rbac.js";
 
-export const allocationsRouter = Router()
+export const allocationsRouter = Router();
 
-allocationsRouter.use(requireAuth())
+allocationsRouter.use(requireAuth());
 
-allocationsRouter.get('/', allocationsController.getAllocations)
-allocationsRouter.get('/:id', allocationsController.getAllocationById)
+allocationsRouter.get("/", allocationsController.getAllocations);
+allocationsRouter.get(
+  "/:id",
+  validateParams(uuidParamSchema),
+  allocationsController.getAllocationById,
+);
 
 allocationsRouter.post(
-  '/',
-  requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'),
+  "/",
+  requireRole("ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"),
   validateBody(createAllocationSchema),
   allocationsController.createAllocation,
-)
+);
 
 allocationsRouter.patch(
-  '/:id',
-  requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'),
+  "/:id",
+  requireRole("ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"),
+  validateParams(uuidParamSchema),
   validateBody(updateAllocationSchema),
   allocationsController.updateAllocation,
-)
+);
 
 allocationsRouter.post(
-  '/:id/end',
-  requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'),
+  "/:id/end",
+  requireRole("ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"),
+  validateParams(uuidParamSchema),
   validateBody(endAllocationSchema),
   allocationsController.endAllocation,
-)
+);
 
 allocationsRouter.post(
-  '/:id/cancel',
-  requireRole('ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER'),
+  "/:id/cancel",
+  requireRole("ADMIN", "PROJECT_MANAGER", "RESOURCE_MANAGER"),
+  validateParams(uuidParamSchema),
   allocationsController.cancelAllocation,
-)
+);

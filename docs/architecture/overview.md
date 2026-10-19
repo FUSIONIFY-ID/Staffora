@@ -51,6 +51,7 @@ Staffora is an internal **Project Resource Allocation & Workforce Planning Syste
 ## 3. Domain Modules Boundaries
 
 Backend features are organized into isolated domain modules:
+
 1. **`identity`**: User accounts, login, logout, session persistence, role loading, CSRF token issuance.
 2. **`workforce`**: Employee resource directory, department and job role taxonomy, resource profiles.
 3. **`skills`**: Skill catalog management, employee skill assignments, and proficiency ratings (Level 1 to 5).
