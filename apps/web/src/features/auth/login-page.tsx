@@ -1,10 +1,16 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../../app/providers/auth-provider.js";
 import { homePathForRole } from "../../app/navigation/nav-config.js";
+import { readRedirectFrom } from "../../app/router/redirect.js";
 import { Button } from "../../components/ui/button.js";
 import { Input } from "../../components/ui/input.js";
 import { Alert } from "../../components/ui/alert.js";
+import { getLoginErrorMessage } from "./login-error.js";
+import { loginFormSchema, type LoginFormValues } from "./schemas.js";
 
 /**
  * Login screen, per design frame 01: a 680px brand panel on #111827 and a 420px
@@ -20,33 +26,28 @@ import { Alert } from "../../components/ui/alert.js";
  * client build.
  */
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = readRedirectFrom(location.state);
 
-  const handleSubmit = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    if (!email || !password) return;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      const user = await login(email, password);
-      navigate(homePathForRole(user.role));
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : "Invalid email or password.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const loginMutation = useMutation({
+    mutationFn: (values: LoginFormValues) =>
+      login(values.email, values.password),
+    onSuccess: (user) => {
+      navigate(redirectTo ?? homePathForRole(user.role), { replace: true });
+    },
+  });
+  const isSubmitting = loginMutation.isPending;
 
   return (
     <div className="min-h-screen flex bg-surface-page">
@@ -73,39 +74,53 @@ export const LoginPage: React.FC = () => {
 
           {/* Login Form Panel */}
           <div>
-            {error && (
+            {redirectTo && (
+              <Alert type="info" className="mb-6">
+                Please sign in to continue.
+              </Alert>
+            )}
+            {loginMutation.isError && (
               <Alert type="error" className="mb-6">
-                {error}
+                {getLoginErrorMessage(loginMutation.error)}
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form
+              onSubmit={handleSubmit((values) => loginMutation.mutate(values))}
+              className="space-y-5"
+              noValidate
+              aria-busy={isSubmitting}
+            >
               <Input
+                {...register("email")}
                 label="Work Email"
                 type="email"
                 placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                autoComplete="username"
                 autoFocus
+                disabled={isSubmitting}
+                error={errors.email?.message}
+                aria-invalid={errors.email ? true : undefined}
                 id="login-email"
               />
 
               <Input
+                {...register("password")}
                 label="Password"
                 type="password"
                 placeholder="••••••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                autoComplete="current-password"
+                disabled={isSubmitting}
+                error={errors.password?.message}
+                aria-invalid={errors.password ? true : undefined}
                 id="login-password"
               />
 
               <Button
                 type="submit"
                 className="w-full h-12"
-                isLoading={isLoading}
-                disabled={!email || !password || isLoading}
+                isLoading={isSubmitting}
+                disabled={isSubmitting}
                 id="login-submit-button"
               >
                 Sign In

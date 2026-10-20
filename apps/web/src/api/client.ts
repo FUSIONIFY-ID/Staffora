@@ -30,6 +30,10 @@ export function setCachedCsrfToken(token: string | null) {
   csrfTokenCache = token;
 }
 
+export function getCachedCsrfToken(): string | null {
+  return csrfTokenCache;
+}
+
 export async function fetchCsrfToken(): Promise<string | null> {
   try {
     const res = await fetch("/api/v1/auth/csrf-token", {
@@ -46,6 +50,23 @@ export async function fetchCsrfToken(): Promise<string | null> {
     // ignore
   }
   return null;
+}
+
+type UnauthorizedListener = () => void;
+
+const unauthorizedListeners = new Set<UnauthorizedListener>();
+const SESSION_PROBE_ENDPOINTS = ["/auth/login", "/auth/me"];
+
+/**
+ * Subscribes to a lost session, meaning a 401 on a data request. The auth provider
+ * uses this to clear the session in-app, so the route guard can send the user to
+ * /login without a full page reload. Returns the unsubscribe function.
+ */
+export function onUnauthorized(listener: UnauthorizedListener): () => void {
+  unauthorizedListeners.add(listener);
+  return () => {
+    unauthorizedListeners.delete(listener);
+  };
 }
 
 export async function apiClient<T>(
@@ -97,13 +118,10 @@ export async function apiClient<T>(
   if (!response.ok) {
     if (response.status === 401) {
       csrfTokenCache = null;
-      // Do not redirect if we are already testing auth/me
-      if (
-        endpoint !== "/auth/me" &&
-        typeof window !== "undefined" &&
-        window.location.pathname !== "/login"
-      ) {
-        window.location.href = "/login";
+      // A lost session on a data request signs the user out in-app. Login and the
+      // session probe answer 401 for their own reasons and must not sign anyone out.
+      if (!SESSION_PROBE_ENDPOINTS.includes(endpoint)) {
+        unauthorizedListeners.forEach((listener) => listener());
       }
     }
 

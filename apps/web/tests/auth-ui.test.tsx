@@ -1,9 +1,20 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 import { LoginPage } from "../src/features/auth/login-page.js";
 import * as AuthContextModule from "../src/app/providers/auth-provider.js";
 import { AppLayout } from "../src/app/layouts/app-layout.js";
+
+function renderLoginPage(): void {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
 
 describe("LoginPage (AC01 - Login Form)", () => {
   it("renders email, masked password, and submit button", () => {
@@ -15,11 +26,7 @@ describe("LoginPage (AC01 - Login Form)", () => {
       refresh: vi.fn(),
     });
 
-    render(
-      <MemoryRouter>
-        <LoginPage />
-      </MemoryRouter>,
-    );
+    renderLoginPage();
 
     // AC01.01: Email and Password fields provided
     const emailInput = screen.getByLabelText(/Work Email/i);
@@ -34,11 +41,7 @@ describe("LoginPage (AC01 - Login Form)", () => {
   });
 
   it("accepts typed credentials and renders no seeded-account shortcut", () => {
-    render(
-      <MemoryRouter>
-        <LoginPage />
-      </MemoryRouter>,
-    );
+    renderLoginPage();
 
     const emailInput = screen.getByLabelText(/Work Email/i);
     fireEvent.change(emailInput, {
