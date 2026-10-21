@@ -1,12 +1,19 @@
 /* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
+  type ReactElement,
   type ReactNode,
 } from "react";
-import { apiClient, setCachedCsrfToken } from "../../api/client.js";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  apiClient,
+  onUnauthorized,
+  setCachedCsrfToken,
+} from "../../api/client.js";
 
 export type Role =
   "ADMIN" | "PROJECT_MANAGER" | "RESOURCE_MANAGER" | "EMPLOYEE";
@@ -39,9 +46,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}): ReactElement {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Drops the user, the CSRF token, and every cached server response, so the next
+  // sign-in never shows data from the previous session.
+  const clearSession = useCallback((): void => {
+    setUser(null);
+    setCachedCsrfToken(null);
+    queryClient.removeQueries();
+  }, [queryClient]);
+
+  // A lost session on any data request signs the user out in-app.
+  useEffect(() => onUnauthorized(clearSession), [clearSession]);
 
   const fetchCurrentUser = async () => {
     try {
@@ -87,12 +110,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.data.user;
   };
 
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     try {
       await apiClient("/auth/logout", { method: "POST" });
     } finally {
-      setUser(null);
-      setCachedCsrfToken(null);
+      clearSession();
     }
   };
 
