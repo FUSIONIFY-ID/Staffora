@@ -52,13 +52,16 @@ Panduan diagnosa dan penanganan insiden operasional Staffora.
 ## 5. Migrasi Gagal Karena Duplikat Case-Insensitive (P3018)
 
 - **Gejala**: `prisma migrate deploy` berhenti dengan `P3018` dan pesan
-  `Cannot add the case-insensitive unique index on departments.name. Merge or rename these duplicates first: it ops (2 rows)`.
+  `Cannot add the case-insensitive unique index on departments.name. Merge or rename these duplicates first: it ops (2 rows)`,
+  atau pesan yang sama untuk `skills.name`.
   Deploy berikutnya ditolak dengan `P3009` karena migrasi sebelumnya tercatat gagal
   (`finished_at` kosong di `_prisma_migrations`).
 - **Penyebab**: Migrasi `20261014160000_workforce_normalized_name_uniqueness` menambahkan unique index
-  pada `lower(name)` untuk `departments` dan `job_roles`. PostgreSQL menolaknya bila sudah ada dua baris
-  yang namanya sama setelah di-lowercase. Ini kondisi data, bukan bug kode, dan hanya muncul di
-  lingkungan yang sempat menerima duplikat sebelum constraint ada.
+  pada `lower(name)` untuk `departments` dan `job_roles`, dan
+  `20261018120000_skills_normalized_name_uniqueness` menambahkan yang sama untuk `skills`.
+  PostgreSQL menolaknya bila sudah ada dua baris yang namanya sama setelah di-lowercase. Ini kondisi
+  data, bukan bug kode, dan hanya muncul di lingkungan yang sempat menerima duplikat sebelum
+  constraint ada.
 - **Diagnosa**: cari duplikatnya lebih dulu, read-only.
   ```sql
   SELECT lower(name) AS normalized, count(*) AS rows, array_agg(name ORDER BY name) AS names
@@ -66,10 +69,14 @@ Panduan diagnosa dan penanganan insiden operasional Staffora.
 
   SELECT lower(name) AS normalized, count(*) AS rows, array_agg(name ORDER BY name) AS names
   FROM job_roles GROUP BY lower(name) HAVING count(*) > 1;
+
+  SELECT lower(name) AS normalized, count(*) AS rows, array_agg(name ORDER BY name) AS names
+  FROM skills GROUP BY lower(name) HAVING count(*) > 1;
   ```
 - **Solusi**: gabungkan tiap grup menjadi satu baris, pindahkan referensinya lebih dulu, baru jalankan
-  ulang migrasi. Referensi foreign key yang menunjuk kedua tabel: `employees.department_id`,
-  `employees.job_role_id`, `allocations.job_role_id`, `staffing_requirements.job_role_id`.
+  ulang migrasi. Referensi foreign key yang menunjuk ketiga tabel: `employees.department_id`,
+  `employees.job_role_id`, `allocations.job_role_id`, `staffing_requirements.job_role_id`,
+  `employee_skills.skill_id`, `staffing_requirement_skills.skill_id`.
 
   Tentukan dulu baris mana yang dipertahankan dan mana yang dibuang, satu pasang per grup. Contoh di
   bawah mempertahankan baris terlama (`created_at` paling awal, lalu `id` sebagai tie-break):
@@ -83,8 +90,8 @@ Panduan diagnosa dan penanganan insiden operasional Staffora.
   FROM ranked WHERE rn <= 2 GROUP BY lower(name) HAVING count(*) > 1;
   ```
 
-  Ulangi dengan `FROM job_roles` untuk tabel kedua. Jalankan blok berikut satu kali per pasangan,
-  dengan `:keep_id` dan `:drop_id` diganti hasil query di atas:
+  Ulangi dengan `FROM job_roles` dan `FROM skills` untuk tabel lainnya. Jalankan blok berikut satu kali
+  per pasangan, dengan `:keep_id` dan `:drop_id` diganti hasil query di atas:
 
   ```sql
   BEGIN;
@@ -102,17 +109,50 @@ Panduan diagnosa dan penanganan insiden operasional Staffora.
   COMMIT;
   ```
 
+  Untuk `skills`, penggabungannya berbeda karena satu karyawan tidak boleh punya skill yang sama dua
+  kali (`employee_skills` unik pada `employee_id, skill_id`). Buang pasangan yang bentrok lebih dulu,
+  baru pindahkan sisanya:
+
+  ```sql
+  BEGIN;
+
+  -- Baris yang akan bentrok setelah referensi dipindah: karyawan yang punya
+  -- kedua skill sekaligus. Simpan yang lebih tinggi proficiency-nya.
+  DELETE FROM employee_skills AS duplicate
+  USING employee_skills AS kept
+  WHERE duplicate.skill_id = :drop_id
+    AND kept.skill_id = :keep_id
+    AND kept.employee_id = duplicate.employee_id;
+
+  UPDATE employee_skills SET skill_id = :keep_id WHERE skill_id = :drop_id;
+
+  DELETE FROM staffing_requirement_skills AS duplicate
+  USING staffing_requirement_skills AS kept
+  WHERE duplicate.skill_id = :drop_id
+    AND kept.skill_id = :keep_id
+    AND kept.staffing_requirement_id = duplicate.staffing_requirement_id;
+
+  UPDATE staffing_requirement_skills SET skill_id = :keep_id WHERE skill_id = :drop_id;
+
+  DELETE FROM skills WHERE id = :drop_id;
+
+  COMMIT;
+  ```
+
   Pastikan grup duplikatnya sudah kosong sebelum lanjut:
 
   ```sql
   SELECT lower(name), count(*) FROM departments GROUP BY lower(name) HAVING count(*) > 1;
   SELECT lower(name), count(*) FROM job_roles   GROUP BY lower(name) HAVING count(*) > 1;
+  SELECT lower(name), count(*) FROM skills      GROUP BY lower(name) HAVING count(*) > 1;
   ```
 
-  Setelah semua grup bersih, tandai migrasi yang gagal sebagai belum dijalankan lalu deploy lagi:
+  Setelah semua grup bersih, tandai migrasi yang gagal sebagai belum dijalankan lalu deploy lagi.
+  Gunakan nama migrasi yang benar-benar gagal:
 
   ```bash
   npx prisma migrate resolve --rolled-back 20261014160000_workforce_normalized_name_uniqueness
+  npx prisma migrate resolve --rolled-back 20261018120000_skills_normalized_name_uniqueness
   npm run db:migrate:deploy -w @staffora/api
   ```
 

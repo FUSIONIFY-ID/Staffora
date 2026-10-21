@@ -5,6 +5,7 @@ import {
   type StaffingRequirementWithSkills,
 } from "./staffing.repository.js";
 import { staffingPolicy } from "./staffing.policy.js";
+import { skillsService } from "../skills/skills.service.js";
 import {
   NotFoundError,
   NotImplementedError,
@@ -40,6 +41,14 @@ export const staffingService = {
       "Project not found.",
     );
 
+    // AC01.05 / BR02: a deactivated skill cannot be newly attached to a
+    // staffing requirement, exactly like a new employee assignment.
+    if (data.skills && data.skills.length > 0) {
+      await skillsService.assertSkillsAssignable(
+        data.skills.map((skill) => skill.skillId),
+      );
+    }
+
     return staffingRepository.create({
       projectId,
       jobRoleId: data.jobRoleId,
@@ -66,6 +75,14 @@ export const staffingService = {
       requirement.project.projectManagerEmployeeId,
       "Staffing requirement not found.",
     );
+
+    // AC01.05 / BR02: the update replaces every join row, so the incoming set
+    // is a new assignment and must satisfy the same active-skill rule.
+    if (data.skills && data.skills.length > 0) {
+      await skillsService.assertSkillsAssignable(
+        data.skills.map((skill) => skill.skillId),
+      );
+    }
 
     return staffingRepository.update(id, {
       jobRoleId: data.jobRoleId,

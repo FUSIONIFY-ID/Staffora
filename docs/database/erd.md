@@ -175,12 +175,13 @@ erDiagram
   - `sess` (json not null)
   - `expire` (timestamptz not null with B-tree index)
 
-### 2.3 `departments` & `job_roles`
+### 2.3 `departments`, `job_roles` & `skills`
 
 - **Purpose**: Master tables providing standardized taxonomy for resources, staffing requirements, and allocations.
 - **Constraints**:
-  - `name`: Unique constraint (case-insensitive/normalized).
-  - Enforcement is two-layer. `schema.prisma` declares `name @unique`, which PostgreSQL implements case-sensitively as `departments_name_key` / `job_roles_name_key`. The case-insensitive half is a unique index over `lower(name)`, named `departments_name_lower_key` and `job_roles_name_lower_key`, added by migration `20261014160000_workforce_normalized_name_uniqueness` because Prisma cannot model an expression index. The application normalises whitespace and trims before writing, and the pre-flight block in that migration refuses to apply while case-insensitive duplicates exist.
+  - `name`: Unique constraint (case-insensitive/normalized) on all three tables.
+  - Enforcement is two-layer. `schema.prisma` declares `name @unique`, which PostgreSQL implements case-sensitively as `departments_name_key` / `job_roles_name_key` / `skills_name_key`. The case-insensitive half is a unique index over `lower(name)`, named `departments_name_lower_key`, `job_roles_name_lower_key`, and `skills_name_lower_key`; the first two are added by migration `20261014160000_workforce_normalized_name_uniqueness` and the skill one by `20261018120000_skills_normalized_name_uniqueness`, because Prisma cannot model an expression index. The application normalises whitespace and trims before writing, and the pre-flight block in each migration refuses to apply while case-insensitive duplicates exist.
+  - Consequence for skills: `React` and `react` cannot coexist, so creating a skill with a name that only differs in case fails with `DUPLICATE_SKILL_NAME` (409) rather than inserting a near-duplicate catalog entry.
 
 ### 2.4 `employees`
 
@@ -196,6 +197,7 @@ erDiagram
 - **Purpose**: Competency catalog and employee proficiency tracking.
 - **Constraints**:
   - `proficiency_level`: Integer constraint between `1` (Beginner) and `5` (Expert).
+  - `skills.name`: Unique both case-sensitively (`skills_name_key`) and case-insensitively (`skills_name_lower_key`) — see §2.3.
   - Unique composite index `(employee_id, skill_id)` ensures a skill cannot be assigned twice to the same employee.
   - Index on `(skill_id, proficiency_level, employee_id)` for Resource Finder query acceleration.
 

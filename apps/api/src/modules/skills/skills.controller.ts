@@ -1,17 +1,53 @@
 import type { Request, Response, NextFunction } from "express";
+import {
+  sendCreated,
+  sendList,
+  sendNoContent,
+  sendSuccess,
+} from "../../common/http/response.js";
+import { UnauthorizedError } from "../../common/errors/app-error.js";
 import { getParam } from "../../common/http/params.js";
-import { sendSuccess } from "../../common/http/response.js";
+import type { AuthenticatedUser } from "../../common/auth/types.js";
 import { skillsService } from "./skills.service.js";
+import {
+  listEmployeeSkillsQuerySchema,
+  listSkillsQuerySchema,
+} from "./skills.schema.js";
 
+/**
+ * `requireAuth()` on every skills route guarantees an authenticated user. The
+ * narrowing lives here so the service can take a non-optional user and keep
+ * authorization decisions in skills.policy.ts.
+ */
+function requireUser(req: Request): AuthenticatedUser {
+  if (!req.user) {
+    throw new UnauthorizedError();
+  }
+  return req.user;
+}
+
+/**
+ * Body and path parameters arrive already parsed by the `validateBody` and
+ * `validateParams` middleware on the route. `validateQuery` replaces
+ * `req.query` with the parsed value at runtime, but Express still types it as
+ * `ParsedQs`; re-running the schema is the type-safe way to read it back and is
+ * a no-op because the schema accepts its own output.
+ */
 export const skillsController = {
   async getSkills(
-    _req: Request,
+    req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const items = await skillsService.getSkills();
-      return sendSuccess(res, items);
+      const result = await skillsService.listSkills(
+        listSkillsQuerySchema.parse(req.query),
+      );
+      sendList(res, result.data, {
+        page: result.page,
+        pageSize: result.pageSize,
+        total: result.total,
+      });
     } catch (err) {
       next(err);
     }
@@ -21,10 +57,13 @@ export const skillsController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const item = await skillsService.createSkill(req.body);
-      return res.status(201).json({ data: item });
+      const item = await skillsService.createSkill(
+        req.body,
+        requireUser(req).id,
+      );
+      sendCreated(res, item);
     } catch (err) {
       next(err);
     }
@@ -34,11 +73,14 @@ export const skillsController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const skillId = getParam(req.params.id);
-      const item = await skillsService.updateSkill(skillId, req.body);
-      return sendSuccess(res, item);
+      const item = await skillsService.updateSkill(
+        getParam(req.params.id),
+        req.body,
+        requireUser(req).id,
+      );
+      sendSuccess(res, item);
     } catch (err) {
       next(err);
     }
@@ -48,11 +90,18 @@ export const skillsController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const employeeId = getParam(req.params.id);
-      const items = await skillsService.getEmployeeSkills(employeeId);
-      return sendSuccess(res, items);
+      const result = await skillsService.listEmployeeSkills(
+        requireUser(req),
+        getParam(req.params.id),
+        listEmployeeSkillsQuerySchema.parse(req.query),
+      );
+      sendList(res, result.data, {
+        page: result.page,
+        pageSize: result.pageSize,
+        total: result.total,
+      });
     } catch (err) {
       next(err);
     }
@@ -62,11 +111,14 @@ export const skillsController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const employeeId = getParam(req.params.id);
-      const item = await skillsService.assignSkill(employeeId, req.body);
-      return res.status(201).json({ data: item });
+      const item = await skillsService.assignSkill(
+        requireUser(req),
+        getParam(req.params.id),
+        req.body,
+      );
+      sendCreated(res, item);
     } catch (err) {
       next(err);
     }
@@ -76,48 +128,31 @@ export const skillsController = {
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const employeeId = getParam(req.params.id);
-      const skillId = getParam(req.params.skillId);
       const item = await skillsService.updateProficiency(
-        employeeId,
-        skillId,
+        getParam(req.params.id),
+        getParam(req.params.skillId),
         req.body,
+        requireUser(req).id,
       );
-      return sendSuccess(res, item);
+      sendSuccess(res, item);
     } catch (err) {
       next(err);
     }
   },
 
-  async removeSkill(
+  async removeEmployeeSkill(
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void | Response> {
+  ): Promise<void> {
     try {
-      const employeeId = getParam(req.params.id);
-      const skillId = getParam(req.params.skillId);
-      await skillsService.removeSkill(employeeId, skillId);
-      return res.status(204).send();
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async upsertEmployeeSkills(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void | Response> {
-    try {
-      const employeeId = getParam(req.params.id);
-      const items = await skillsService.upsertEmployeeSkills(
-        employeeId,
-        req.body,
+      await skillsService.removeEmployeeSkill(
+        getParam(req.params.id),
+        getParam(req.params.skillId),
       );
-      return sendSuccess(res, items);
+      sendNoContent(res);
     } catch (err) {
       next(err);
     }
