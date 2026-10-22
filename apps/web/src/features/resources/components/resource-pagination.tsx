@@ -11,13 +11,8 @@ export interface ResourcePaginationProps {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
 
-/**
- * Pagination controls driven entirely by the server's `meta` block.
- *
- * `totalPages` is read from the response instead of being derived from
- * `data.length`, because a page can legitimately be short or empty while more
- * records exist (for example after a filter change lands on a later page).
- */
+// totalPages comes from the server meta, never from data.length: a page can be
+// short or empty while more records exist.
 export const ResourcePagination: React.FC<ResourcePaginationProps> = ({
   meta,
   isFetching,

@@ -21,13 +21,6 @@ const Field: React.FC<FieldProps> = ({ label, value }) => (
   </div>
 )
 
-/**
- * Profile header for the resource detail page (PRD US02.01 - AC03.01).
- *
- * Shows the identity block the story asks for: avatar initials, full name, code,
- * work email, department, job role and status, plus the shared availability
- * badge so capacity reads the same here as it does in the directory.
- */
 export const ResourceProfileHeader: React.FC<ResourceProfileHeaderProps> = ({ resource }) => {
   return (
     <Card className="p-6">
@@ -51,8 +44,8 @@ export const ResourceProfileHeader: React.FC<ResourceProfileHeaderProps> = ({ re
           <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Field label="Employee code" value={<span className="font-mono">{resource.employeeCode}</span>} />
             <Field label="Work email" value={resource.workEmail} />
-            <Field label="Department" value={resource.departmentName ?? '—'} />
-            <Field label="Job role" value={resource.jobRoleTitle ?? '—'} />
+            <Field label="Department" value={resource.departmentName ?? '-'} />
+            <Field label="Job role" value={resource.jobRoleTitle ?? '-'} />
           </dl>
         </div>
       </div>

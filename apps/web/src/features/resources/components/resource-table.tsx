@@ -12,17 +12,8 @@ export interface ResourceTableProps {
   onEdit: (employee: Employee) => void
 }
 
-/**
- * Directory table (PRD US02.01 - AC01.01).
- *
- * Columns follow the story: code, name, email, department, job role, status,
- * remaining capacity and actions. The capacity column reuses the shared
- * availability badge so the threshold logic exists in exactly one place.
- *
- * "Edit" only renders for roles that can actually persist a change; the backend
- * rejects the PATCH for everyone else, so showing the control would be a dead
- * end for the user.
- */
+// Edit only renders for roles that can persist the change; the backend rejects
+// the PATCH for everyone else.
 export const ResourceTable: React.FC<ResourceTableProps> = ({ employees, canManage, onEdit }) => {
   return (
     <div className="overflow-x-auto">
@@ -72,8 +63,8 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({ employees, canMana
                 </Link>
               </td>
               <td className="px-3 py-3 text-slate-400">{employee.workEmail}</td>
-              <td className="px-3 py-3 text-slate-300">{employee.departmentName ?? '—'}</td>
-              <td className="px-3 py-3 text-slate-300">{employee.jobRoleTitle ?? '—'}</td>
+              <td className="px-3 py-3 text-slate-300">{employee.departmentName ?? '-'}</td>
+              <td className="px-3 py-3 text-slate-300">{employee.jobRoleTitle ?? '-'}</td>
               <td className="px-3 py-3">
                 <Badge variant={employee.status === 'ACTIVE' ? 'green' : 'gray'}>
                   {employee.status === 'ACTIVE' ? 'Active' : 'Inactive'}

@@ -7,11 +7,7 @@ import type {
   ResourceDetail,
 } from '../../src/features/resources/api/resources-api.js'
 
-/**
- * Fixtures mirror the shapes in docs/api/openapi.yaml (Employee, EmployeeSkill,
- * Allocation). They are typed against the generated schema so a contract change
- * breaks the build instead of silently making the tests lie.
- */
+// Typed against the generated schema so a contract change breaks the build.
 
 export const DEPARTMENT_ENGINEERING: Department = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -37,7 +33,7 @@ export const JOB_ROLE_MANAGER: JobRole = {
   isActive: true,
 }
 
-/** Fully available: no allocation is effective. */
+// Fully available: no allocation is effective.
 export const EMPLOYEE_AVAILABLE: Employee = {
   id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   employeeCode: 'EMP001',
@@ -52,7 +48,7 @@ export const EMPLOYEE_AVAILABLE: Employee = {
   currentRemainingCapacity: 100,
 }
 
-/** Partially allocated: 45% remains. */
+// Partially allocated: 45% remains.
 export const EMPLOYEE_PARTIAL: Employee = {
   id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   employeeCode: 'EMP002',
@@ -67,7 +63,7 @@ export const EMPLOYEE_PARTIAL: Employee = {
   currentRemainingCapacity: 45,
 }
 
-/** Fully allocated: 0% remains. */
+// Fully allocated: 0% remains.
 export const EMPLOYEE_FULL: Employee = {
   id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   employeeCode: 'EMP003',

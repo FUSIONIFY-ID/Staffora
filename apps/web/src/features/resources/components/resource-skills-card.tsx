@@ -9,14 +9,8 @@ export interface ResourceSkillsCardProps {
 
 const MAX_LEVEL = 5
 
-/**
- * Skill list with proficiency visualisation (PRD US02.01 - AC04.02).
- *
- * Proficiency is rendered twice: as five filled/empty pips for a fast visual
- * scan, and as the numeric level plus its label for anyone who cannot rely on
- * colour. The `aria-label` states the full value so screen readers announce
- * "Advanced, level 4 of 5" instead of an unlabelled row of dots.
- */
+// Level is shown as pips plus a numeric label, and the aria-label spells out the
+// full value so screen readers do not get an unlabelled row of dots.
 export const ResourceSkillsCard: React.FC<ResourceSkillsCardProps> = ({ skills }) => {
   return (
     <Card className="p-6">

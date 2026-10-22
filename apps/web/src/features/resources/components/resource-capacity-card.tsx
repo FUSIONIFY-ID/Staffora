@@ -26,15 +26,8 @@ const Metric: React.FC<MetricProps> = ({ label, value, hint }) => (
   </div>
 )
 
-/**
- * Capacity summary (PRD US02.01 - AC04.04).
- *
- * The numbers come straight from the backend capacity engine: `evaluatedPeriod`
- * for the requested window and `currentAllocation`/`currentRemainingCapacity`
- * as the today baseline. The card never sums allocation percentages itself —
- * overlapping allocations do not add linearly, which is exactly the bug the
- * shared capacity engine exists to prevent (TSD 10.3).
- */
+// Numbers come from the backend capacity engine. The card never sums allocation
+// percentages itself: overlapping allocations do not add linearly (TSD 10.3).
 export const ResourceCapacityCard: React.FC<ResourceCapacityCardProps> = ({ resource }) => {
   const availability = describeAvailability(resource)
   const evaluated = resource.evaluatedPeriod

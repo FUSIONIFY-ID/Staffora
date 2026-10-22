@@ -14,16 +14,8 @@ import { useResourceForm } from './hooks/use-resource-form.js'
 import { canManageResources } from './lib/resource-permissions.js'
 import { normalizeError } from './lib/normalize-error.js'
 
-/**
- * Resource detail page (PRD US02.01 - AC03/AC04).
- *
- * Composed of independent cards rather than one long layout so a failure in one
- * area is readable on its own and each section can be tested in isolation.
- *
- * Read-only enforcement: PROJECT_MANAGER and EMPLOYEE get no edit affordance at
- * all — the button is not rendered rather than merely disabled, so there is no
- * misleading control to click. The backend enforces the same rule regardless.
- */
+// Read-only roles get no edit affordance at all: the button is not rendered
+// rather than disabled. The backend enforces the same rule.
 export const ResourceDetailPage: React.FC = () => {
   const { employeeId } = useParams<{ employeeId: string }>()
   const { user } = useAuth()

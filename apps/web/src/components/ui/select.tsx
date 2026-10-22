@@ -14,11 +14,7 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   placeholder?: string
 }
 
-/**
- * Native `<select>` wrapped in the same label/error/helper structure as
- * `Input`. A native control is deliberate: it keeps keyboard and screen-reader
- * behaviour correct for free and needs no positioning logic for the option list.
- */
+// Native select on purpose: keyboard and screen-reader behaviour come for free.
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, helperText, options, placeholder, className = '', id, ...props }, ref) => {
     const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)

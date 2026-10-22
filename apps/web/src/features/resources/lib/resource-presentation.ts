@@ -3,27 +3,13 @@ import type { Employee } from '../api/resources-api.js'
 export type BadgeVariant = 'green' | 'amber' | 'red' | 'gray'
 
 export interface AvailabilityPresentation {
-  /** Short badge text, e.g. "100% available". */
   label: string
   variant: BadgeVariant
-  /** Full sentence used as `title` and in the detail capacity card. */
   description: string
 }
 
-/**
- * Maps a resource's remaining capacity onto the three-state availability
- * indicator from PRD US02.01 - AC01.03:
- *   emerald -> 100% remaining (fully available)
- *   amber   -> 1-99% remaining (partially allocated)
- *   rose    -> 0% remaining (fully allocated)
- *
- * Inactive employees get a neutral badge instead, because capacity is
- * meaningless for a resource that cannot be staffed at all.
- *
- * `currentRemainingCapacity` comes from the backend capacity engine, which is
- * the single authority on how overlapping allocations combine (TSD 10.3). The
- * UI only classifies the number it is given and never recomputes workload.
- */
+// Three-state indicator per PRD US02.01 AC01.03. Reads the capacity engine's
+// figure and never recomputes workload from allocations.
 export function describeAvailability(employee: Employee): AvailabilityPresentation {
   if (employee.status !== 'ACTIVE') {
     return {
@@ -58,7 +44,6 @@ export function describeAvailability(employee: Employee): AvailabilityPresentati
   }
 }
 
-/** Clamps an API percentage into 0-100 and rounds it for display. */
 export function clampPercentage(value: number | undefined): number {
   if (typeof value !== 'number' || Number.isNaN(value)) return 0
   return Math.min(100, Math.max(0, Math.round(value)))
@@ -72,7 +57,6 @@ const PROFICIENCY_LABELS: Readonly<Record<number, string>> = {
   5: 'Expert',
 }
 
-/** Maps a 1-5 proficiency level onto the label required by US02.01 AC04.02. */
 export function describeProficiency(level: number): string {
   return PROFICIENCY_LABELS[level] ?? 'Unknown'
 }
@@ -84,7 +68,6 @@ export interface AllocationStatusPresentation {
   variant: BadgeVariant
 }
 
-/** Human labels for the allocation lifecycle states returned by the API. */
 export function describeAllocationStatus(
   status: AllocationDisplayStatus | undefined,
 ): AllocationStatusPresentation {
@@ -102,7 +85,6 @@ export function describeAllocationStatus(
   }
 }
 
-/** Initials for the avatar placeholder, e.g. "Budi Santoso" -> "BS". */
 export function toInitials(fullName: string): string {
   const words = fullName.trim().split(/\s+/).filter(Boolean)
   if (words.length === 0) return '?'
@@ -111,9 +93,9 @@ export function toInitials(fullName: string): string {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
 }
 
-/** `YYYY-MM-DD` -> `12 Mar 2026`; returns the raw value when unparseable. */
+// Formats YYYY-MM-DD in UTC so the day never shifts with the local time zone.
 export function formatDate(isoDate: string | undefined): string {
-  if (!isoDate) return '—'
+  if (!isoDate) return '-'
   const parsed = new Date(`${isoDate}T00:00:00Z`)
   if (Number.isNaN(parsed.getTime())) return isoDate
   return parsed.toLocaleDateString('en-GB', {
@@ -124,7 +106,6 @@ export function formatDate(isoDate: string | undefined): string {
   })
 }
 
-/** Today's UTC calendar date as `YYYY-MM-DD`, matching the capacity engine. */
 export function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10)
 }

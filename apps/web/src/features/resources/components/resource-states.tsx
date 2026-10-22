@@ -3,14 +3,6 @@ import { Alert } from '../../../components/ui/alert.js'
 import { Button } from '../../../components/ui/button.js'
 import { Spinner } from '../../../components/ui/spinner.js'
 
-/**
- * Shared non-happy-path surfaces for the resources feature.
- *
- * Each state lives here rather than inside a page so the list and the detail
- * page present identical wording, spacing and retry behaviour, and so the
- * component tests can exercise them without mounting a full page.
- */
-
 export const ResourceLoadingState: React.FC<{ label?: string }> = ({
   label = 'Loading resources...',
 }) => (
@@ -72,11 +64,7 @@ export const ResourceEmptyState: React.FC<ResourceEmptyStateProps> = ({
   </div>
 )
 
-/**
- * Read-only notice shown to roles that can browse but not modify resources.
- * Rendered as a quiet inline hint rather than a 403 block, because these roles
- * are legitimately allowed to view the directory.
- */
+// Inline hint, not a 403 block: these roles may still browse the directory.
 export const ResourceReadOnlyNotice: React.FC<{ role: string }> = ({ role }) => (
   <p className="text-xs text-slate-500">
     You are signed in as <span className="font-semibold text-slate-400">{role}</span>. Resource

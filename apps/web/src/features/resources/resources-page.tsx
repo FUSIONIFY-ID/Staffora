@@ -31,15 +31,9 @@ const INITIAL_FILTERS: EmployeeListFilters = {
   pageSize: DEFAULT_PAGE_SIZE,
 }
 
-/**
- * Resource directory (PRD US02.01 - AC01).
- *
- * State handling note: filters, page and pageSize live in one object because
- * they are always read together to build the query key. Any change other than a
- * pure page change resets `page` to 1 — a filter that shrinks the result set
- * while staying on page 5 would otherwise render an empty table that looks like
- * "no results" rather than "wrong page".
- */
+// Filters, page and pageSize live in one object because they are always read
+// together to build the query key. Any change except paging resets page to 1, so
+// a narrower result set never leaves the user on an empty page.
 export const ResourcesPage: React.FC = () => {
   const { user } = useAuth()
   const [filters, setFilters] = useState<EmployeeListFilters>(INITIAL_FILTERS)
@@ -72,8 +66,7 @@ export const ResourcesPage: React.FC = () => {
   const meta = listQuery.data?.meta
   const listError = listQuery.isError ? normalizeError(listQuery.error) : null
 
-  // First load with nothing to show yet -> full-page loading state. A background
-  // refetch keeps the table mounted and only dims it, so the layout never jumps.
+  // Full-page loader on first load; background refetches only dim the table.
   const isInitialLoading = listQuery.isPending && !listQuery.data
 
   return (

@@ -19,16 +19,8 @@ const STATUS_OPTIONS = [
   { value: 'INACTIVE', label: 'Inactive only' },
 ]
 
-/**
- * Search and filter bar for the resource directory.
- *
- * The search box keeps its own state so the caret never lags behind typing, and
- * only pushes the value up once it has been stable for 300ms. Every other
- * control is a direct change: choosing a department should refetch immediately.
- *
- * Filter changes always reset `page` to 1 in the parent, because staying on page
- * 7 of a result set that now has two pages would show an empty table.
- */
+// The search box keeps its own state so the caret never lags, and only pushes
+// the value up after 300ms of no typing. Other controls change immediately.
 export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
   filters,
   departments,
@@ -41,10 +33,8 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
   const [appliedSearch, setAppliedSearch] = useState(filters.search)
   const debouncedSearch = useDebouncedValue(searchTerm, 300)
 
-  // Keep the input in sync when the parent changes the applied search (for
-  // example on "Reset filters"). Adjusting state during render, rather than in an
-  // effect, applies the correction in the same pass and avoids a cascading
-  // render. See https://react.dev/learn/you-might-not-need-an-effect.
+  // Adjust state during render (not in an effect) so a parent reset applies in
+  // the same pass instead of causing a cascading render.
   if (filters.search !== appliedSearch) {
     setAppliedSearch(filters.search)
     setSearchTerm(filters.search)

@@ -6,11 +6,9 @@ import type { CreateEmployeeFormValues } from '../lib/resource-form-schema.js'
 
 export interface ResourceFormController {
   isOpen: boolean
-  /** Record being edited, or `null` when the modal is in create mode. */
   editing: Employee | null
   isSubmitting: boolean
   error: NormalizedError | null
-  /** Transient success message rendered above the table after a mutation. */
   successMessage: string | null
   openCreate: () => void
   openEdit: (employee: Employee) => void
@@ -23,16 +21,8 @@ function toStatus(value: string): EmployeeStatus {
   return value === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE'
 }
 
-/**
- * Owns the create/edit modal lifecycle plus both mutations.
- *
- * Keeping this out of the page means the page stays a pure layout: it renders
- * states and passes callbacks, while the sequencing of "submit -> await ->
- * close on success / keep open with errors on failure" lives in one place.
- *
- * The modal stays open when a mutation fails so the user's typed values survive
- * and can be corrected; it only closes after a successful save.
- */
+// The modal stays open when a mutation fails so typed values survive; it only
+// closes after a successful save.
 export function useResourceForm(): ResourceFormController {
   const [isOpen, setIsOpen] = useState(false)
   const [editing, setEditing] = useState<Employee | null>(null)

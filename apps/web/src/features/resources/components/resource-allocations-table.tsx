@@ -12,14 +12,8 @@ export interface ResourceAllocationsTableProps {
   allocations: Allocation[]
 }
 
-/**
- * Project allocations for a resource (PRD US02.01 - AC04.03).
- *
- * Columns: project, project role, date range, allocation percentage and status.
- * `displayStatus` is already derived server-side (PLANNED / ACTIVE / ENDED /
- * CANCELLED), so the table only maps it to a label and a colour and never tries
- * to infer the state from the dates itself.
- */
+// displayStatus is derived server-side, so this only maps it to a label and a
+// colour rather than inferring the state from the dates.
 export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> = ({
   allocations,
 }) => {
@@ -89,7 +83,7 @@ export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> =
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-slate-300">{allocation.jobRoleTitle ?? '—'}</td>
+                    <td className="px-3 py-3 text-slate-300">{allocation.jobRoleTitle ?? '-'}</td>
                     <td className="px-3 py-3 text-slate-400">
                       {formatDate(allocation.startDate)} – {formatDate(allocation.endDate)}
                     </td>

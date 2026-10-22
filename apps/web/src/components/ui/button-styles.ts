@@ -24,14 +24,8 @@ const VARIANT_STYLES = {
     'bg-transparent hover:bg-slate-800/50 text-slate-300 hover:text-white focus:ring-slate-500',
 }
 
-/**
- * Button visuals as a class string.
- *
- * Lives outside `button.tsx` for two reasons: navigation needs button styling on
- * a real `<Link>` (nesting a `<button>` inside an `<a>` is invalid interactive
- * markup), and a component module may only export components to keep React Fast
- * Refresh working.
- */
+// Kept out of button.tsx so a <Link> can be styled as a button without nesting
+// a <button> inside an <a>, and so that module only exports components.
 export function buttonStyles({ variant = 'primary', size = 'md' }: ButtonStyleOptions = {}): string {
   return `${BASE_STYLES} ${SIZE_STYLES[size]} ${VARIANT_STYLES[variant]}`
 }

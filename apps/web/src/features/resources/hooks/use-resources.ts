@@ -14,11 +14,8 @@ import {
   type UpdateEmployeeInput,
 } from '../api/resources-api.js'
 
-/**
- * Query keys for the resources feature. Everything is nested under the
- * `['employees']` root so a single `invalidateQueries` call after a mutation
- * refreshes both the list and any open detail view.
- */
+// Everything nests under the ['employees'] root so one invalidateQueries call
+// refreshes both the list and any open detail view.
 export const resourceKeys = {
   all: ['employees'] as const,
   lists: () => [...resourceKeys.all, 'list'] as const,
@@ -35,11 +32,7 @@ export const resourceKeys = {
   jobRoles: ['job-roles'] as const,
 }
 
-/**
- * Paginated employee list. `keepPreviousData` keeps the current page visible
- * while the next page loads, so paging and filtering do not flash an empty
- * table on every page change.
- */
+// keepPreviousData holds the current page on screen while the next one loads.
 export function useEmployeeList(filters: EmployeeListFilters) {
   return useQuery<EmployeeListResult>({
     queryKey: resourceKeys.list(filters),
@@ -49,7 +42,6 @@ export function useEmployeeList(filters: EmployeeListFilters) {
   })
 }
 
-/** Employee profile with skills, allocations and the capacity evaluation. */
 export function useEmployeeDetail(employeeId: string | undefined, window?: CapacityWindow) {
   return useQuery<ResourceDetail>({
     queryKey: resourceKeys.detail(employeeId, window),
@@ -59,7 +51,6 @@ export function useEmployeeDetail(employeeId: string | undefined, window?: Capac
   })
 }
 
-/** Department master data, cached for the session because it rarely changes. */
 export function useDepartments() {
   return useQuery({
     queryKey: resourceKeys.departments,
@@ -68,7 +59,6 @@ export function useDepartments() {
   })
 }
 
-/** Job role master data, cached for the session because it rarely changes. */
 export function useJobRoles() {
   return useQuery({
     queryKey: resourceKeys.jobRoles,
@@ -77,11 +67,8 @@ export function useJobRoles() {
   })
 }
 
-/**
- * Create mutation. Invalidating the whole `['employees']` root is intentional:
- * a new employee changes the list, the total count and therefore the pagination
- * controls, so a narrower invalidation would leave stale metadata behind.
- */
+// Invalidates the whole root: a new employee changes the list, the total and
+// therefore the pagination metadata.
 export function useCreateEmployee() {
   const queryClient = useQueryClient()
 
@@ -93,7 +80,6 @@ export function useCreateEmployee() {
   })
 }
 
-/** Update mutation, invalidating the list and the affected detail record. */
 export function useUpdateEmployee() {
   const queryClient = useQueryClient()
 

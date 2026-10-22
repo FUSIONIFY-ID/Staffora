@@ -15,14 +15,11 @@ import {
 
 export interface ResourceFormModalProps {
   isOpen: boolean
-  /** When set the modal edits this record; otherwise it creates a new one. */
   employee?: Employee | null
   departments: Department[]
   jobRoles: JobRole[]
   isSubmitting: boolean
-  /** Message from a failed mutation, already reduced to a human sentence. */
   submitError?: string | null
-  /** Field-level messages returned by the API (`errors` in the error payload). */
   fieldErrors?: Record<string, string[]>
   onClose: () => void
   onSubmit: (values: CreateEmployeeFormValues, employeeId?: string) => void
@@ -48,17 +45,9 @@ function isFormField(field: string): field is FormFieldName {
   return (FORM_FIELDS as readonly string[]).includes(field)
 }
 
-/**
- * Create/edit form for an employee record (PRD US02.01 - AC02).
- *
- * The create schema drives both modes so one resolver type serves the whole
- * form. In edit mode `employeeCode` and `workEmail` are disabled and seeded from
- * the existing record: those two fields are not part of `UpdateEmployeeInput`,
- * so the form must not imply they can be changed.
- *
- * Uniqueness of employee code and work email can only be decided by the
- * backend, so those messages are mapped onto the matching input on failure.
- */
+// employeeCode and workEmail are disabled in edit mode because
+// UpdateEmployeeInput cannot persist them. Uniqueness is decided by the backend,
+// so those messages are mapped back onto the matching input on failure.
 export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   isOpen,
   employee,

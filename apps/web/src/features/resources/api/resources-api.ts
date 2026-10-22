@@ -1,10 +1,8 @@
 import { ApiError, apiClient } from '../../../api/client.js'
 import type { components } from '../../../api/schema.js'
 
-/**
- * Contract types are re-exported from the generated OpenAPI schema so the
- * feature never hand-maintains a parallel copy of the API shape.
- */
+// Contract types come from the generated schema, so the feature never keeps a
+// hand-written copy of the API shape.
 export type Employee = components['schemas']['Employee']
 export type EmployeeDetail = components['schemas']['EmployeeDetail']
 export type EmployeeSkill = components['schemas']['EmployeeSkill']
@@ -15,7 +13,7 @@ export type EmployeeStatus = Employee['status']
 export type CreateEmployeeInput = components['schemas']['CreateEmployeeInput']
 export type UpdateEmployeeInput = components['schemas']['UpdateEmployeeInput']
 
-/** Capacity figures for a date window, computed by the backend capacity engine. */
+// Capacity figures for a date window, computed by the backend capacity engine.
 export interface EvaluatedPeriod {
   startDate?: string
   endDate?: string
@@ -23,7 +21,7 @@ export interface EvaluatedPeriod {
   remainingCapacity?: number
 }
 
-/** Normalised detail payload: `skills` and `allocations` are always arrays. */
+// Detail payload with `skills` and `allocations` normalised to arrays.
 export type ResourceDetail = Employee & {
   skills: EmployeeSkill[]
   allocations: Allocation[]
@@ -66,11 +64,8 @@ function buildQuery(params: Record<string, string | number | undefined>): string
   return query ? `?${query}` : ''
 }
 
-/**
- * `GET /api/v1/employees` — server-side search, filtering and pagination.
- * Pagination metadata is taken from the response; it is never recomputed from a
- * partial page of rows.
- */
+// GET /api/v1/employees. Pagination metadata comes from the response and is
+// never recomputed from a partial page of rows.
 export async function fetchEmployees(filters: EmployeeListFilters): Promise<EmployeeListResult> {
   const query = buildQuery({
     search: filters.search.trim() || undefined,
@@ -101,11 +96,8 @@ export async function fetchEmployees(filters: EmployeeListFilters): Promise<Empl
   }
 }
 
-/**
- * `GET /api/v1/employees/{id}` — profile, skills, allocations and the capacity
- * evaluation for an optional `startDate`/`endDate` window. Omitting the window
- * makes the backend evaluate the current day.
- */
+// GET /api/v1/employees/{id}. Omitting the window makes the backend evaluate
+// today.
 export async function fetchEmployeeDetail(
   employeeId: string,
   window?: CapacityWindow,
@@ -136,19 +128,16 @@ export async function fetchEmployeeDetail(
   }
 }
 
-/** `GET /api/v1/departments` — active master data for filter and form selects. */
 export async function fetchDepartments(): Promise<Department[]> {
   const response = await apiClient<components['schemas']['DepartmentListResponse']>('/departments')
   return (response.data ?? []).filter((department) => department.isActive)
 }
 
-/** `GET /api/v1/job-roles` — active master data for filter and form selects. */
 export async function fetchJobRoles(): Promise<JobRole[]> {
   const response = await apiClient<components['schemas']['JobRoleListResponse']>('/job-roles')
   return (response.data ?? []).filter((jobRole) => jobRole.isActive)
 }
 
-/** `POST /api/v1/employees` — CSRF header is injected by the shared API client. */
 export async function createEmployee(input: CreateEmployeeInput): Promise<Employee> {
   const response = await apiClient<{ data?: Employee }>('/employees', {
     method: 'POST',
@@ -165,11 +154,8 @@ export async function createEmployee(input: CreateEmployeeInput): Promise<Employ
   return response.data
 }
 
-/**
- * `PATCH /api/v1/employees/{id}` — `UpdateEmployeeInput` only accepts
- * `fullName`, `departmentId`, `jobRoleId` and `status`; employee code and work
- * email are immutable in the current contract.
- */
+// PATCH /api/v1/employees/{id}. UpdateEmployeeInput only accepts fullName,
+// departmentId, jobRoleId and status; code and work email are immutable.
 export async function updateEmployee(
   employeeId: string,
   input: UpdateEmployeeInput,

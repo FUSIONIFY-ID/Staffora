@@ -8,12 +8,8 @@ export interface ResourceAvailabilityBadgeProps {
   className?: string
 }
 
-/**
- * Three-state availability indicator (PRD US02.01 - AC01.03).
- *
- * The wording carries the state as well as the colour, so the badge is still
- * readable without colour vision or a screen reader announcing classes.
- */
+// Three-state indicator per PRD US02.01 AC01.03. Wording carries the state too,
+// so colour is never the only signal.
 export const ResourceAvailabilityBadge: React.FC<ResourceAvailabilityBadgeProps> = ({
   employee,
   className,

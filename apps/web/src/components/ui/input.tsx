@@ -6,14 +6,8 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   helperText?: string
 }
 
-/**
- * Text input with label, inline error and helper text.
- *
- * The error/helper text is linked to the control through `aria-describedby` and
- * the invalid state is exposed via `aria-invalid`, so screen readers announce
- * validation messages when the field receives focus. Colour alone would leave
- * the message invisible to non-visual users.
- */
+// Error and helper text are linked via aria-describedby, and error sets
+// aria-invalid, so validation is announced rather than only coloured red.
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, className = '', id, ...props }, ref) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)

@@ -14,12 +14,8 @@ import {
   EMPLOYEE_PARTIAL,
 } from './fixtures/resources-fixtures.js'
 
-/**
- * The capacity thresholds from PRD US02.01 - AC01.03 are asserted here as pure
- * functions, which is the cheapest place to pin them: the same helper drives the
- * directory badge, the detail header and the capacity card, so a regression in
- * the thresholds would otherwise need three separate rendering tests to catch.
- */
+// Pinned as pure functions because one helper drives the badge, the header and
+// the capacity card.
 describe('resource presentation: availability indicator', () => {
   it('marks an unallocated employee as fully available in emerald', () => {
     const result = describeAvailability(EMPLOYEE_AVAILABLE)
@@ -105,7 +101,7 @@ describe('resource presentation: formatting', () => {
 
   it('formats ISO dates without shifting the day across time zones', () => {
     expect(formatDate('2026-03-01')).toBe('01 Mar 2026')
-    expect(formatDate(undefined)).toBe('—')
+    expect(formatDate(undefined)).toBe('-')
     expect(formatDate('not-a-date')).toBe('not-a-date')
   })
 })
