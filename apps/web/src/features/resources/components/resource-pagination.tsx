@@ -11,8 +11,6 @@ export interface ResourcePaginationProps {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
 
-// totalPages comes from the server meta, never from data.length: a page can be
-// short or empty while more records exist.
 export const ResourcePagination: React.FC<ResourcePaginationProps> = ({
   meta,
   isFetching,
@@ -27,9 +25,9 @@ export const ResourcePagination: React.FC<ResourcePaginationProps> = ({
   return (
     <nav
       aria-label="Resource pagination"
-      className="flex flex-col gap-3 border-t border-slate-800 pt-4 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between"
     >
-      <p className="text-xs text-slate-400" aria-live="polite">
+      <p className="text-xs text-ink-muted" aria-live="polite">
         {meta.total === 0
           ? 'No resources to display'
           : `Showing ${firstRow}–${lastRow} of ${meta.total} resources`}
@@ -38,7 +36,7 @@ export const ResourcePagination: React.FC<ResourcePaginationProps> = ({
       <div className="flex flex-wrap items-center gap-3">
         <label
           htmlFor="resource-page-size"
-          className="text-xs font-medium text-slate-400 whitespace-nowrap"
+          className="text-xs font-medium text-ink-muted whitespace-nowrap"
         >
           Rows per page
         </label>
@@ -46,7 +44,7 @@ export const ResourcePagination: React.FC<ResourcePaginationProps> = ({
           id="resource-page-size"
           value={meta.pageSize}
           onChange={(event) => onPageSizeChange(Number(event.target.value))}
-          className="rounded-lg border border-slate-700/80 bg-slate-900/80 px-2.5 py-1.5 text-xs text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          className="rounded-lg border border-line-input bg-surface-white px-2.5 py-1.5 text-xs text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
         >
           {PAGE_SIZE_OPTIONS.map((size) => (
             <option key={size} value={size}>
@@ -66,7 +64,7 @@ export const ResourcePagination: React.FC<ResourcePaginationProps> = ({
           >
             Previous
           </Button>
-          <span className="text-xs text-slate-400 whitespace-nowrap">
+          <span className="text-xs text-ink-muted whitespace-nowrap">
             Page {currentPage} of {totalPages}
           </span>
           <Button

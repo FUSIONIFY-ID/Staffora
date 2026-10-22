@@ -1,8 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router'
-import { Badge } from '../../../components/ui/badge.js'
 import { Button } from '../../../components/ui/button.js'
-import { buttonStyles } from '../../../components/ui/button-styles.js'
 import type { Employee } from '../api/resources-api.js'
 import { ResourceAvailabilityBadge } from './resource-availability-badge.js'
 
@@ -12,70 +10,80 @@ export interface ResourceTableProps {
   onEdit: (employee: Employee) => void
 }
 
-// Edit only renders for roles that can persist the change; the backend rejects
-// the PATCH for everyone else.
 export const ResourceTable: React.FC<ResourceTableProps> = ({ employees, canManage, onEdit }) => {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[960px] border-collapse text-sm">
+      <table className="w-full min-w-[900px] border-collapse text-left text-sm">
         <caption className="sr-only">Employee resource directory</caption>
         <thead>
-          <tr className="border-b border-slate-800 text-left">
-            <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Employee code
+          <tr className="h-[46px] border-b border-line bg-surface-table-header text-left">
+            <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+              Employee
             </th>
-            <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Full name
+            <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+              Code
             </th>
-            <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Email
+            <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+              Role
             </th>
-            <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
               Department
             </th>
-            <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Job role
+            <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+              Allocation
             </th>
-            <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+              Availability
+            </th>
+            <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
               Status
             </th>
-            <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Capacity
-            </th>
-            <th scope="col" className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <th scope="col" className="px-6 py-3 text-right text-xs font-semibold text-ink-muted">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-surface-divider">
           {employees.map((employee) => (
             <tr
               key={employee.id}
-              className="border-b border-slate-800/60 transition-colors hover:bg-slate-800/30"
+              className="h-[48px] transition-colors hover:bg-surface-page/50"
             >
-              <td className="px-3 py-3 font-mono text-xs text-slate-300">{employee.employeeCode}</td>
-              <td className="px-3 py-3">
+              <td className="px-6 py-3.5">
                 <Link
                   to={`/resources/${employee.id}`}
-                  className="font-medium text-slate-100 hover:text-blue-400 hover:underline underline-offset-4"
+                  className="font-semibold text-ink hover:text-primary transition-colors block"
                 >
                   {employee.fullName}
                 </Link>
+                <span className="block text-xs text-ink-placeholder font-normal">
+                  {employee.workEmail}
+                </span>
               </td>
-              <td className="px-3 py-3 text-slate-400">{employee.workEmail}</td>
-              <td className="px-3 py-3 text-slate-300">{employee.departmentName ?? '-'}</td>
-              <td className="px-3 py-3 text-slate-300">{employee.jobRoleTitle ?? '-'}</td>
-              <td className="px-3 py-3">
-                <Badge variant={employee.status === 'ACTIVE' ? 'green' : 'gray'}>
-                  {employee.status === 'ACTIVE' ? 'Active' : 'Inactive'}
-                </Badge>
+              <td className="px-6 py-3.5 text-sm text-ink-muted font-normal">
+                {employee.employeeCode}
               </td>
-              <td className="px-3 py-3">
+              <td className="px-6 py-3.5 text-sm text-ink-muted">
+                {employee.jobRoleTitle ?? '-'}
+              </td>
+              <td className="px-6 py-3.5 text-sm text-ink-muted">
+                {employee.departmentName ?? '-'}
+              </td>
+              <td className="px-6 py-3.5 text-sm text-ink-muted">
+                {employee.currentAllocation}%
+              </td>
+              <td className="px-6 py-3.5">
                 <ResourceAvailabilityBadge employee={employee} />
               </td>
-              <td className="px-3 py-3">
+              <td className="px-6 py-3.5 text-sm text-ink-muted">
+                {employee.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+              </td>
+              <td className="px-6 py-3.5 text-right">
                 <div className="flex items-center justify-end gap-2">
-                  <Link to={`/resources/${employee.id}`} className={buttonStyles({ variant: 'outline', size: 'sm' })}>
+                  <Link
+                    to={`/resources/${employee.id}`}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
                     View detail
                   </Link>
                   {canManage && (

@@ -8,7 +8,7 @@ export const ResourceLoadingState: React.FC<{ label?: string }> = ({
 }) => (
   <div className="flex flex-col items-center justify-center gap-3 py-16" role="status" aria-live="polite">
     <Spinner size="lg" />
-    <p className="text-sm text-slate-400">{label}</p>
+    <p className="text-sm text-ink-muted">{label}</p>
   </div>
 )
 
@@ -51,11 +51,11 @@ export const ResourceEmptyState: React.FC<ResourceEmptyStateProps> = ({
   resetLabel = 'Clear filters',
 }) => (
   <div className="flex flex-col items-center justify-center gap-3 py-16 text-center" role="status">
-    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800/60 text-xl" aria-hidden="true">
+    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-chip text-xl" aria-hidden="true">
       🔍
     </div>
-    <h3 className="text-base font-semibold text-slate-200">{title}</h3>
-    <p className="max-w-md text-sm text-slate-400">{description}</p>
+    <h3 className="text-base font-semibold text-ink">{title}</h3>
+    <p className="max-w-md text-sm text-ink-muted">{description}</p>
     {onReset && (
       <Button type="button" variant="outline" size="sm" onClick={onReset} className="mt-1">
         {resetLabel}
@@ -64,10 +64,9 @@ export const ResourceEmptyState: React.FC<ResourceEmptyStateProps> = ({
   </div>
 )
 
-// Inline hint, not a 403 block: these roles may still browse the directory.
 export const ResourceReadOnlyNotice: React.FC<{ role: string }> = ({ role }) => (
-  <p className="text-xs text-slate-500">
-    You are signed in as <span className="font-semibold text-slate-400">{role}</span>. Resource
+  <p className="text-xs text-ink-dim">
+    You are signed in as <span className="font-semibold text-ink-muted">{role}</span>. Resource
     records are read-only for this role.
   </p>
 )

@@ -14,8 +14,6 @@ import { useResourceForm } from './hooks/use-resource-form.js'
 import { canManageResources } from './lib/resource-permissions.js'
 import { normalizeError } from './lib/normalize-error.js'
 
-// Read-only roles get no edit affordance at all: the button is not rendered
-// rather than disabled. The backend enforces the same rule.
 export const ResourceDetailPage: React.FC = () => {
   const { employeeId } = useParams<{ employeeId: string }>()
   const { user } = useAuth()
@@ -55,10 +53,15 @@ export const ResourceDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <BackLink />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-[28px] font-bold tracking-tight text-ink">{resource.fullName}</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            {resource.employeeCode} · {resource.jobRoleTitle ?? '-'} · {resource.departmentName ?? '-'}
+          </p>
+        </div>
         {canManage && (
-          <Button type="button" variant="outline" size="sm" onClick={() => form.openEdit(resource)}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => form.openEdit(resource)}>
             Edit resource
           </Button>
         )}
@@ -70,9 +73,13 @@ export const ResourceDetailPage: React.FC = () => {
         </Alert>
       )}
 
-      <ResourceProfileHeader resource={resource} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <ResourceProfileHeader resource={resource} />
+        <ResourceSkillsCard skills={resource.skills} />
+      </div>
+
       <ResourceCapacityCard resource={resource} />
-      <ResourceSkillsCard skills={resource.skills} />
+
       <ResourceAllocationsTable allocations={resource.allocations} />
 
       {canManage && (
@@ -98,6 +105,6 @@ const BackLink: React.FC = () => (
     className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted transition-colors hover:text-primary"
   >
     <span aria-hidden="true">&larr;</span>
-    Back to resource directory
+    Back to resources
   </Link>
 )

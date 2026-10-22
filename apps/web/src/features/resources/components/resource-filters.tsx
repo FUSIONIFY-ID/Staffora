@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { Button } from '../../../components/ui/button.js'
-import { Input } from '../../../components/ui/input.js'
-import { Select } from '../../../components/ui/select.js'
 import { useDebouncedValue } from '../hooks/use-debounced-value.js'
 import type { Department, EmployeeListFilters, JobRole } from '../api/resources-api.js'
 
@@ -10,22 +8,22 @@ export interface ResourceFiltersProps {
   departments: Department[]
   jobRoles: JobRole[]
   isMasterDataLoading?: boolean
+  onAddResource?: () => void
   onChange: (patch: Partial<EmployeeListFilters>) => void
   onReset: () => void
 }
 
 const STATUS_OPTIONS = [
-  { value: 'ACTIVE', label: 'Active only' },
-  { value: 'INACTIVE', label: 'Inactive only' },
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'INACTIVE', label: 'Inactive' },
 ]
 
-// The search box keeps its own state so the caret never lags, and only pushes
-// the value up after 300ms of no typing. Other controls change immediately.
 export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
   filters,
   departments,
   jobRoles,
   isMasterDataLoading = false,
+  onAddResource,
   onChange,
   onReset,
 }) => {
@@ -33,15 +31,11 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
   const [appliedSearch, setAppliedSearch] = useState(filters.search)
   const debouncedSearch = useDebouncedValue(searchTerm, 300)
 
-  // Adjust state during render (not in an effect) so a parent reset applies in
-  // the same pass instead of causing a cascading render.
   if (filters.search !== appliedSearch) {
     setAppliedSearch(filters.search)
     setSearchTerm(filters.search)
   }
 
-  // Push the debounced value up only when it actually differs from the applied
-  // filter, so re-renders caused by other filters cannot re-trigger a fetch.
   useEffect(() => {
     if (debouncedSearch !== filters.search) {
       onChange({ search: debouncedSearch, page: 1 })
@@ -54,70 +48,110 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
     filters.jobRoleId !== '' ||
     filters.status !== ''
 
-  const departmentOptions = departments.map((department) => ({
-    value: department.id,
-    label: department.name,
-  }))
-
-  const jobRoleOptions = jobRoles.map((jobRole) => ({
-    value: jobRole.id,
-    label: jobRole.name,
-  }))
-
   return (
-    <section aria-label="Resource filters" className="glass-card p-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Input
-          id="resource-search"
-          label="Search"
-          type="search"
-          placeholder="Name, employee code or email"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          helperText="Searches name, employee code and email."
-        />
+    <section aria-label="Resource filters" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-1 flex-wrap items-center gap-3">
+        {/* Search input with search icon */}
+        <div className="relative w-full sm:w-[320px]">
+          <label htmlFor="resource-search" className="sr-only">
+            Search
+          </label>
+          <svg
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-placeholder"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            id="resource-search"
+            type="search"
+            placeholder="Search name or employee code..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="h-10 w-full rounded-lg border border-line-input bg-surface-white pl-10 pr-3.5 text-sm text-ink placeholder:text-ink-placeholder transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
 
-        <Select
-          id="resource-filter-department"
-          label="Department"
-          placeholder="All departments"
-          options={departmentOptions}
-          value={filters.departmentId}
-          disabled={isMasterDataLoading}
-          onChange={(event) => onChange({ departmentId: event.target.value, page: 1 })}
-        />
+        {/* Status filter */}
+        <div className="relative">
+          <label htmlFor="resource-filter-status" className="sr-only">
+            Status
+          </label>
+          <select
+            id="resource-filter-status"
+            value={filters.status}
+            onChange={(event) =>
+              onChange({
+                status: event.target.value === '' ? '' : (event.target.value as 'ACTIVE' | 'INACTIVE'),
+                page: 1,
+              })
+            }
+            className={`h-10 rounded-lg border text-xs font-semibold px-3 py-2 cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+              filters.status === 'ACTIVE'
+                ? 'bg-success-surface text-success-text border-success-border'
+                : 'bg-surface-white text-ink border-line-input'
+            }`}
+          >
+            <option value="">Status</option>
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <Select
-          id="resource-filter-job-role"
-          label="Job role"
-          placeholder="All job roles"
-          options={jobRoleOptions}
-          value={filters.jobRoleId}
-          disabled={isMasterDataLoading}
-          onChange={(event) => onChange({ jobRoleId: event.target.value, page: 1 })}
-        />
+        {/* Department filter */}
+        <div className="relative">
+          <label htmlFor="resource-filter-department" className="sr-only">
+            Department
+          </label>
+          <select
+            id="resource-filter-department"
+            value={filters.departmentId}
+            disabled={isMasterDataLoading}
+            onChange={(event) => onChange({ departmentId: event.target.value, page: 1 })}
+            className="h-10 rounded-lg border border-line-input bg-surface-white px-3 py-2 text-xs font-semibold text-ink cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+          >
+            <option value="">Department</option>
+            {departments.map((dept) => (
+              <option key={dept.id} value={dept.id}>
+                {dept.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <Select
-          id="resource-filter-status"
-          label="Status"
-          placeholder="All statuses"
-          options={STATUS_OPTIONS}
-          value={filters.status}
-          onChange={(event) =>
-            onChange({
-              status: event.target.value === '' ? '' : (event.target.value as 'ACTIVE' | 'INACTIVE'),
-              page: 1,
-            })
-          }
-        />
-      </div>
+        {/* Job role filter */}
+        <div className="relative">
+          <label htmlFor="resource-filter-job-role" className="sr-only">
+            Job role
+          </label>
+          <select
+            id="resource-filter-job-role"
+            value={filters.jobRoleId}
+            disabled={isMasterDataLoading}
+            onChange={(event) => onChange({ jobRoleId: event.target.value, page: 1 })}
+            className="h-10 rounded-lg border border-line-input bg-surface-white px-3 py-2 text-xs font-semibold text-ink cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+          >
+            <option value="">Role</option>
+            {jobRoles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-800 pt-3">
-        <p className="text-xs text-slate-500">
-          {hasActiveFilters
-            ? 'Filters are applied to the server query.'
-            : 'Showing every resource in the directory.'}
-        </p>
         <Button
           type="button"
           variant="ghost"
@@ -128,6 +162,16 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
           Reset filters
         </Button>
       </div>
+
+      {onAddResource && (
+        <Button
+          type="button"
+          onClick={onAddResource}
+          className="shrink-0 font-medium"
+        >
+          + Add Resource
+        </Button>
+      )}
     </section>
   )
 }

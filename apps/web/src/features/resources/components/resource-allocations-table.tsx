@@ -1,5 +1,4 @@
 import React from 'react'
-import { Badge } from '../../../components/ui/badge.js'
 import { Card } from '../../../components/ui/card.js'
 import type { Allocation } from '../api/resources-api.js'
 import {
@@ -12,94 +11,70 @@ export interface ResourceAllocationsTableProps {
   allocations: Allocation[]
 }
 
-// displayStatus is derived server-side, so this only maps it to a label and a
-// colour rather than inferring the state from the dates.
 export const ResourceAllocationsTable: React.FC<ResourceAllocationsTableProps> = ({
   allocations,
 }) => {
-  return (
-    <Card className="p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-white">Project allocations</h2>
-        <span className="text-xs text-slate-500">{allocations.length} total</span>
-      </div>
-
-      {allocations.length === 0 ? (
-        <p className="text-sm text-slate-400">
+  if (allocations.length === 0) {
+    return (
+      <Card className="p-6">
+        <p className="text-sm text-ink-muted">
           This resource is not allocated to any project in the selected period.
         </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
-            <caption className="sr-only">Project allocations for this resource</caption>
-            <thead>
-              <tr className="border-b border-slate-800 text-left">
-                <th
-                  scope="col"
-                  className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
-                >
-                  Project
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
-                >
-                  Project role
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
-                >
-                  Period
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-slate-400"
-                >
-                  Allocation
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
-                >
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {allocations.map((allocation) => {
-                const status = describeAllocationStatus(allocation.displayStatus)
-                const percentage = clampPercentage(allocation.allocationPercentage)
+      </Card>
+    )
+  }
 
-                return (
-                  <tr key={allocation.id} className="border-b border-slate-800/60 last:border-0">
-                    <td className="px-3 py-3">
-                      <div className="font-medium text-slate-100">
-                        {allocation.projectName ?? 'Unnamed project'}
-                      </div>
-                      {allocation.projectCode && (
-                        <div className="font-mono text-xs text-slate-500">
-                          {allocation.projectCode}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-3 py-3 text-slate-300">{allocation.jobRoleTitle ?? '-'}</td>
-                    <td className="px-3 py-3 text-slate-400">
-                      {formatDate(allocation.startDate)} – {formatDate(allocation.endDate)}
-                    </td>
-                    <td className="px-3 py-3 text-right font-medium text-slate-200">
-                      {percentage}%
-                    </td>
-                    <td className="px-3 py-3">
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+  return (
+    <Card className="overflow-hidden p-0">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left text-sm">
+          <caption className="sr-only">Project allocations for this resource</caption>
+          <thead>
+            <tr className="h-[46px] border-b border-line bg-surface-table-header text-left">
+              <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+                Project
+              </th>
+              <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+                Project Role
+              </th>
+              <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+                Allocation
+              </th>
+              <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+                Start
+              </th>
+              <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+                End
+              </th>
+              <th scope="col" className="px-6 py-3 text-xs font-semibold text-ink-muted">
+                Status
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-surface-divider">
+            {allocations.map((allocation) => {
+              const status = describeAllocationStatus(allocation.displayStatus)
+              const percentage = clampPercentage(allocation.allocationPercentage)
+
+              return (
+                <tr
+                  key={allocation.id}
+                  className="h-[48px] transition-colors hover:bg-surface-page/50"
+                >
+                  <td className="px-6 py-3.5 font-semibold text-ink">
+                    {allocation.projectName ?? 'Unnamed project'}
+                  </td>
+                  <td className="px-6 py-3.5 text-ink-muted">{allocation.jobRoleTitle ?? '-'}</td>
+                  <td className="px-6 py-3.5 text-ink-muted">{percentage}%</td>
+                  <td className="px-6 py-3.5 text-ink-muted">{formatDate(allocation.startDate)}</td>
+                  <td className="px-6 py-3.5 text-ink-muted">{formatDate(allocation.endDate)}</td>
+                  <td className="px-6 py-3.5 text-ink-muted">{status.label}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </Card>
   )
 }

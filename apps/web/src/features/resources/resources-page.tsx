@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { useAuth } from '../../app/providers/auth-provider.js'
 import { Alert } from '../../components/ui/alert.js'
-import { Badge } from '../../components/ui/badge.js'
 import { Button } from '../../components/ui/button.js'
 import { Card } from '../../components/ui/card.js'
 import type { EmployeeListFilters } from './api/resources-api.js'
@@ -31,9 +30,6 @@ const INITIAL_FILTERS: EmployeeListFilters = {
   pageSize: DEFAULT_PAGE_SIZE,
 }
 
-// Filters, page and pageSize live in one object because they are always read
-// together to build the query key. Any change except paging resets page to 1, so
-// a narrower result set never leaves the user on an empty page.
 export const ResourcesPage: React.FC = () => {
   const { user } = useAuth()
   const [filters, setFilters] = useState<EmployeeListFilters>(INITIAL_FILTERS)
@@ -65,28 +61,16 @@ export const ResourcesPage: React.FC = () => {
   const employees = listQuery.data?.data ?? []
   const meta = listQuery.data?.meta
   const listError = listQuery.isError ? normalizeError(listQuery.error) : null
-
-  // Full-page loader on first load; background refetches only dim the table.
   const isInitialLoading = listQuery.isPending && !listQuery.data
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink">Resource Directory</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Browse employee profiles, skills and current capacity across the organisation.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {meta && <Badge variant="blue">{meta.total} resources</Badge>}
-          {canManage && (
-            <Button type="button" onClick={form.openCreate}>
-              Add resource
-            </Button>
-          )}
-        </div>
-      </header>
+      <div>
+        <h1 className="text-[28px] font-bold tracking-tight text-ink">Resources</h1>
+        <p className="mt-1 text-sm text-ink-muted">
+          Search, filter, and manage employee resource profiles.
+        </p>
+      </div>
 
       {!canManage && user && <ResourceReadOnlyNotice role={user.role} />}
 
@@ -106,23 +90,30 @@ export const ResourcesPage: React.FC = () => {
         departments={departmentsQuery.data ?? []}
         jobRoles={jobRolesQuery.data ?? []}
         isMasterDataLoading={departmentsQuery.isPending || jobRolesQuery.isPending}
+        onAddResource={canManage ? form.openCreate : undefined}
         onChange={patchFilters}
         onReset={resetFilters}
       />
 
-      <Card className="p-4 sm:p-6">
-        {isInitialLoading && <ResourceLoadingState label="Loading resource directory..." />}
+      {isInitialLoading && (
+        <Card className="p-6">
+          <ResourceLoadingState label="Loading resource directory..." />
+        </Card>
+      )}
 
-        {!isInitialLoading && listError && (
+      {!isInitialLoading && listError && (
+        <Card className="p-6">
           <ResourceErrorState
             title={listError.isForbidden ? 'Access denied' : 'Could not load resources'}
             message={listError.message}
             onRetry={() => void listQuery.refetch()}
             isRetrying={listQuery.isFetching}
           />
-        )}
+        </Card>
+      )}
 
-        {!isInitialLoading && !listError && employees.length === 0 && (
+      {!isInitialLoading && !listError && employees.length === 0 && (
+        <Card className="p-6">
           <ResourceEmptyState
             title={hasActiveFilters ? 'No resources match these filters' : 'No resources yet'}
             description={
@@ -133,10 +124,12 @@ export const ResourcesPage: React.FC = () => {
             onReset={hasActiveFilters ? resetFilters : undefined}
             resetLabel="Clear filters"
           />
-        )}
+        </Card>
+      )}
 
-        {!isInitialLoading && !listError && employees.length > 0 && (
-          <>
+      {!isInitialLoading && !listError && employees.length > 0 && (
+        <div className="space-y-4">
+          <Card className="overflow-hidden p-0">
             <div
               className={listQuery.isFetching ? 'opacity-60 transition-opacity' : 'transition-opacity'}
               aria-busy={listQuery.isFetching}
@@ -147,19 +140,18 @@ export const ResourcesPage: React.FC = () => {
                 onEdit={form.openEdit}
               />
             </div>
-            {meta && (
-              <div className="mt-4">
-                <ResourcePagination
-                  meta={meta}
-                  isFetching={listQuery.isFetching}
-                  onPageChange={(page) => patchFilters({ page })}
-                  onPageSizeChange={(pageSize) => patchFilters({ pageSize, page: 1 })}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </Card>
+          </Card>
+
+          {meta && (
+            <ResourcePagination
+              meta={meta}
+              isFetching={listQuery.isFetching}
+              onPageChange={(page) => patchFilters({ page })}
+              onPageSizeChange={(pageSize) => patchFilters({ pageSize, page: 1 })}
+            />
+          )}
+        </div>
+      )}
 
       {canManage && (
         <ResourceFormModal
