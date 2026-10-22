@@ -55,7 +55,7 @@ export const ResourceDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 border-b border-slate-800 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-center sm:justify-between">
         <BackLink />
         {canManage && (
           <Button type="button" variant="outline" size="sm" onClick={() => form.openEdit(resource)}>
@@ -95,7 +95,7 @@ export const ResourceDetailPage: React.FC = () => {
 const BackLink: React.FC = () => (
   <Link
     to="/resources"
-    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-blue-400"
+    className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted transition-colors hover:text-primary"
   >
     <span aria-hidden="true">&larr;</span>
     Back to resource directory

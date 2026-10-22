@@ -32,7 +32,7 @@ the assumed cause. Do not implement a fix unless the task explicitly asks for on
    - API unit/integration tests: `npm test --workspace=api`
    - DB integration tests: `npm run test:db --workspace=api`
    - Web component tests: `npm test --workspace=web`
-   If an external dependency (like local Postgres) is unavailable, report the result as **Blocked**, not **Pass**.
+     If an external dependency (like local Postgres) is unavailable, report the result as **Blocked**, not **Pass**.
 
 ## Optional Knowledge-Graph Tools
 
@@ -41,6 +41,7 @@ Start with `get_minimal_context(task="<task>")`, request `detail_level="minimal"
 minimal result is insufficient.
 
 Suggested order:
+
 1. `semantic_search_nodes` for the route, component, error code, or domain term.
 2. `query_graph` with callers/callees for the suspected function.
 3. `get_flow` for the end-to-end execution path.

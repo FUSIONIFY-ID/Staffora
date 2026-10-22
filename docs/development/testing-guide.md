@@ -44,11 +44,34 @@ Modul kalkulasi kapasitas (`apps/api/src/modules/capacity/capacity.service.ts`) 
 ## 3. Mandatory Authorization Matrix (TSD 15.4)
 
 Setiap capability API diuji terhadap:
+
 - Role yang diizinkan (Allowed role).
 - Role yang dilarang (Disallowed role) -> HTTP 403.
 - Project Manager pada proyek miliknya (Allowed).
 - Project Manager pada proyek milik PM lain (Disallowed -> HTTP 403).
 - Employee melihat data miliknya sendiri (Allowed).
-- Employee mencoba mengakses data employee lain (Disallowed -> HTTP 403).
+- Employee mencoba mengakses data employee lain (Disallowed -> HTTP 404).
+  Endpoint detail employee memakai 404, bukan 403, supaya responsnya tidak bisa
+  dipakai untuk menebak id employee mana yang benar-benar ada (non-disclosure).
+  Body dan `code` untuk record milik orang lain harus identik dengan record yang
+  tidak ada. Lihat `apps/api/src/modules/workforce/workforce.policy.ts`.
 - Akun berstatus `isActive: false` dengan session lama (Disallowed -> HTTP 401/403).
 - Direct API request tanpa melalui UI (Tetap terproteksi di backend).
+
+### 3.1 Database terpisah untuk test
+
+Suite API menulis baris ke database yang ditunjuk `DATABASE_URL`, dan variabel
+yang sama dipakai `npm run dev` serta `db:seed`. Arahkan test ke database
+tersendiri supaya data development tidak tersentuh:
+
+```bash
+cp apps/api/.env.test.example apps/api/.env.test
+# isi DATABASE_URL di .env.test ke database khusus test
+npm run db:migrate:deploy -w @staffora/api   # dengan DATABASE_URL dari .env.test
+npm run db:seed -w @staffora/api             # dengan DATABASE_URL dari .env.test
+npm test -w @staffora/api
+```
+
+`apps/api/vitest.config.ts` memuat `.env.test` lebih dulu bila file itu ada,
+sehingga tidak perlu mengubah shell. CI tidak memakai file ini: job CI
+menyediakan container PostgreSQL sementara dan menyetel `DATABASE_URL` sendiri.

@@ -25,7 +25,12 @@ import { parseTargetOptions } from "./lib/target-args.mjs";
 const PRODUCT_NAMES = ["PRODUCT.md", "Product.md", "product.md"];
 const DESIGN_NAMES = ["DESIGN.md", "Design.md", "design.md"];
 const FALLBACK_DIRS = [".agents/context", "docs"];
-const MONOREPO_MARKER_FILES = ["pnpm-workspace.yaml", "turbo.json", "nx.json", "lerna.json"];
+const MONOREPO_MARKER_FILES = [
+  "pnpm-workspace.yaml",
+  "turbo.json",
+  "nx.json",
+  "lerna.json",
+];
 const MONOREPO_FALLBACK_PROJECT_DIRS = ["apps", "packages"];
 const WORKSPACE_DISCOVERY_IGNORED_DIRS = new Set([
   "node_modules",
@@ -47,10 +52,9 @@ const WORKSPACE_DISCOVERY_IGNORED_DIRS = new Set([
 // silent on failure: a network problem, sandbox, or missing cache must never
 // block context output or print an error.
 
-const UPDATE_HOST = (process.env.IMPECCABLE_UPDATE_HOST || "https://impeccable.style").replace(
-  /\/$/,
-  "",
-);
+const UPDATE_HOST = (
+  process.env.IMPECCABLE_UPDATE_HOST || "https://impeccable.style"
+).replace(/\/$/, "");
 const UPDATE_CACHE_PATH =
   process.env.IMPECCABLE_UPDATE_CACHE ||
   path.join(os.homedir(), ".impeccable", "update-check.json");
@@ -95,10 +99,14 @@ function resolveContext(cwd = process.cwd(), options = {}) {
       : null;
 
   let productPath =
-    (projectContextDir ? firstExisting(projectContextDir, PRODUCT_NAMES) : null) ||
+    (projectContextDir
+      ? firstExisting(projectContextDir, PRODUCT_NAMES)
+      : null) ||
     (rootContextDir ? firstExisting(rootContextDir, PRODUCT_NAMES) : null);
   let designPath =
-    (projectContextDir ? firstExisting(projectContextDir, DESIGN_NAMES) : null) ||
+    (projectContextDir
+      ? firstExisting(projectContextDir, DESIGN_NAMES)
+      : null) ||
     (rootContextDir ? firstExisting(rootContextDir, DESIGN_NAMES) : null);
 
   let envContextDir = null;
@@ -206,9 +214,12 @@ function resolveEnvContextDir(cwd) {
 }
 
 function resolveTargetDir(cwd, options = {}) {
-  const targetPath = options && typeof options === "object" ? options.targetPath : null;
+  const targetPath =
+    options && typeof options === "object" ? options.targetPath : null;
   if (!targetPath || !String(targetPath).trim()) return cwd;
-  const abs = path.isAbsolute(targetPath) ? targetPath : path.resolve(cwd, targetPath);
+  const abs = path.isAbsolute(targetPath)
+    ? targetPath
+    : path.resolve(cwd, targetPath);
   try {
     const stat = fs.statSync(abs);
     return stat.isDirectory() ? abs : path.dirname(abs);
@@ -243,7 +254,10 @@ function isMonorepoRoot(dir) {
     )
   )
     return true;
-  if (!MONOREPO_MARKER_FILES.some((file) => fs.existsSync(path.join(dir, file)))) return false;
+  if (
+    !MONOREPO_MARKER_FILES.some((file) => fs.existsSync(path.join(dir, file)))
+  )
+    return false;
   return hasFallbackWorkspaceChildren(dir);
 }
 
@@ -260,7 +274,12 @@ function hasFallbackWorkspaceChildren(dir) {
     } catch {
       continue;
     }
-    if (entries.some((entry) => entry.isDirectory() && !isIgnoredWorkspaceDiscoveryDir(entry.name)))
+    if (
+      entries.some(
+        (entry) =>
+          entry.isDirectory() && !isIgnoredWorkspaceDiscoveryDir(entry.name),
+      )
+    )
       return true;
   }
   return false;
@@ -274,7 +293,11 @@ function discoverTargetCandidates(repoRoot) {
       roots.set(path.relative(repoRoot, root).split(path.sep).join("/"), root);
     }
   }
-  if (MONOREPO_MARKER_FILES.some((file) => fs.existsSync(path.join(repoRoot, file)))) {
+  if (
+    MONOREPO_MARKER_FILES.some((file) =>
+      fs.existsSync(path.join(repoRoot, file)),
+    )
+  ) {
     for (const name of MONOREPO_FALLBACK_PROJECT_DIRS) {
       const base = path.join(repoRoot, name);
       let entries;
@@ -284,9 +307,13 @@ function discoverTargetCandidates(repoRoot) {
         continue;
       }
       for (const entry of entries) {
-        if (!entry.isDirectory() || isIgnoredWorkspaceDiscoveryDir(entry.name)) continue;
+        if (!entry.isDirectory() || isIgnoredWorkspaceDiscoveryDir(entry.name))
+          continue;
         const root = path.join(base, entry.name);
-        roots.set(path.relative(repoRoot, root).split(path.sep).join("/"), root);
+        roots.set(
+          path.relative(repoRoot, root).split(path.sep).join("/"),
+          root,
+        );
       }
     }
   }
@@ -296,7 +323,13 @@ function discoverTargetCandidates(repoRoot) {
       // Honor negated workspace patterns (e.g. "!packages/internal"). resolveWorkspaceProjectRoot
       // sends an excluded package back to the repo root, so an excluded folder must not appear as a
       // selectable target — choosing it would silently resolve to the root instead.
-      .filter(([rel]) => !isExcludedByWorkspacePattern(rel.split("/").filter(Boolean), patterns))
+      .filter(
+        ([rel]) =>
+          !isExcludedByWorkspacePattern(
+            rel.split("/").filter(Boolean),
+            patterns,
+          ),
+      )
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([rel, root]) => {
         const targetExample = findTargetExample(repoRoot, root);
@@ -334,7 +367,10 @@ function contextSourceStatus(filePath, repoRoot, projectRoot) {
   if (isPathInsideOrEqual(absPath, absProjectRoot)) {
     return path.dirname(absPath) === absProjectRoot ? "child" : "fallback";
   }
-  if (absProjectRoot !== absRepoRoot && isPathInsideOrEqual(absPath, absRepoRoot)) {
+  if (
+    absProjectRoot !== absRepoRoot &&
+    isPathInsideOrEqual(absPath, absRepoRoot)
+  ) {
     return "inherited";
   }
   return "fallback";
@@ -355,7 +391,8 @@ function discoverRootsForPattern(repoRoot, rawPattern) {
   const segments = pattern.split("/").filter(Boolean);
   if (!segments.length) return [];
   const firstGlobIndex = segments.findIndex((segment) => segment.includes("*"));
-  const literalPrefix = firstGlobIndex === -1 ? segments : segments.slice(0, firstGlobIndex);
+  const literalPrefix =
+    firstGlobIndex === -1 ? segments : segments.slice(0, firstGlobIndex);
   const base = path.join(repoRoot, ...literalPrefix);
   if (!fs.existsSync(base)) return [];
   if (segments.includes("**")) {
@@ -369,11 +406,22 @@ function discoverRootsForPattern(repoRoot, rawPattern) {
   return expandSimplePattern(repoRoot, segments);
 }
 
-function expandSimplePattern(repoRoot, patternSegments, index = 0, current = repoRoot) {
-  if (index >= patternSegments.length) return fs.existsSync(current) ? [current] : [];
+function expandSimplePattern(
+  repoRoot,
+  patternSegments,
+  index = 0,
+  current = repoRoot,
+) {
+  if (index >= patternSegments.length)
+    return fs.existsSync(current) ? [current] : [];
   const segment = patternSegments[index];
   if (!segment.includes("*")) {
-    return expandSimplePattern(repoRoot, patternSegments, index + 1, path.join(current, segment));
+    return expandSimplePattern(
+      repoRoot,
+      patternSegments,
+      index + 1,
+      path.join(current, segment),
+    );
   }
   let entries;
   try {
@@ -383,10 +431,16 @@ function expandSimplePattern(repoRoot, patternSegments, index = 0, current = rep
   }
   const roots = [];
   for (const entry of entries) {
-    if (!entry.isDirectory() || isIgnoredWorkspaceDiscoveryDir(entry.name)) continue;
+    if (!entry.isDirectory() || isIgnoredWorkspaceDiscoveryDir(entry.name))
+      continue;
     if (!segmentMatches(segment, entry.name)) continue;
     roots.push(
-      ...expandSimplePattern(repoRoot, patternSegments, index + 1, path.join(current, entry.name)),
+      ...expandSimplePattern(
+        repoRoot,
+        patternSegments,
+        index + 1,
+        path.join(current, entry.name),
+      ),
     );
   }
   return roots;
@@ -396,7 +450,10 @@ function directChildDirs(dir) {
   try {
     return fs
       .readdirSync(dir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && !isIgnoredWorkspaceDiscoveryDir(entry.name))
+      .filter(
+        (entry) =>
+          entry.isDirectory() && !isIgnoredWorkspaceDiscoveryDir(entry.name),
+      )
       .map((entry) => path.join(dir, entry.name));
   } catch {
     return [];
@@ -411,7 +468,8 @@ function walkDirs(root, visit) {
     return;
   }
   for (const entry of entries) {
-    if (!entry.isDirectory() || isIgnoredWorkspaceDiscoveryDir(entry.name)) continue;
+    if (!entry.isDirectory() || isIgnoredWorkspaceDiscoveryDir(entry.name))
+      continue;
     const dir = path.join(root, entry.name);
     visit(dir);
     walkDirs(dir, visit);
@@ -447,7 +505,8 @@ function findTargetExample(repoRoot, projectRoot) {
   ];
   for (const rel of examples) {
     const abs = path.join(projectRoot, rel);
-    if (fs.existsSync(abs)) return path.relative(repoRoot, abs).split(path.sep).join("/");
+    if (fs.existsSync(abs))
+      return path.relative(repoRoot, abs).split(path.sep).join("/");
   }
   return path.relative(repoRoot, projectRoot).split(path.sep).join("/");
 }
@@ -460,12 +519,19 @@ function resolveWorkspaceProjectRoot(repoRoot, targetDir) {
   const excluded = isExcludedByWorkspacePattern(relSegments, patterns);
   if (!excluded) {
     for (const pattern of patterns) {
-      const projectRoot = projectRootFromWorkspacePattern(repoRoot, relSegments, pattern);
+      const projectRoot = projectRootFromWorkspacePattern(
+        repoRoot,
+        relSegments,
+        pattern,
+      );
       if (projectRoot) return projectRoot;
     }
   }
   if (excluded) return repoRoot;
-  if (relSegments.length >= 2 && MONOREPO_FALLBACK_PROJECT_DIRS.includes(relSegments[0])) {
+  if (
+    relSegments.length >= 2 &&
+    MONOREPO_FALLBACK_PROJECT_DIRS.includes(relSegments[0])
+  ) {
     return path.join(repoRoot, relSegments[0], relSegments[1]);
   }
   const nearest = nearestProjectLikeRoot(repoRoot, targetDir);
@@ -512,16 +578,25 @@ function nearestPackageRootBetween(repoRoot, targetDir, stopDir) {
 }
 
 function isPathInsideOrEqual(candidate, root) {
-  return path.resolve(candidate) === path.resolve(root) || isPathInside(candidate, root);
+  return (
+    path.resolve(candidate) === path.resolve(root) ||
+    isPathInside(candidate, root)
+  );
 }
 
 function workspacePatternMatchesRel(pattern, relSegments) {
-  const patternSegments = normalizeWorkspacePattern(pattern).split("/").filter(Boolean);
+  const patternSegments = normalizeWorkspacePattern(pattern)
+    .split("/")
+    .filter(Boolean);
   if (!patternSegments.length) return false;
   if (patternSegments.includes("**")) {
-    const firstGlobIndex = patternSegments.findIndex((segment) => segment.includes("*"));
+    const firstGlobIndex = patternSegments.findIndex((segment) =>
+      segment.includes("*"),
+    );
     const literalPrefix =
-      firstGlobIndex === -1 ? patternSegments : patternSegments.slice(0, firstGlobIndex);
+      firstGlobIndex === -1
+        ? patternSegments
+        : patternSegments.slice(0, firstGlobIndex);
     if (relSegments.length < literalPrefix.length + 1) return false;
     for (let i = 0; i < literalPrefix.length; i++) {
       if (!segmentMatches(literalPrefix[i], relSegments[i])) return false;
@@ -558,7 +633,10 @@ function readLernaWorkspaces(repoRoot) {
 
 function readPnpmWorkspaces(repoRoot) {
   try {
-    const body = fs.readFileSync(path.join(repoRoot, "pnpm-workspace.yaml"), "utf-8");
+    const body = fs.readFileSync(
+      path.join(repoRoot, "pnpm-workspace.yaml"),
+      "utf-8",
+    );
     const patterns = [];
     let inPackages = false;
     for (const line of body.split(/\r?\n/)) {
@@ -643,7 +721,11 @@ function projectRootFromWorkspacePattern(repoRoot, relSegments, rawPattern) {
   const patternSegments = pattern.split("/").filter(Boolean);
   if (!patternSegments.length) return null;
   if (patternSegments.includes("**")) {
-    return projectRootFromDoubleStarPattern(repoRoot, relSegments, patternSegments);
+    return projectRootFromDoubleStarPattern(
+      repoRoot,
+      relSegments,
+      patternSegments,
+    );
   }
   if (relSegments.length < patternSegments.length) return null;
   for (let i = 0; i < patternSegments.length; i++) {
@@ -652,10 +734,18 @@ function projectRootFromWorkspacePattern(repoRoot, relSegments, rawPattern) {
   return path.join(repoRoot, ...relSegments.slice(0, patternSegments.length));
 }
 
-function projectRootFromDoubleStarPattern(repoRoot, relSegments, patternSegments) {
-  const firstGlobIndex = patternSegments.findIndex((segment) => segment.includes("*"));
+function projectRootFromDoubleStarPattern(
+  repoRoot,
+  relSegments,
+  patternSegments,
+) {
+  const firstGlobIndex = patternSegments.findIndex((segment) =>
+    segment.includes("*"),
+  );
   const literalPrefix =
-    firstGlobIndex === -1 ? patternSegments : patternSegments.slice(0, firstGlobIndex);
+    firstGlobIndex === -1
+      ? patternSegments
+      : patternSegments.slice(0, firstGlobIndex);
   if (relSegments.length < literalPrefix.length + 1) return null;
   for (let i = 0; i < literalPrefix.length; i++) {
     if (!segmentMatches(literalPrefix[i], relSegments[i])) return null;
@@ -678,7 +768,9 @@ function normalizeWorkspacePattern(pattern) {
 function segmentMatches(patternSegment, relSegment) {
   if (patternSegment === "*") return true;
   if (!patternSegment.includes("*")) return patternSegment === relSegment;
-  const re = new RegExp(`^${escapeRegExp(patternSegment).replace(/\\\*/g, "[^/]*")}$`);
+  const re = new RegExp(
+    `^${escapeRegExp(patternSegment).replace(/\\\*/g, "[^/]*")}$`,
+  );
   return re.test(relSegment);
 }
 
@@ -809,8 +901,14 @@ function updateCheckDisabledByConfig(cwd = process.cwd()) {
   let value;
   for (const name of ["config.json", "config.local.json"]) {
     try {
-      const raw = JSON.parse(fs.readFileSync(path.join(cwd, ".impeccable", name), "utf-8"));
-      if (raw && typeof raw === "object" && typeof raw.updateCheck === "boolean")
+      const raw = JSON.parse(
+        fs.readFileSync(path.join(cwd, ".impeccable", name), "utf-8"),
+      );
+      if (
+        raw &&
+        typeof raw === "object" &&
+        typeof raw.updateCheck === "boolean"
+      )
         value = raw.updateCheck;
     } catch {
       /* missing or malformed: ignore */
@@ -889,7 +987,9 @@ async function cli() {
         "Stop the current task, load reference/init.md, and follow its " +
         "instructions to write PRODUCT.md before resuming.",
     ];
-    parts.push(buildResolvedContextDirective(ctx, cliOptions, { targetExists }));
+    parts.push(
+      buildResolvedContextDirective(ctx, cliOptions, { targetExists }),
+    );
     if (shouldWarnMissingTarget(ctx, targetProvided, targetExists)) {
       parts.push(buildMissingTargetDirective());
     }
@@ -919,15 +1019,25 @@ function parseCliOptions(args) {
 }
 
 function hasTargetOption(options) {
-  return !!(options && typeof options.targetPath === "string" && options.targetPath.trim());
+  return !!(
+    options &&
+    typeof options.targetPath === "string" &&
+    options.targetPath.trim()
+  );
 }
 
 function pathExistsForTarget(cwd, targetPath) {
-  const abs = path.isAbsolute(targetPath) ? targetPath : path.resolve(cwd, targetPath);
+  const abs = path.isAbsolute(targetPath)
+    ? targetPath
+    : path.resolve(cwd, targetPath);
   return fs.existsSync(abs);
 }
 
-function buildResolvedContextDirective(ctx, options, { targetExists = null } = {}) {
+function buildResolvedContextDirective(
+  ctx,
+  options,
+  { targetExists = null } = {},
+) {
   const targetPath = hasTargetOption(options) ? options.targetPath : null;
   return `RESOLVED_CONTEXT:\n${JSON.stringify(
     {
@@ -980,7 +1090,9 @@ function invokedAsScript() {
   const arg = process.argv[1];
   if (!arg) return false;
   try {
-    return fs.realpathSync(arg) === fs.realpathSync(fileURLToPath(import.meta.url));
+    return (
+      fs.realpathSync(arg) === fs.realpathSync(fileURLToPath(import.meta.url))
+    );
   } catch {
     return false;
   }

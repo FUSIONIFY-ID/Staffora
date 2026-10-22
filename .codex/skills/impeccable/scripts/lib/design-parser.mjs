@@ -97,7 +97,10 @@ function findTopLevelColon(s) {
 }
 
 function unquoteYamlKey(key) {
-  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
     return key.slice(1, -1);
   }
   return key;
@@ -120,7 +123,10 @@ function stripInlineYamlComment(s) {
 
 function parseScalar(raw) {
   const s = raw.trim();
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
     return s.slice(1, -1);
   }
   if (s === "true") return true;
@@ -188,7 +194,9 @@ function matchCanonicalSection(name) {
   // "Elevation & Depth" -> "Elevation", etc.
   for (const c of CANONICAL_SECTIONS) {
     const key = normalizeApostrophes(c).toLowerCase();
-    const pattern = new RegExp(`\\b${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+    const pattern = new RegExp(
+      `\\b${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+    );
     if (pattern.test(normalized)) return c;
   }
   return null;
@@ -285,11 +293,16 @@ function extractNamedRules(lines) {
   const inlineMatches = [];
   let m;
   while ((m = inlineStart.exec(joined)) !== null) {
-    inlineMatches.push({ name: m[1], start: m.index, end: inlineStart.lastIndex });
+    inlineMatches.push({
+      name: m[1],
+      start: m.index,
+      end: inlineStart.lastIndex,
+    });
   }
   for (let i = 0; i < inlineMatches.length; i++) {
     const mm = inlineMatches[i];
-    const bodyEnd = i + 1 < inlineMatches.length ? inlineMatches[i + 1].start : joined.length;
+    const bodyEnd =
+      i + 1 < inlineMatches.length ? inlineMatches[i + 1].start : joined.length;
     const body = joined
       .slice(mm.end, bodyEnd)
       .replace(/\n##[^\n]*$/s, "")
@@ -305,9 +318,7 @@ function extractNamedRules(lines) {
   for (let i = 0; i < lines.length; i++) {
     const h3 = lines[i].match(/^###\s+(.+?)\s*$/);
     if (!h3) continue;
-    const headerName = stripBold(h3[1])
-      .replace(/["“”]/g, "")
-      .trim();
+    const headerName = stripBold(h3[1]).replace(/["“”]/g, "").trim();
     if (!/^The\b.*\b(Rule|Fallback|Principle)\b/i.test(headerName)) continue;
     if (seen.has(headerName.toLowerCase())) continue;
 
@@ -348,7 +359,9 @@ function extractOverview(section) {
   const text = section.lines.join("\n");
   const northStar = text.match(/\*\*Creative North Star:\s*"([^"]+)"\*\*/);
   const keyChars = [];
-  const keyCharMatch = text.match(/\*\*Key Characteristics:\*\*\s*\n([\s\S]+?)(?:\n##|\n###|$)/);
+  const keyCharMatch = text.match(
+    /\*\*Key Characteristics:\*\*\s*\n([\s\S]+?)(?:\n##|\n###|$)/,
+  );
   if (keyCharMatch) {
     for (const line of keyCharMatch[1].split("\n")) {
       const m = line.match(/^\s*[-*]\s+(.+)$/);
@@ -358,7 +371,9 @@ function extractOverview(section) {
 
   // Philosophy paragraphs: everything that isn't a rule header or key-char block
   const paragraphs = collectParagraphs(section.lines).filter(
-    (p) => !p.startsWith("**Creative North Star") && !p.startsWith("**Key Characteristics"),
+    (p) =>
+      !p.startsWith("**Creative North Star") &&
+      !p.startsWith("**Key Characteristics"),
   );
 
   return {
@@ -378,7 +393,8 @@ function extractColors(section) {
   const ROLE_KEYWORDS = /^(primary|secondary|tertiary|neutral|accent)\b/i;
 
   for (const sub of subs.slice(1)) {
-    if (!sub.name || /Named Rules?/i.test(sub.name) || /^The\s/i.test(sub.name)) continue;
+    if (!sub.name || /Named Rules?/i.test(sub.name) || /^The\s/i.test(sub.name))
+      continue;
 
     const bullets = collectBullets(sub.lines);
     const parsed = bullets.map((b) => parseColorBullet(b)).filter(Boolean);
@@ -387,7 +403,8 @@ function extractColors(section) {
     // If every bullet starts with a role keyword (Primary/Secondary/...), promote
     // each bullet to its own group. Otherwise keep the subsection as the group.
     const allRoleBullets =
-      parsed.length > 0 && parsed.every((p) => p.name && ROLE_KEYWORDS.test(p.name));
+      parsed.length > 0 &&
+      parsed.every((p) => p.name && ROLE_KEYWORDS.test(p.name));
 
     if (allRoleBullets) {
       for (const p of parsed) {
@@ -534,7 +551,8 @@ function extractTypography(section) {
 
   const fonts = {};
   // Pattern A: **Display Font:** Family (with fallback)
-  const fontLineRe = /\*\*([\w\s/]+?)Font:\*\*\s*([^\n(]+?)(?:\s*\(with\s+([^)]+)\))?\s*$/gm;
+  const fontLineRe =
+    /\*\*([\w\s/]+?)Font:\*\*\s*([^\n(]+?)(?:\s*\(with\s+([^)]+)\))?\s*$/gm;
   let fm;
   while ((fm = fontLineRe.exec(text)) !== null) {
     const rawRole = fm[1].trim().toLowerCase().replace(/\s+/g, "-");
@@ -556,7 +574,11 @@ function extractTypography(section) {
         .replace(/\s*&\s*/g, "-")
         .replace(/\s+/g, "-");
       const role = normalizeFontRole(rawRole) || rawRole;
-      fonts[role] = { family: sm[2].trim(), fallback: null, purpose: sm[3].trim() };
+      fonts[role] = {
+        family: sm[2].trim(),
+        fallback: null,
+        purpose: sm[3].trim(),
+      };
     }
   }
 
@@ -565,10 +587,13 @@ function extractTypography(section) {
   const characterMatch = text.match(
     /\*\*Character:\*\*\s*([^\n]+(?:\n[^\n]+)*?)(?=\n\n|\n###|\n##|$)/,
   );
-  let character = characterMatch ? characterMatch[1].replace(/\n/g, " ").trim() : null;
+  let character = characterMatch
+    ? characterMatch[1].replace(/\n/g, " ").trim()
+    : null;
   if (!character) {
     const paragraphs = collectParagraphs(section.lines).filter(
-      (p) => !/^\*\*[\w\s/&]+Font/i.test(p) && !/^\*\*[\w\s/&]+\([^)]+\)/.test(p),
+      (p) =>
+        !/^\*\*[\w\s/&]+Font/i.test(p) && !/^\*\*[\w\s/&]+\([^)]+\)/.test(p),
     );
     if (paragraphs.length) character = paragraphs[0];
   }
@@ -666,7 +691,9 @@ function extractInlineShadows(text) {
     // Name heuristic: the noun immediately before the shadow phrase.
     // e.g. "an extra-diffused shadow: ..." -> "extra-diffused shadow"
     const before = text.slice(0, m.index);
-    const nameMatch = before.match(/\b([A-Za-z][A-Za-z\- ]{2,40})\s+shadow\b[^A-Za-z0-9]*$/i);
+    const nameMatch = before.match(
+      /\b([A-Za-z][A-Za-z\- ]{2,40})\s+shadow\b[^A-Za-z0-9]*$/i,
+    );
     let name = null;
     if (nameMatch) {
       const stripped = nameMatch[1]
@@ -695,7 +722,8 @@ function parseShadowBullet(bullet) {
   if (!m) return null;
   const rawValue = m[2].replace(/^box-shadow:\s*/i, "").trim();
   const looksLikeShadow =
-    /box-shadow|rgba?\(|\bpx\b|\brem\b|^-?\d+\s/i.test(rawValue) && /\d/.test(rawValue);
+    /box-shadow|rgba?\(|\bpx\b|\brem\b|^-?\d+\s/i.test(rawValue) &&
+    /\d/.test(rawValue);
   if (!looksLikeShadow) return null;
   const name = stripBold(m[1]).trim();
   return {
@@ -774,9 +802,11 @@ function extractDosDonts(section) {
   for (const b of collectBullets(section.lines)) {
     const stripped = normalizeApostrophes(stripBold(b).trim());
     if (/^don'?t\b/i.test(stripped)) {
-      if (!donts.some((d) => normalizeApostrophes(d) === stripped)) donts.push(stripped);
+      if (!donts.some((d) => normalizeApostrophes(d) === stripped))
+        donts.push(stripped);
     } else if (/^do\b/i.test(stripped)) {
-      if (!dos.some((d) => normalizeApostrophes(d) === stripped)) dos.push(stripped);
+      if (!dos.some((d) => normalizeApostrophes(d) === stripped))
+        dos.push(stripped);
     }
   }
 
@@ -799,7 +829,10 @@ function assessCoverage(model) {
   report.colors = model.colors
     ? {
         groups: model.colors.groups.length,
-        totalColors: model.colors.groups.reduce((n, g) => n + g.colors.length, 0),
+        totalColors: model.colors.groups.reduce(
+          (n, g) => n + g.colors.length,
+          0,
+        ),
         rules: model.colors.rules.length,
       }
     : "missing";
@@ -824,7 +857,10 @@ function assessCoverage(model) {
   report.components = model.components
     ? {
         count: model.components.components.length,
-        variantTotal: model.components.components.reduce((n, c) => n + c.variants.length, 0),
+        variantTotal: model.components.components.reduce(
+          (n, c) => n + c.variants.length,
+          0,
+        ),
       }
     : "missing";
 

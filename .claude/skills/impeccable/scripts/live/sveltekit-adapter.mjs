@@ -10,8 +10,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export const SVELTE_LIVE_ROOT_COMPONENT = "src/lib/impeccable/ImpeccableLiveRoot.svelte";
-export const SVELTE_LAYOUT_MARKER_OPEN = "<!-- impeccable-live-svelte-start -->";
+export const SVELTE_LIVE_ROOT_COMPONENT =
+  "src/lib/impeccable/ImpeccableLiveRoot.svelte";
+export const SVELTE_LAYOUT_MARKER_OPEN =
+  "<!-- impeccable-live-svelte-start -->";
 export const SVELTE_LAYOUT_MARKER_CLOSE = "<!-- impeccable-live-svelte-end -->";
 export const SVELTE_ROOT_IMPORT =
   "import ImpeccableLiveRoot from '$lib/impeccable/ImpeccableLiveRoot.svelte';";
@@ -39,7 +41,11 @@ export function detectSvelteKitProject(cwd = process.cwd(), config = null) {
   };
 }
 
-export function applySvelteKitLiveAdapter({ cwd = process.cwd(), port, config = null } = {}) {
+export function applySvelteKitLiveAdapter({
+  cwd = process.cwd(),
+  port,
+  config = null,
+} = {}) {
   if (!Number.isFinite(Number(port))) {
     throw new Error("SvelteKit live adapter requires a numeric port");
   }
@@ -52,7 +58,9 @@ export function applySvelteKitLiveAdapter({ cwd = process.cwd(), port, config = 
   const layoutAbs = path.join(cwd, layoutRel);
   fs.mkdirSync(path.dirname(layoutAbs), { recursive: true });
   const layoutExisted = fs.existsSync(layoutAbs);
-  const before = layoutExisted ? fs.readFileSync(layoutAbs, "utf-8") : defaultSvelteLayout();
+  const before = layoutExisted
+    ? fs.readFileSync(layoutAbs, "utf-8")
+    : defaultSvelteLayout();
   const after = patchSvelteLayout(before);
   fs.writeFileSync(layoutAbs, after, "utf-8");
 
@@ -65,7 +73,10 @@ export function applySvelteKitLiveAdapter({ cwd = process.cwd(), port, config = 
   };
 }
 
-export function removeSvelteKitLiveAdapter({ cwd = process.cwd(), config = null } = {}) {
+export function removeSvelteKitLiveAdapter({
+  cwd = process.cwd(),
+  config = null,
+} = {}) {
   const detected = detectSvelteKitProject(cwd, config);
   if (!detected) return null;
 
@@ -103,7 +114,11 @@ export function patchSvelteLayout(content) {
     const scriptMatch = out.match(/<script(?:\s[^>]*)?>/i);
     if (scriptMatch) {
       const insertAt = scriptMatch.index + scriptMatch[0].length;
-      out = out.slice(0, insertAt) + "\n  " + SVELTE_ROOT_IMPORT + out.slice(insertAt);
+      out =
+        out.slice(0, insertAt) +
+        "\n  " +
+        SVELTE_ROOT_IMPORT +
+        out.slice(insertAt);
     } else {
       out = `<script>\n  ${SVELTE_ROOT_IMPORT}\n</script>\n\n` + out;
     }
@@ -135,7 +150,10 @@ export function unpatchSvelteLayout(content) {
     "g",
   );
   out = out.replace(blockRe, "$1");
-  out = out.replace(new RegExp("^\\s*" + escapeRegExp(SVELTE_ROOT_IMPORT) + "\\s*\\n?", "gm"), "");
+  out = out.replace(
+    new RegExp("^\\s*" + escapeRegExp(SVELTE_ROOT_IMPORT) + "\\s*\\n?", "gm"),
+    "",
+  );
   out = out.replace(/<script>\s*<\/script>\s*\n?/g, "");
   return out.replace(/\n{3,}/g, "\n\n");
 }
@@ -222,7 +240,10 @@ function findSvelteKitAppHtml(cwd, config) {
 }
 
 function findSvelteKitLayout(cwd) {
-  const candidates = ["src/routes/+layout.svelte", "src/routes/(app)/+layout.svelte"];
+  const candidates = [
+    "src/routes/+layout.svelte",
+    "src/routes/(app)/+layout.svelte",
+  ];
   for (const rel of candidates) {
     if (fs.existsSync(path.join(cwd, rel))) return rel;
   }
@@ -243,7 +264,11 @@ function packageHasSvelteKit(cwd) {
       ...(pkg.devDependencies || {}),
       ...(pkg.peerDependencies || {}),
     };
-    return Boolean(deps["@sveltejs/kit"] || deps["@sveltejs/vite-plugin-svelte"] || deps.svelte);
+    return Boolean(
+      deps["@sveltejs/kit"] ||
+      deps["@sveltejs/vite-plugin-svelte"] ||
+      deps.svelte,
+    );
   } catch {
     return false;
   }

@@ -1,40 +1,61 @@
+import { NotImplementedError } from "../../common/errors/app-error.js";
+
 export const skillsService = {
-  async getSkills() {
-    // TODO: Implement skills query in Sprint (PIC: Saiful & Jundy)
-    return []
+  async getSkills(): Promise<unknown[]> {
+    throw new NotImplementedError(
+      "Skills catalog is not implemented in Sprint 1.",
+    );
   },
 
-  async createSkill(_data: Record<string, unknown>) {
-    // TODO: Implement skill creation in Sprint (PIC: Saiful & Jundy)
-    return null
+  async createSkill(_data: Record<string, unknown>): Promise<unknown> {
+    throw new NotImplementedError(
+      "Skill creation is not implemented in Sprint 1.",
+    );
   },
 
-  async updateSkill(id: string, _data: Record<string, unknown>) {
-    // TODO: Implement skill update in Sprint (PIC: Saiful & Jundy)
-    return { id }
+  async updateSkill(
+    _id: string,
+    _data: Record<string, unknown>,
+  ): Promise<unknown> {
+    throw new NotImplementedError(
+      "Skill update is not implemented in Sprint 1.",
+    );
   },
 
-  async getEmployeeSkills(_employeeId: string) {
-    // TODO: Implement employee skills query in Sprint (PIC: Saiful & Jundy)
-    return []
+  async getEmployeeSkills(_employeeId: string): Promise<unknown[]> {
+    throw new NotImplementedError(
+      "Employee skills query is not implemented in Sprint 1.",
+    );
   },
 
-  async assignSkill(_employeeId: string, _data: unknown) {
-    // TODO: Implement assign skill in Sprint (PIC: Saiful & Jundy)
-    return null
+  async assignSkill(_employeeId: string, _data: unknown): Promise<unknown> {
+    throw new NotImplementedError(
+      "Assigning skill to employee is not implemented in Sprint 1.",
+    );
   },
 
-  async updateProficiency(_employeeId: string, _skillId: string, _data: unknown) {
-    // TODO: Implement update proficiency in Sprint (PIC: Saiful & Jundy)
-    return null
+  async updateProficiency(
+    _employeeId: string,
+    _skillId: string,
+    _data: unknown,
+  ): Promise<unknown> {
+    throw new NotImplementedError(
+      "Updating skill proficiency is not implemented in Sprint 1.",
+    );
   },
 
-  async removeSkill(_employeeId: string, _skillId: string) {
-    // TODO: Implement remove skill in Sprint (PIC: Saiful & Jundy)
+  async removeSkill(_employeeId: string, _skillId: string): Promise<void> {
+    throw new NotImplementedError(
+      "Removing employee skill is not implemented in Sprint 1.",
+    );
   },
 
-  async upsertEmployeeSkills(_employeeId: string, _data: unknown) {
-    // TODO: Implement employee skills upsert in Sprint (PIC: Saiful & Jundy)
-    return []
+  async upsertEmployeeSkills(
+    _employeeId: string,
+    _data: unknown,
+  ): Promise<unknown[]> {
+    throw new NotImplementedError(
+      "Upserting employee skills is not implemented in Sprint 1.",
+    );
   },
-}
+};

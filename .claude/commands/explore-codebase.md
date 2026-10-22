@@ -37,6 +37,7 @@ Use graph tooling only when `code-review-graph` exists in the active environment
 `get_minimal_context(task="<task>")` and `detail_level="minimal"`.
 
 Suggested sequence:
+
 1. `list_graph_stats` and `get_architecture_overview` for a broad map.
 2. `list_communities` and `get_community` for the relevant module.
 3. `semantic_search_nodes` for a route, function, class, or domain term.

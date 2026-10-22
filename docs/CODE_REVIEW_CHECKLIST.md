@@ -59,7 +59,7 @@ and the relevant Architecture Decision Record (ADR).
 ### API Design & Semantics
 
 - [ ] Endpoint path matches `docs/api/openapi.yaml` and is versioned at `/api/v1/`.
-- [ ] HTTP status codes match TSD 11.3 (`200 OK`, `201 Created`, `204 No Content`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `409 Conflict`, `422 Unprocessable Entity`, `429 Too Many Requests`, `500 Internal Server Error`).
+- [ ] HTTP status codes match TSD 11.3 (`200 OK`, `201 Created`, `204 No Content`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `409 Conflict`, `422 Unprocessable Entity`, `429 Too Many Requests`, `500 Internal Server Error`, `501 Not Implemented`).
 - [ ] All responses use `{ "data": ... }` or `{ "data": [], "meta": { ... } }`.
 - [ ] Error responses follow TSD 11.4: `{ message, code, errors, meta, requestId }`.
 - [ ] All external inputs (body, query, params) are validated with Zod before service execution.
@@ -105,7 +105,7 @@ and the relevant Architecture Decision Record (ADR).
 - [ ] Direct navigation to restricted routes renders an explicit 403 Forbidden state with a return link, never disguised as empty data.
 - [ ] All data-driven screens handle loading, empty, error, and populated states.
 - [ ] Forms provide immediate client-side validation feedback and display backend validation errors.
-- [ ] UI uses consistent dark theme (`#0a0f1d`) and brand tokens with Tailwind CSS 4 and shared UI primitives.
+- [ ] UI uses the design tokens from `docs/ui-specs/design-system/design-system.md` (light mode only, per [ADR-011](architecture/decisions/adr-011-figma-design-system-light-mode.md)) with Tailwind CSS 4 and shared UI primitives. Components do not hard-code hex values for colours a token already defines.
 
 ## Database & Prisma Migrations
 
@@ -140,7 +140,7 @@ and the relevant Architecture Decision Record (ADR).
 
 Setiap pull request wajib ditinjau dan disetujui oleh Tech Lead sebelum dimerge ke `dev`:
 
-| Reviewer Role            | Name | Decision                  | Notes / Evidence |
-| ------------------------ | ---- | ------------------------- | ---------------- |
-| **Tech Lead**            | **Arya Isnaidi** | Approve / Request Changes |                  |
-| **QA Verification**      | **Fikri**        | Verified / Blocked        |                  |
+| Reviewer Role       | Name             | Decision                  | Notes / Evidence |
+| ------------------- | ---------------- | ------------------------- | ---------------- |
+| **Tech Lead**       | **Arya Isnaidi** | Approve / Request Changes |                  |
+| **QA Verification** | **Fikri**        | Verified / Blocked        |                  |

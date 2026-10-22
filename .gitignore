@@ -3,9 +3,16 @@ node_modules/
 **/coverage/
 **/.env
 **/.env.local
+**/.env.test
 !**/.env.example
+!**/.env.test.example
 *.tsbuildinfo
 apps/api/src/generated/
 playwright-report/
 test-results/
 .DS_Store
+docker-compose.override.yml
+
+# ARX UI Spec — generated local artifacts
+.arx-ui-spec/
+docs/ui-specs/**/artifacts/

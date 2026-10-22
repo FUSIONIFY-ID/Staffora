@@ -15,7 +15,9 @@
     Me = Object.prototype.propertyIsEnumerable;
   var Oe = Math.pow,
     Le = (y, v, N) =>
-      v in y ? rr(y, v, { enumerable: !0, configurable: !0, writable: !0, value: N }) : (y[v] = N),
+      v in y
+        ? rr(y, v, { enumerable: !0, configurable: !0, writable: !0, value: N })
+        : (y[v] = N),
     D = (y, v) => {
       for (var N in v || (v = {})) xe.call(v, N) && Le(y, N, v[N]);
       if (Z) for (var N of Z(v)) Me.call(v, N) && Le(y, N, v[N]);
@@ -25,7 +27,8 @@
   var je = (y, v) => {
     var N = {};
     for (var R in y) xe.call(y, R) && v.indexOf(R) < 0 && (N[R] = y[R]);
-    if (y != null && Z) for (var R of Z(y)) v.indexOf(R) < 0 && Me.call(y, R) && (N[R] = y[R]);
+    if (y != null && Z)
+      for (var R of Z(y)) v.indexOf(R) < 0 && Me.call(y, R) && (N[R] = y[R]);
     return N;
   };
   var C = (y, v, N) =>
@@ -50,7 +53,12 @@
   var Be;
   function v(e, t) {
     return (
-      (e[13] = 1), (e[14] = t >> 8), (e[15] = t & 255), (e[16] = t >> 8), (e[17] = t & 255), e
+      (e[13] = 1),
+      (e[14] = t >> 8),
+      (e[15] = t & 255),
+      (e[16] = t >> 8),
+      (e[17] = t & 255),
+      e
     );
   }
   const N = 112,
@@ -76,7 +84,13 @@
   function W(e) {
     const t = e.length - 1;
     for (let r = t; r >= 4; r--)
-      if (e[r - 4] === 9 && e[r - 3] === N && e[r - 2] === R && e[r - 1] === O && e[r] === X)
+      if (
+        e[r - 4] === 9 &&
+        e[r - 3] === N &&
+        e[r - 2] === R &&
+        e[r - 1] === O &&
+        e[r] === X
+      )
         return r - 3;
     return 0;
   }
@@ -98,7 +112,13 @@
       (n[12] = 1));
     const i = P(n),
       a = new Uint8Array(4);
-    if (((a[0] = i >>> 24), (a[1] = i >>> 16), (a[2] = i >>> 8), (a[3] = i & 255), r)) {
+    if (
+      ((a[0] = i >>> 24),
+      (a[1] = i >>> 16),
+      (a[2] = i >>> 8),
+      (a[3] = i & 255),
+      r)
+    ) {
       const s = W(e);
       return (e.set(n, s), e.set(a, s + 13), e);
     } else {
@@ -113,7 +133,11 @@
     He = "AAAACXBI";
   function Ve(e) {
     let t = e.indexOf(qe);
-    return (t === -1 && (t = e.indexOf(We)), t === -1 && (t = e.indexOf(He)), t);
+    return (
+      t === -1 && (t = e.indexOf(We)),
+      t === -1 && (t = e.indexOf(He)),
+      t
+    );
   }
   const se = "[modern-screenshot]",
     U = typeof window != "undefined",
@@ -148,10 +172,15 @@
     ct = (...e) => console.warn(se, ...e);
   function ut(e) {
     var r;
-    const t = (r = e == null ? void 0 : e.createElement) == null ? void 0 : r.call(e, "canvas");
+    const t =
+      (r = e == null ? void 0 : e.createElement) == null
+        ? void 0
+        : r.call(e, "canvas");
     return (
       t && (t.height = t.width = 1),
-      !!t && "toDataURL" in t && !!t.toDataURL("image/webp").includes("image/webp")
+      !!t &&
+        "toDataURL" in t &&
+        !!t.toDataURL("image/webp").includes("image/webp")
     );
   }
   const re = (e) => e.startsWith("data:");
@@ -162,7 +191,13 @@
     const r = J().implementation.createHTMLDocument(),
       n = r.createElement("base"),
       i = r.createElement("a");
-    return (r.head.appendChild(n), r.body.appendChild(i), t && (n.href = t), (i.href = e), i.href);
+    return (
+      r.head.appendChild(n),
+      r.body.appendChild(i),
+      t && (n.href = t),
+      (i.href = e),
+      i.href
+    );
   }
   function J(e) {
     var t;
@@ -183,7 +218,11 @@
   function de(e, t) {
     let r = new XMLSerializer().serializeToString(e);
     return (
-      t && (r = r.replace(/[\u0000-\u0008\v\f\u000E-\u001F\uD800-\uDFFF\uFFFE\uFFFF]/gu, "")),
+      t &&
+        (r = r.replace(
+          /[\u0000-\u0008\v\f\u000E-\u001F\uD800-\uDFFF\uFFFE\uFFFF]/gu,
+          "",
+        )),
       `data:image/svg+xml;charset=utf-8,${encodeURIComponent(r)}`
     );
   }
@@ -208,7 +247,10 @@
   function dt(e) {
     var o, c;
     const [t, r] = e.split(","),
-      n = (c = (o = t.match(/data:(.+);/)) == null ? void 0 : o[1]) != null ? c : void 0,
+      n =
+        (c = (o = t.match(/data:(.+);/)) == null ? void 0 : o[1]) != null
+          ? c
+          : void 0,
       i = window.atob(r),
       a = i.length,
       s = new Uint8Array(a);
@@ -221,7 +263,9 @@
       ((i.onload = () => r(i.result)),
         (i.onerror = () => n(i.error)),
         (i.onabort = () => n(new Error(`Failed read blob to ${t}`))),
-        t === "dataUrl" ? i.readAsDataURL(e) : t === "arrayBuffer" && i.readAsArrayBuffer(e));
+        t === "dataUrl"
+          ? i.readAsDataURL(e)
+          : t === "arrayBuffer" && i.readAsArrayBuffer(e));
     });
   }
   const gt = (e) => ge(e, "dataUrl"),
@@ -232,7 +276,12 @@
   }
   function L(e, t) {
     return new Promise((r) => {
-      const { timeout: n, ownerDocument: i, onError: a, onWarn: s } = t != null ? t : {},
+      const {
+          timeout: n,
+          ownerDocument: i,
+          onError: a,
+          onWarn: s,
+        } = t != null ? t : {},
         o = typeof e == "string" ? _(e, J(i)) : e;
       let c = null,
         u = null;
@@ -248,7 +297,8 @@
             (s == null || s("Failed video load", d, h), a == null || a(h), l());
           };
         ((u = () => {
-          (o.removeEventListener("loadeddata", m), o.removeEventListener("error", f));
+          (o.removeEventListener("loadeddata", m),
+            o.removeEventListener("error", f));
         }),
           o.addEventListener("loadeddata", m, { once: !0 }),
           o.addEventListener("error", f, { once: !0 }));
@@ -271,7 +321,8 @@
               l();
             }),
           f = (h) => {
-            (s == null || s("Failed image load", o.dataset.originalSrc || d, h), l());
+            (s == null || s("Failed image load", o.dataset.originalSrc || d, h),
+              l());
           };
         if ($(o) && o.complete) return m();
         ((u = () => {
@@ -296,7 +347,8 @@
   }
   const he = (function () {
     let t = 0;
-    const r = () => `0000${((Math.random() * Oe(36, 4)) << 0).toString(36)}`.slice(-4);
+    const r = () =>
+      `0000${((Math.random() * Oe(36, 4)) << 0).toString(36)}`.slice(-4);
     return () => ((t += 1), `u${r()}${t}`);
   })();
   function we(e) {
@@ -359,7 +411,9 @@
               fetch: D(
                 {
                   requestInit: wt(
-                    (E = t == null ? void 0 : t.fetch) == null ? void 0 : E.bypassingCache,
+                    (E = t == null ? void 0 : t.fetch) == null
+                      ? void 0
+                      : E.bypassingCache,
                   ),
                   placeholderImage:
                     "data:image/png;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
@@ -402,16 +456,28 @@
                         var A, F, B, $e;
                         const { url: S, result: T } = w.data;
                         T
-                          ? (F = (A = u.get(S)) == null ? void 0 : A.resolve) == null ||
-                            F.call(A, T)
-                          : ($e = (B = u.get(S)) == null ? void 0 : B.reject) == null ||
-                            $e.call(B, new Error(`Error receiving message from worker: ${S}`));
+                          ? (F = (A = u.get(S)) == null ? void 0 : A.resolve) ==
+                              null || F.call(A, T)
+                          : ($e = (B = u.get(S)) == null ? void 0 : B.reject) ==
+                              null ||
+                            $e.call(
+                              B,
+                              new Error(
+                                `Error receiving message from worker: ${S}`,
+                              ),
+                            );
                       })),
                     (b.onmessageerror = (w) => {
                       var T, A;
                       const { url: S } = w.data;
-                      (A = (T = u.get(S)) == null ? void 0 : T.reject) == null ||
-                        A.call(T, new Error(`Error receiving message from worker: ${S}`));
+                      (A = (T = u.get(S)) == null ? void 0 : T.reject) ==
+                        null ||
+                        A.call(
+                          T,
+                          new Error(
+                            `Error receiving message from worker: ${S}`,
+                          ),
+                        );
                     }),
                     b
                   );
@@ -495,7 +561,13 @@
     });
   }
   function bt(e, t) {
-    const { width: r, height: n, scale: i, backgroundColor: a, maximumCanvasSize: s } = t,
+    const {
+        width: r,
+        height: n,
+        scale: i,
+        backgroundColor: a,
+        maximumCanvasSize: s,
+      } = t,
       o = e.createElement("canvas");
     ((o.width = Math.floor(r * i)),
       (o.height = Math.floor(n * i)),
@@ -528,7 +600,10 @@
       n = e.getContext("2d"),
       i = r.getContext("2d");
     try {
-      return (n && i && i.putImageData(n.getImageData(0, 0, e.width, e.height), 0, 0), r);
+      return (
+        n && i && i.putImageData(n.getImageData(0, 0, e.width, e.height), 0, 0),
+        r
+      );
     } catch (a) {
       t.log.warn("Failed to clone canvas", a);
     }
@@ -537,7 +612,10 @@
   function St(e, t) {
     var r;
     try {
-      if ((r = e == null ? void 0 : e.contentDocument) != null && r.documentElement)
+      if (
+        (r = e == null ? void 0 : e.contentDocument) != null &&
+        r.documentElement
+      )
         return ne(e.contentDocument.documentElement, t);
     } catch (n) {
       t.log.warn("Failed to clone iframe", n);
@@ -547,14 +625,17 @@
   function Et(e) {
     const t = e.cloneNode(!1);
     return (
-      e.currentSrc && e.currentSrc !== e.src && ((t.src = e.currentSrc), (t.srcset = "")),
+      e.currentSrc &&
+        e.currentSrc !== e.src &&
+        ((t.src = e.currentSrc), (t.srcset = "")),
       t.loading === "lazy" && (t.loading = "eager"),
       t
     );
   }
   function Ct(e, t) {
     return C(this, null, function* () {
-      if (e.ownerDocument && !e.currentSrc && e.poster) return _(e.poster, e.ownerDocument);
+      if (e.ownerDocument && !e.currentSrc && e.poster)
+        return _(e.poster, e.ownerDocument);
       const r = e.cloneNode(!1);
       ((r.crossOrigin = "anonymous"),
         e.currentSrc && e.currentSrc !== e.src && (r.src = e.currentSrc));
@@ -574,7 +655,8 @@
           s && s.drawImage(r, 0, 0, a.width, a.height);
         } catch (s) {
           return (
-            t.log.warn("Failed to clone video", s), e.poster ? _(e.poster, e.ownerDocument) : r
+            t.log.warn("Failed to clone video", s),
+            e.poster ? _(e.poster, e.ownerDocument) : r
           );
         }
         return Se(a, t);
@@ -583,7 +665,15 @@
     });
   }
   function Tt(e, t) {
-    return tt(e) ? Se(e, t) : lt(e) ? St(e, t) : $(e) ? Et(e) : Y(e) ? Ct(e, t) : e.cloneNode(!1);
+    return tt(e)
+      ? Se(e, t)
+      : lt(e)
+        ? St(e, t)
+        : $(e)
+          ? Et(e)
+          : Y(e)
+            ? Ct(e, t)
+            : e.cloneNode(!1);
   }
   function vt(e) {
     let t = e.sandbox;
@@ -598,7 +688,8 @@
           (t.style.visibility = "hidden"),
           (t.style.position = "fixed"),
           r.body.appendChild(t),
-          (t.srcdoc = '<!DOCTYPE html><meta charset="UTF-8"><title></title><body>'),
+          (t.srcdoc =
+            '<!DOCTYPE html><meta charset="UTF-8"><title></title><body>'),
           (e.sandbox = t));
       } catch (n) {
         e.log.warn("Failed to getSandBox", n);
@@ -612,8 +703,12 @@
     const { defaultComputedStyles: n } = r,
       i = e.nodeName.toLowerCase(),
       a = H(e) && i !== "svg",
-      s = a ? Nt.map((g) => [g, e.getAttribute(g)]).filter(([, g]) => g !== null) : [],
-      o = [a && "svg", i, s.map((g, p) => `${g}=${p}`).join(","), t].filter(Boolean).join(":");
+      s = a
+        ? Nt.map((g) => [g, e.getAttribute(g)]).filter(([, g]) => g !== null)
+        : [],
+      o = [a && "svg", i, s.map((g, p) => `${g}=${p}`).join(","), t]
+        .filter(Boolean)
+        .join(":");
     if (n.has(o)) return n.get(o);
     const c = vt(r),
       u = c == null ? void 0 : c.contentWindow;
@@ -666,7 +761,11 @@
   }
   function Rt(e, t, r, n) {
     var d, m, f, h;
-    const { ownerWindow: i, includeStyleProperties: a, currentParentNodeStyle: s } = n,
+    const {
+        ownerWindow: i,
+        includeStyleProperties: a,
+        currentParentNodeStyle: s,
+      } = n,
       o = t.style,
       c = i.getComputedStyle(e),
       u = Ee(e, null, n);
@@ -696,7 +795,8 @@
         (l.has("font-kerning") || l.set("font-kerning", ["normal", ""]),
         (((m = l.get("overflow-x")) == null ? void 0 : m[0]) === "hidden" ||
           ((f = l.get("overflow-y")) == null ? void 0 : f[0]) === "hidden") &&
-          ((h = l.get("text-overflow")) == null ? void 0 : h[0]) === "ellipsis" &&
+          ((h = l.get("text-overflow")) == null ? void 0 : h[0]) ===
+            "ellipsis" &&
           e.scrollWidth === e.clientWidth &&
           l.set("text-overflow", ["clip", ""])));
     for (let g = o.length, p = 0; p < g; p++) o.removeProperty(o.item(p));
@@ -721,7 +821,12 @@
       "::-webkit-resizer",
     ];
   function Pt(e, t, r, n, i) {
-    const { ownerWindow: a, svgStyleElement: s, svgStyles: o, currentNodeStyle: c } = n;
+    const {
+      ownerWindow: a,
+      svgStyleElement: s,
+      svgStyles: o,
+      currentNodeStyle: c,
+    } = n;
     if (!s || !a) return;
     function u(l) {
       var w;
@@ -821,8 +926,14 @@
   function ne(e, t, r = !1, n) {
     return C(this, null, function* () {
       var u, l, d, m;
-      const { ownerDocument: i, ownerWindow: a, fontFamilies: s, onCloneEachNode: o } = t;
-      if (i && et(e)) return (n && /\S/.test(e.data) && n(e.data), i.createTextNode(e.data));
+      const {
+        ownerDocument: i,
+        ownerWindow: a,
+        fontFamilies: s,
+        onCloneEachNode: o,
+      } = t;
+      if (i && et(e))
+        return (n && /\S/.test(e.data) && n(e.data), i.createTextNode(e.data));
       if (i && a && I(e) && (V(e) || H(e))) {
         const f = yield Tt(e, t);
         if (t.isEnable("removeAbnormalAttributes")) {
@@ -843,7 +954,8 @@
           g =
             w.includes("scroll") ||
             ((w.includes("auto") || w.includes("overlay")) &&
-              (e.scrollHeight > e.clientHeight || e.scrollWidth > e.clientWidth));
+              (e.scrollHeight > e.clientHeight ||
+                e.scrollWidth > e.clientWidth));
         }
         const p = (d = h.get("text-transform")) == null ? void 0 : d[0],
           E = we((m = h.get("font-family")) == null ? void 0 : m[0]),
@@ -853,10 +965,12 @@
                   ? (w = w.toUpperCase())
                   : p === "lowercase"
                     ? (w = w.toLowerCase())
-                    : p === "capitalize" && (w = w[0].toUpperCase() + w.substring(1)),
+                    : p === "capitalize" &&
+                      (w = w[0].toUpperCase() + w.substring(1)),
                   E.forEach((S) => {
                     let T = s.get(S);
-                    (T || s.set(S, (T = new Set())), w.split("").forEach((A) => T.add(A)));
+                    (T || s.set(S, (T = new Set())),
+                      w.split("").forEach((A) => T.add(A)));
                   }));
               }
             : void 0;
@@ -904,7 +1018,8 @@
       s = r ? setTimeout(() => a.abort(), r) : void 0;
     return fetch(t, D({ signal: a.signal }, i))
       .then((c) => {
-        if (!c.ok) throw new Error("Failed fetch, not 2xx response", { cause: c });
+        if (!c.ok)
+          throw new Error("Failed fetch, not 2xx response", { cause: c });
         switch (n) {
           case "arrayBuffer":
             return c.arrayBuffer();
@@ -918,7 +1033,12 @@
       .finally(() => clearTimeout(s));
   }
   function z(e, t) {
-    const { url: r, requestType: n = "text", responseType: i = "text", imageDom: a } = t;
+    const {
+      url: r,
+      requestType: n = "text",
+      responseType: i = "text",
+      imageDom: a,
+    } = t;
     let s = r;
     const {
       timeout: o,
@@ -972,7 +1092,10 @@
         }).catch((A) => {
           if ((u.delete(r), n === "image" && f))
             return (
-              e.log.warn("Failed to fetch image base64, trying to use placeholder image", s),
+              e.log.warn(
+                "Failed to fetch image base64, trying to use placeholder image",
+                s,
+              ),
               typeof f == "string" ? f : f(a)
             );
           throw A;
@@ -1004,7 +1127,10 @@
   const ke = /url\((['"]?)([^'"]+?)\1\)/g;
   function $t(e, t) {
     const r = [];
-    return (e.replace(ke, (n, i, a) => (r.push([a, ue(a, t)]), n)), r.filter(([n]) => !re(n)));
+    return (
+      e.replace(ke, (n, i, a) => (r.push([a, ue(a, t)]), n)),
+      r.filter(([n]) => !re(n))
+    );
   }
   function Lt(e) {
     const t = e.replace(/([.*+?^${}()|\[\]\/\\])/g, "\\$1");
@@ -1035,15 +1161,26 @@
       const r = e.currentSrc || e.src;
       if (!re(r))
         return [
-          z(t, { url: r, imageDom: e, requestType: "image", responseType: "dataUrl" }).then((n) => {
-            n && ((e.srcset = ""), (e.dataset.originalSrc = r), (e.src = n || ""));
+          z(t, {
+            url: r,
+            imageDom: e,
+            requestType: "image",
+            responseType: "dataUrl",
+          }).then((n) => {
+            n &&
+              ((e.srcset = ""), (e.dataset.originalSrc = r), (e.src = n || ""));
           }),
         ];
       (G || te) && t.drawImageCount++;
     } else if (H(e) && !re(e.href.baseVal)) {
       const r = e.href.baseVal;
       return [
-        z(t, { url: r, imageDom: e, requestType: "image", responseType: "dataUrl" }).then((n) => {
+        z(t, {
+          url: r,
+          imageDom: e,
+          requestType: "image",
+          responseType: "dataUrl",
+        }).then((n) => {
           n && ((e.dataset.originalSrc = r), (e.href.baseVal = n || ""));
         }),
       ];
@@ -1053,7 +1190,8 @@
   function jt(e, t) {
     var o;
     const { ownerDocument: r, svgDefsElement: n } = t,
-      i = (o = e.getAttribute("href")) != null ? o : e.getAttribute("xlink:href");
+      i =
+        (o = e.getAttribute("href")) != null ? o : e.getAttribute("xlink:href");
     if (!i) return [];
     const [a, s] = i.split("#");
     if (s) {
@@ -1062,7 +1200,8 @@
           (l, d) => (l != null ? l : d.querySelector(`svg ${c}`)),
           r == null ? void 0 : r.querySelector(`svg ${c}`),
         );
-      if ((a && e.setAttribute("href", c), n != null && n.querySelector(c))) return [];
+      if ((a && e.setAttribute("href", c), n != null && n.querySelector(c)))
+        return [];
       if (u) return (n == null || n.appendChild(u.cloneNode(!0)), []);
       if (a)
         return [
@@ -1075,7 +1214,8 @@
   }
   function De(e, t) {
     const { tasks: r } = t;
-    (I(e) && (($(e) || ce(e)) && r.push(...Ot(e, t)), Qe(e) && r.push(...jt(e, t))),
+    (I(e) &&
+      (($(e) || ce(e)) && r.push(...Ot(e, t)), Qe(e) && r.push(...jt(e, t))),
       V(e) && r.push(...Mt(e.style, t)),
       e.childNodes.forEach((n) => {
         De(n, t);
@@ -1103,7 +1243,10 @@
               try {
                 return "cssRules" in f && !!f.cssRules.length;
               } catch (h) {
-                return (t.log.warn(`Error while reading CSS rules from ${f.href}`, h), !1);
+                return (
+                  t.log.warn(`Error while reading CSS rules from ${f.href}`, h),
+                  !1
+                );
               }
             }),
             u = r.implementation.createHTMLDocument(""),
@@ -1118,19 +1261,28 @@
                     const g = h.href;
                     let p = "";
                     try {
-                      p = yield z(t, { url: g, requestType: "text", responseType: "text" });
+                      p = yield z(t, {
+                        url: g,
+                        requestType: "text",
+                        responseType: "text",
+                      });
                     } catch (b) {
                       t.log.warn(`Error fetch remote css import from ${g}`, b);
                     }
-                    const E = p.replace(ke, (b, w, S) => b.replace(S, ue(S, g)));
+                    const E = p.replace(ke, (b, w, S) =>
+                      b.replace(S, ue(S, g)),
+                    );
                     for (const b of Ht(E))
                       try {
                         d.insertRule(b, d.cssRules.length);
                       } catch (w) {
-                        t.log.warn("Error inserting rule from remote css import", {
-                          rule: b,
-                          error: w,
-                        });
+                        t.log.warn(
+                          "Error inserting rule from remote css import",
+                          {
+                            rule: b,
+                            error: w,
+                          },
+                        );
                       }
                   }
                 }),
@@ -1162,16 +1314,18 @@
 `),
                     )
                   : s.push(
-                      Re(h.cssText, h.parentStyleSheet ? h.parentStyleSheet.href : null, t).then(
-                        (p) => {
-                          ((p = Ue(p, t)),
-                            a.set(h.cssText, p),
-                            n.appendChild(
-                              r.createTextNode(`${p}
+                      Re(
+                        h.cssText,
+                        h.parentStyleSheet ? h.parentStyleSheet.href : null,
+                        t,
+                      ).then((p) => {
+                        ((p = Ue(p, t)),
+                          a.set(h.cssText, p),
+                          n.appendChild(
+                            r.createTextNode(`${p}
 `),
-                            ));
-                        },
-                      ),
+                          ));
+                      }),
                     );
               }));
         }
@@ -1220,7 +1374,11 @@
   }
   function oe(e, t = []) {
     for (const r of Array.from(e))
-      Ke(r) ? t.push(...oe(r.cssRules)) : "cssRules" in r ? oe(r.cssRules, t) : t.push(r);
+      Ke(r)
+        ? t.push(...oe(r.cssRules))
+        : "cssRules" in r
+          ? oe(r.cssRules, t)
+          : t.push(r);
     return t;
   }
   const Xt = /\bx?link:?href\s*=\s*["'](?!data:)[^"']+["']/i;
@@ -1260,7 +1418,11 @@
       }
       (i.timeEnd("clone node"),
         yield m == null ? void 0 : m(g),
-        u !== !1 && I(g) && (i.time("embed web font"), yield qt(g, r), i.timeEnd("embed web font")),
+        u !== !1 &&
+          I(g) &&
+          (i.time("embed web font"),
+          yield qt(g, r),
+          i.timeEnd("embed web font")),
         i.time("embed node"),
         De(g, r));
       const p = a.length;
@@ -1314,7 +1476,10 @@
         i = de(n, r.isEnable("removeControlCharacter"));
       r.autoDestruct ||
         ((r.svgStyleElement = be(r.ownerDocument)),
-        (r.svgDefsElement = (s = r.ownerDocument) == null ? void 0 : s.createElementNS(K, "defs")),
+        (r.svgDefsElement =
+          (s = r.ownerDocument) == null
+            ? void 0
+            : s.createElementNS(K, "defs")),
         r.svgStyles.clear());
       const a = _(i, n.ownerDocument);
       return yield yt(a, r);
@@ -1331,7 +1496,9 @@
         const u = yield mt(c.slice(0, 33));
         let l = new Uint8Array(u);
         return (
-          i === "image/png" ? (l = ae(l, s)) : i === "image/jpeg" && (l = v(l, s)),
+          i === "image/png"
+            ? (l = ae(l, s))
+            : i === "image/jpeg" && (l = v(l, s)),
           n.timeEnd("canvas to blob"),
           new Blob([l, c.slice(33)], { type: i })
         );
@@ -1352,7 +1519,9 @@
           m = !1;
         if (a === "image/png") {
           const w = Ve(l);
-          w >= 0 ? ((d = Math.ceil((w + 28) / 3) * 4), (m = !0)) : (d = (33 / 3) * 4);
+          w >= 0
+            ? ((d = Math.ceil((w + 28) / 3) * 4), (m = !0))
+            : (d = (33 / 3) * 4);
         } else a === "image/jpeg" && (d = (18 / 3) * 4);
         const f = l.substring(0, d),
           h = l.substring(d),
