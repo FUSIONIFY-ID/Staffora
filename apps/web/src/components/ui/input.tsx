@@ -1,15 +1,18 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef } from 'react'
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  helperText?: string;
+  label?: string
+  error?: string
+  helperText?: string
 }
 
+// Error and helper text are linked via aria-describedby, and error sets
+// aria-invalid, so validation is announced rather than only coloured red.
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, className = "", id, ...props }, ref) => {
-    const inputId =
-      id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
+  ({ label, error, helperText, className = '', id, ...props }, ref) => {
+    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
+    const messageId = inputId ? `${inputId}-message` : undefined
+    const hasMessage = Boolean(error || helperText)
 
     return (
       <div className="w-full space-y-1.5 text-left">
@@ -24,20 +27,28 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           id={inputId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={hasMessage ? messageId : undefined}
           className={`w-full rounded-lg bg-surface-white border ${
             error
-              ? "border-danger focus:border-danger focus:ring-danger/20"
-              : "border-line-input focus:border-primary focus:ring-primary/20"
+              ? 'border-danger focus:border-danger focus:ring-danger/20'
+              : 'border-line-input focus:border-primary focus:ring-primary/20'
           } h-10 px-3.5 text-sm text-ink placeholder-ink-placeholder transition-all focus:outline-none focus:ring-2 disabled:opacity-50 ${className}`}
           {...props}
         />
-        {error && <p className="text-xs text-danger font-medium">{error}</p>}
+        {error && (
+          <p id={messageId} className="text-xs text-danger font-medium">
+            {error}
+          </p>
+        )}
         {helperText && !error && (
-          <p className="text-xs text-ink-dim">{helperText}</p>
+          <p id={messageId} className="text-xs text-ink-dim">
+            {helperText}
+          </p>
         )}
       </div>
-    );
+    )
   },
-);
+)
 
-Input.displayName = "Input";
+Input.displayName = 'Input'
