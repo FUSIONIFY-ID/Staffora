@@ -1515,7 +1515,10 @@ export interface paths {
             };
         };
         put?: never;
-        /** Create staffing requirement for project */
+        /**
+         * Create staffing requirement for project
+         * @description Creates a staffing requirement for the project, restricted to ADMIN or the assigned Project Manager. The attached skills must reference existing skills and must not repeat a skill id. A deactivated skill cannot be newly attached and answers 422 with code SKILL_INACTIVE (AC01.05, BR02).
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1545,7 +1548,7 @@ export interface paths {
                 401: components["responses"]["UnauthorizedResponse"];
                 403: components["responses"]["ForbiddenResponse"];
                 404: components["responses"]["NotFoundResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
+                422: components["responses"]["SkillAssignmentErrorResponse"];
             };
         };
         delete?: never;
@@ -1597,7 +1600,7 @@ export interface paths {
         head?: never;
         /**
          * Update staffing requirement
-         * @description Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager. Passing an empty array for skills removes all existing required skills.
+         * @description Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager. Passing an empty array for skills removes all existing required skills. Only skills newly added by the request are checked against AC01.05: a skill that was already attached before it was deactivated may stay attached, while a newly attached deactivated skill answers 422 with code SKILL_INACTIVE and an `errors.skillId` entry. An unknown or repeated skill id answers 422 with code SKILL_REFERENCE_INVALID and an `errors.skills` entry.
          */
         patch: {
             parameters: {
@@ -1628,7 +1631,7 @@ export interface paths {
                 401: components["responses"]["UnauthorizedResponse"];
                 403: components["responses"]["ForbiddenResponse"];
                 404: components["responses"]["NotFoundResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
+                422: components["responses"]["SkillAssignmentErrorResponse"];
             };
         };
         trace?: never;
@@ -2444,6 +2447,7 @@ export interface components {
             startDate: string;
             /** Format: date */
             endDate: string;
+            /** @description Skills required for the role. Each `skills[].skillId` must reference an existing skill and must be unique within the request; an unknown or repeated id answers 422 with code SKILL_REFERENCE_INVALID and an `errors.skills` entry. A deactivated skill cannot be newly attached and answers 422 with code SKILL_INACTIVE and an `errors.skillId` entry (AC01.05). */
             skills?: {
                 /** Format: uuid */
                 skillId: string;
@@ -2459,6 +2463,7 @@ export interface components {
             startDate?: string;
             /** Format: date */
             endDate?: string;
+            /** @description Replaces the requirement's skill list; an empty array removes all existing required skills. Each `skills[].skillId` must reference an existing skill and must be unique within the request; an unknown or repeated id answers 422 with code SKILL_REFERENCE_INVALID and an `errors.skills` entry. Only newly added skills are checked against AC01.05, so a skill that was already attached before it was deactivated may stay attached, while a newly attached deactivated skill answers 422 with code SKILL_INACTIVE and an `errors.skillId` entry. */
             skills?: {
                 /** Format: uuid */
                 skillId: string;
@@ -2638,6 +2643,15 @@ export interface components {
         };
         /** @description Validation failed for request parameters or body */
         ValidationErrorResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Validation failed for the request body or parameters; alongside generic validation failures, two codes name a skill problem: `SKILL_INACTIVE` means the request attaches a skill that is deactivated, named by an `errors.skillId` entry (AC01.05), and `SKILL_REFERENCE_INVALID` means the `skills` array names a skill id that does not exist or repeats the same id twice, named by an `errors.skills` entry. On `PATCH /staffing-requirements/{id}`, only skills newly added by the request are checked, so a skill that was already attached before it was deactivated may stay attached; AC01.05 applies to new assignments. */
+        SkillAssignmentErrorResponse: {
             headers: {
                 [name: string]: unknown;
             };

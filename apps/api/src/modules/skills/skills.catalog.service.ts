@@ -1,4 +1,3 @@
-import type { Prisma } from "../../generated/prisma/client.js";
 import { NotFoundError } from "../../common/errors/app-error.js";
 import type {
   CreateSkillInput,
@@ -28,17 +27,17 @@ export const skillsCatalogService = {
    * assignments remain interpretable.
    */
   async listSkills(query: SkillListQuery): Promise<SkillListResult> {
-    const search = query.q?.trim();
-    const where: Prisma.SkillWhereInput = {
-      ...(search
-        ? { name: { contains: search, mode: "insensitive" } }
-        : {}),
-      ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
-    };
+    // F9: the service passes domain values; building the `SkillWhereInput`
+    // (including LIKE escaping) is the repository's job.
+    const filter = { q: query.q, isActive: query.isActive };
 
     const [rows, total] = await Promise.all([
-      skillsRepository.listSkills(where, (query.page - 1) * query.pageSize, query.pageSize),
-      skillsRepository.countSkills(where),
+      skillsRepository.listSkills(
+        filter,
+        (query.page - 1) * query.pageSize,
+        query.pageSize,
+      ),
+      skillsRepository.countSkills(filter),
     ]);
 
     return {

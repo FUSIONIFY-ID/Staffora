@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { prisma } from "../src/common/database/prisma.js";
+import { Prisma } from "../src/generated/prisma/client.js";
 import { fetchCsrfSession } from "./support/auth-login.js";
 import {
   MISSING_ID,
@@ -43,10 +45,7 @@ interface EmployeeSkillBody {
   proficiencyLevel: number;
 }
 
-async function createSkill(
-  session: Session,
-  name: string,
-): Promise<SkillBody> {
+async function createSkill(session: Session, name: string): Promise<SkillBody> {
   const res = await writeReq(session, "post", "/api/v1/skills").send({ name });
   expect(res.status, `create skill ${name}`).toBe(201);
   return res.body.data as SkillBody;
@@ -88,12 +87,17 @@ async function listEmployeeSkills(
  * staffing requirement itself is created through the real API. `projectCode`
  * carries the skill prefix so teardown can find the project and its staffing
  * requirements again without every test remembering an id.
+ *
+ * `projectCode` is unique in the database, so a run that needs more than one
+ * project passes a label that becomes part of the code; every code still starts
+ * with `SKILL_PREFIX`, which is what `removeCreatedProjects` matches on.
  */
-async function createProject(): Promise<string> {
+async function createProject(label?: string): Promise<string> {
   const project = await prisma.project.create({
     data: {
-      projectCode: SKILL_PREFIX,
-      name: `${SKILL_PREFIX} Staffing Project`,
+      projectCode:
+        label === undefined ? SKILL_PREFIX : `${SKILL_PREFIX}-${label}`,
+      name: `${SKILL_PREFIX} Staffing Project${label === undefined ? "" : ` ${label}`}`,
       // Required by the schema; an ADMIN may manage any project regardless of
       // who is named here.
       projectManagerEmployeeId: fixture.employeeId,
@@ -103,6 +107,81 @@ async function createProject(): Promise<string> {
     select: { id: true },
   });
   return project.id;
+}
+
+/** One skill attachment as the staffing requirement endpoints take it. */
+interface RequirementSkill {
+  skillId: string;
+  minimumProficiencyLevel: number;
+}
+
+function staffingRequirementsPath(projectId: string): string {
+  return `/api/v1/projects/${projectId}/staffing-requirements`;
+}
+
+/**
+ * The body `POST /projects/{id}/staffing-requirements` expects. `jobRoleId` is
+ * read from the fixture at call time, because the fixture is only populated by
+ * `beforeAll`.
+ */
+function staffingRequirementBody(
+  skills?: RequirementSkill[],
+): Record<string, unknown> {
+  return {
+    jobRoleId: fixture.jobRoleId,
+    headcount: 1,
+    allocationPercentage: 50,
+    startDate: isoDate(1),
+    endDate: isoDate(30),
+    ...(skills === undefined ? {} : { skills }),
+  };
+}
+
+/**
+ * Creates a project owned by this suite plus one staffing requirement through
+ * the real API, which is the setup every regression test below needs. The
+ * label keeps `projectCode` unique per project and still inside the prefix, so
+ * `removeCreatedProjects` finds it.
+ */
+async function createProjectAndRequirement(
+  session: Session,
+  skills: RequirementSkill[],
+  label: string,
+): Promise<{ projectId: string; requirementId: string }> {
+  const projectId = await createProject(label);
+  const created = await writeReq(
+    session,
+    "post",
+    staffingRequirementsPath(projectId),
+  ).send(staffingRequirementBody(skills));
+  expect(created.status, `create requirement (${label})`).toBe(201);
+  return { projectId, requirementId: created.body.data.id as string };
+}
+
+/** Deactivates a skill through the API, the way an Admin retires one (AC01.04). */
+async function deactivateSkill(
+  session: Session,
+  skillId: string,
+): Promise<void> {
+  const res = await writeReq(
+    session,
+    "patch",
+    `/api/v1/skills/${skillId}`,
+  ).send({ isActive: false });
+  expect(res.status, `deactivate ${skillId}`).toBe(200);
+  expect(res.body.data.isActive).toBe(false);
+}
+
+/** DELETE /employees/{id}/skills/{skillId} with the CSRF token a write needs. */
+function removeAssignment(
+  session: Session,
+  employeeId: string,
+  skillId: string,
+): request.Test {
+  return request(app)
+    .delete(`/api/v1/employees/${employeeId}/skills/${skillId}`)
+    .set("Cookie", session.cookie)
+    .set("X-CSRF-Token", session.csrfToken);
 }
 
 /**
@@ -269,9 +348,9 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
       expect(created.status).toBe(201);
 
       for (const variant of [name.toLowerCase(), name.toUpperCase()]) {
-        const duplicate = await writeReq(admin, "post", "/api/v1/skills").send(
-          { name: variant },
-        );
+        const duplicate = await writeReq(admin, "post", "/api/v1/skills").send({
+          name: variant,
+        });
         expect(duplicate.status, variant).toBe(409);
         expect(duplicate.body.code, variant).toBe("DUPLICATE_SKILL_NAME");
       }
@@ -397,7 +476,10 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
 
     it("rejects attaching a deactivated skill to a staffing requirement (AC01.05, BR02)", async () => {
       const admin = await login("admin");
-      const activeSkill = await createSkill(admin, skillName("Staffing Active"));
+      const activeSkill = await createSkill(
+        admin,
+        skillName("Staffing Active"),
+      );
       const retiredSkill = await createSkill(
         admin,
         skillName("Staffing Retired"),
@@ -664,21 +746,11 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
       const employeeId = await createEmployee(admin);
       const skill = await createSkill(admin, skillName("Missing Reference"));
 
-      const missingEmployee = await assignSkill(
-        admin,
-        MISSING_ID,
-        skill.id,
-        3,
-      );
+      const missingEmployee = await assignSkill(admin, MISSING_ID, skill.id, 3);
       expect(missingEmployee.status).toBe(404);
       expect(missingEmployee.body.code).toBe("NOT_FOUND");
 
-      const missingSkill = await assignSkill(
-        admin,
-        employeeId,
-        MISSING_ID,
-        3,
-      );
+      const missingSkill = await assignSkill(admin, employeeId, MISSING_ID, 3);
       expect(missingSkill.status).toBe(404);
       expect(missingSkill.body.code).toBe("NOT_FOUND");
     });
@@ -800,7 +872,10 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
       const admin = await login("admin");
       const employee = await login("employee");
       const employeeId = await createEmployee(admin);
-      const skill = await createSkill(admin, skillName("Employee Denied Write"));
+      const skill = await createSkill(
+        admin,
+        skillName("Employee Denied Write"),
+      );
 
       const assign = await assignSkill(employee, employeeId, skill.id, 3);
       expect(assign.status).toBe(403);
@@ -957,7 +1032,9 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
 
       const inactiveRows = inactiveOnly.body.data as SkillBody[];
       expect(inactiveRows.length).toBeGreaterThan(0);
-      expect(inactiveRows.every((skill) => skill.isActive === false)).toBe(true);
+      expect(inactiveRows.every((skill) => skill.isActive === false)).toBe(
+        true,
+      );
       expect(inactiveRows.map((skill) => skill.id)).toContain(inactive.id);
       expect(inactiveRows.map((skill) => skill.id)).not.toContain(active.id);
     });
@@ -1008,9 +1085,9 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
         [
           "PATCH /skills/:id",
           () =>
-            asAnonymous(request(app).patch(`/api/v1/skills/${MISSING_ID}`)).send(
-              { isActive: false },
-            ),
+            asAnonymous(
+              request(app).patch(`/api/v1/skills/${MISSING_ID}`),
+            ).send({ isActive: false }),
         ],
         [
           "GET /employees/:id/skills",
@@ -1086,9 +1163,7 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
           "PATCH /employees/:id/skills/:skillId",
           () =>
             request(app)
-              .patch(
-                `/api/v1/employees/${MISSING_ID}/skills/${MISSING_ID}`,
-              )
+              .patch(`/api/v1/employees/${MISSING_ID}/skills/${MISSING_ID}`)
               .send({ proficiencyLevel: 3 }),
         ],
         [
@@ -1110,6 +1185,326 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
         where: { name: blockedName },
       });
       expect(stored).toBe(0);
+    });
+  });
+
+  /**
+   * Regression coverage for the code-review findings F2, F3, F5, F6, and F7 on
+   * this card. Each test below fails if the fix it pins is reverted, and every
+   * one of them used to answer 500 or reject a legitimate request:
+   *
+   * - F2: an unknown or repeated skill id reached the database and surfaced as
+   *   a foreign-key / unique violation (500) instead of a 422.
+   * - F3: re-saving a requirement that still holds a since-deactivated skill
+   *   was rejected with 422 SKILL_INACTIVE, so the row could never be edited.
+   * - F5: a concurrent delete of the same assignment let P2025 escape as a 500.
+   * - F6: the case-insensitive uniqueness rule is only real because the
+   *   database enforces `skills_name_lower_key`; the service pre-check cannot.
+   * - F7: `%` and `_` in `q` were passed to `ILIKE` unescaped, so a search for
+   *   `%` returned the whole catalog.
+   */
+  describe("review findings regressions (F2, F3, F5, F6, F7)", () => {
+    it("rejects an unknown skill id on staffing create with 422 SKILL_REFERENCE_INVALID (F2)", async () => {
+      const admin = await login("admin");
+      const known = await createSkill(admin, skillName("F2 Known Skill"));
+
+      // A valid requirement first, so "unchanged" is a real baseline instead
+      // of an empty project that would also look right if the endpoint never
+      // wrote anything.
+      const { projectId } = await createProjectAndRequirement(
+        admin,
+        [{ skillId: known.id, minimumProficiencyLevel: 3 }],
+        "F2-Unknown",
+      );
+
+      const rejected = await writeReq(
+        admin,
+        "post",
+        staffingRequirementsPath(projectId),
+      ).send(
+        staffingRequirementBody([
+          { skillId: randomUUID(), minimumProficiencyLevel: 3 },
+        ]),
+      );
+
+      // Before the fix the id went straight into the join insert and the
+      // foreign key answered 500; the guard has to catch it first.
+      expect(rejected.status).toBe(422);
+      expect(rejected.body.code).toBe("SKILL_REFERENCE_INVALID");
+      expect(Array.isArray(rejected.body.errors.skills)).toBe(true);
+      expect(rejected.body.errors.skills.length).toBeGreaterThan(0);
+
+      expect(
+        await prisma.staffingRequirement.count({ where: { projectId } }),
+      ).toBe(1);
+    });
+
+    it("rejects a repeated skill id in one staffing body with 422 and no requirement (F2)", async () => {
+      const admin = await login("admin");
+      const skill = await createSkill(admin, skillName("F2 Repeated Skill"));
+      const projectId = await createProject("F2-Repeated");
+
+      const rejected = await writeReq(
+        admin,
+        "post",
+        staffingRequirementsPath(projectId),
+      ).send(
+        staffingRequirementBody([
+          { skillId: skill.id, minimumProficiencyLevel: 2 },
+          { skillId: skill.id, minimumProficiencyLevel: 4 },
+        ]),
+      );
+
+      // Uncaught, the duplicate reached the unique index on
+      // (staffing_requirement_id, skill_id) and the transaction surfaced as a
+      // 500. The array-level refinement in staffing.schema.ts is the layer that
+      // answers first, and it is plain field validation, so the code is the
+      // generic one; the service's own Set check would answer
+      // SKILL_REFERENCE_INVALID if the body ever got past the schema.
+      expect(rejected.status).toBe(422);
+      expect(rejected.body.code).toBe("UNPROCESSABLE_ENTITY");
+      expect(Array.isArray(rejected.body.errors.skills)).toBe(true);
+      expect(rejected.body.errors.skills.length).toBeGreaterThan(0);
+
+      expect(
+        await prisma.staffingRequirement.count({ where: { projectId } }),
+      ).toBe(0);
+      expect(
+        await prisma.staffingRequirementSkill.count({
+          where: { skillId: skill.id },
+        }),
+      ).toBe(0);
+    });
+
+    it("rejects a newly added deactivated skill on PATCH with 422 SKILL_INACTIVE (AC01.05)", async () => {
+      const admin = await login("admin");
+      const attached = await createSkill(admin, skillName("AC0105 Attached"));
+      const retired = await createSkill(admin, skillName("AC0105 Retired"));
+
+      const { requirementId } = await createProjectAndRequirement(
+        admin,
+        [{ skillId: attached.id, minimumProficiencyLevel: 3 }],
+        "AC0105-New",
+      );
+
+      // Both are deactivated: the attached one must stay tolerated (it is not a
+      // new assignment), the other one must not.
+      await deactivateSkill(admin, attached.id);
+      await deactivateSkill(admin, retired.id);
+
+      const rejected = await writeReq(
+        admin,
+        "patch",
+        `/api/v1/staffing-requirements/${requirementId}`,
+      ).send({
+        skills: [
+          { skillId: attached.id, minimumProficiencyLevel: 3 },
+          { skillId: retired.id, minimumProficiencyLevel: 4 },
+        ],
+      });
+
+      expect(rejected.status).toBe(422);
+      expect(rejected.body.code).toBe("SKILL_INACTIVE");
+
+      // The guard runs before the delete-and-recreate, so the existing join row
+      // is still there and the rejected skill never landed.
+      expect(
+        await prisma.staffingRequirementSkill.count({
+          where: { staffingRequirementId: requirementId },
+        }),
+      ).toBe(1);
+      expect(
+        await prisma.staffingRequirementSkill.count({
+          where: {
+            staffingRequirementId: requirementId,
+            skillId: retired.id,
+          },
+        }),
+      ).toBe(0);
+    });
+
+    it("re-saves a requirement whose skill was deactivated after it was attached (F3)", async () => {
+      const admin = await login("admin");
+      const skill = await createSkill(admin, skillName("F3 Resave"));
+
+      const { requirementId } = await createProjectAndRequirement(
+        admin,
+        [{ skillId: skill.id, minimumProficiencyLevel: 2 }],
+        "F3-Resave",
+      );
+
+      await deactivateSkill(admin, skill.id);
+
+      // The exact case that used to answer 422: the skill is already attached,
+      // so re-sending it is not a new assignment even though the update path
+      // replaces every join row.
+      const resaved = await writeReq(
+        admin,
+        "patch",
+        `/api/v1/staffing-requirements/${requirementId}`,
+      ).send({
+        skills: [{ skillId: skill.id, minimumProficiencyLevel: 5 }],
+      });
+
+      expect(resaved.status).toBe(200);
+      expect(resaved.body.data.skills).toEqual([
+        expect.objectContaining({
+          skillId: skill.id,
+          minimumProficiencyLevel: 5,
+        }),
+      ]);
+
+      const rows = await prisma.staffingRequirementSkill.findMany({
+        where: { staffingRequirementId: requirementId },
+        select: { skillId: true, minimumProficiencyLevel: true },
+      });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        skillId: skill.id,
+        minimumProficiencyLevel: 5,
+      });
+    });
+
+    it("answers 404 for an unknown skill id on employee assignment (F2)", async () => {
+      const admin = await login("admin");
+      const employeeId = await createEmployee(admin);
+
+      const res = await assignSkill(admin, employeeId, randomUUID(), 3);
+
+      // Pinned so a future rewrite of the assignment path cannot turn the
+      // missing row into a foreign-key 500: the lock lookup has to report the
+      // absent skill as an ordinary 404, like the pre-lock path did.
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe("NOT_FOUND");
+      expect(await prisma.employeeSkill.count({ where: { employeeId } })).toBe(
+        0,
+      );
+    });
+
+    it("answers one 204 and four 404s for five concurrent deletes of one assignment (F5)", async () => {
+      const admin = await login("admin");
+      const employeeId = await createEmployee(admin);
+      const skill = await createSkill(admin, skillName("F5 Concurrent Delete"));
+
+      const assigned = await assignSkill(admin, employeeId, skill.id, 3);
+      expect(assigned.status).toBe(201);
+
+      const results = await Promise.all(
+        Array.from({ length: 5 }, () =>
+          removeAssignment(admin, employeeId, skill.id),
+        ),
+      );
+
+      const statuses = results.map((res) => res.status).sort((a, b) => a - b);
+      // Exactly one delete can win; the four losers lose the pre-flight race
+      // and have to be told "not found", never "internal server error".
+      expect(statuses).toEqual([204, 404, 404, 404, 404]);
+      for (const res of results.filter((r) => r.status === 404)) {
+        expect(res.body.code).toBe("NOT_FOUND");
+      }
+
+      expect(
+        await prisma.employeeSkill.count({
+          where: { employeeId, skillId: skill.id },
+        }),
+      ).toBe(0);
+
+      // Removing an assignment never touches the catalog row (BR03).
+      const skillRow = await prisma.skill.findUnique({
+        where: { id: skill.id },
+        select: { id: true },
+      });
+      expect(skillRow?.id).toBe(skill.id);
+    });
+
+    it("lets the database enforce case-insensitive uniqueness through skills_name_lower_key (F6)", async () => {
+      const admin = await login("admin");
+      const original = await createSkill(admin, skillName("F6 Index Probe"));
+      const variant = original.name.toUpperCase();
+
+      try {
+        // Bypasses the service pre-check on purpose: the rule is only real if
+        // the lower(name) index rejects the row itself, which is what the
+        // P2002 mapping in skills.errors.ts relies on.
+        const error = await prisma.skill
+          .create({ data: { name: variant }, select: { id: true } })
+          .then(
+            () => null,
+            (thrown: unknown) => thrown,
+          );
+
+        expect(error).toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
+        const prismaError = error as Prisma.PrismaClientKnownRequestError;
+        expect(prismaError.code).toBe("P2002");
+        expect(prismaError.meta).toMatchObject({
+          driverAdapterError: {
+            cause: { constraint: { index: "skills_name_lower_key" } },
+          },
+        });
+
+        expect(
+          await prisma.skill.count({
+            where: { name: { equals: original.name, mode: "insensitive" } },
+          }),
+        ).toBe(1);
+      } finally {
+        // Nothing is created by the rejected insert, but the probe row is
+        // removed here as well so a failure mid-test cannot leave it for the
+        // prefix teardown to find.
+        await prisma.skill.deleteMany({ where: { name: variant } });
+        await prisma.skill.deleteMany({ where: { id: original.id } });
+      }
+    });
+
+    it("treats % and _ in q as literal characters instead of LIKE wildcards (F7)", async () => {
+      const admin = await login("admin");
+      const withPercent = await createSkill(
+        admin,
+        skillName("F7 Percent % Row"),
+      );
+      const withoutPercent = await createSkill(
+        admin,
+        skillName("F7 Percent X Row"),
+      );
+
+      const catalog = await prisma.skill.findMany({
+        select: { id: true, name: true },
+      });
+      const idsContaining = (character: string): string[] =>
+        catalog
+          .filter((skill) => skill.name.includes(character))
+          .map((skill) => skill.id)
+          .sort();
+
+      const search = (q: string): request.Test =>
+        request(app)
+          .get("/api/v1/skills")
+          .query({ q, pageSize: 100 })
+          .set("Cookie", admin.cookie);
+
+      // `%25` on the wire, `%` after decoding. Unescaped it becomes the `ILIKE`
+      // pattern `%%%`, which matches the whole catalog.
+      const percentQuery = await search("%");
+      expect(percentQuery.status).toBe(200);
+      const percentIds = (percentQuery.body.data as SkillBody[])
+        .map((skill) => skill.id)
+        .sort();
+      expect(percentIds).toEqual(idsContaining("%"));
+      expect(percentIds).toContain(withPercent.id);
+      expect(percentIds).not.toContain(withoutPercent.id);
+      expect(percentQuery.body.meta.total).toBeLessThan(catalog.length);
+
+      // `_` is the single-character wildcard; escaped it matches a literal
+      // underscore, so neither of the two skills above can come back.
+      const underscoreQuery = await search("_");
+      expect(underscoreQuery.status).toBe(200);
+      const underscoreIds = (underscoreQuery.body.data as SkillBody[]).map(
+        (skill) => skill.id,
+      );
+      expect(underscoreIds.sort()).toEqual(idsContaining("_"));
+      expect(underscoreIds).not.toContain(withPercent.id);
+      expect(underscoreIds).not.toContain(withoutPercent.id);
+      expect(underscoreQuery.body.meta.total).toBeLessThan(catalog.length);
     });
   });
 });

@@ -1,25 +1,19 @@
 import { AppError, HTTP_STATUS } from "../../common/errors/app-error.js";
-import {
-  conflictError,
-  mapUniqueViolation,
-} from "../workforce/workforce.errors.js";
+import type {
+  UniqueViolationMap,
+  UniqueViolationTarget,
+} from "../../common/errors/unique-violation.js";
 
 /**
  * Unique-constraint responses for the skills module (PRD US02.02).
  *
- * `mapUniqueViolation` already knows how to read the violated index out of the
- * `@prisma/adapter-pg` P2002 shape (the adapter does not populate
- * `meta.target`), so the module reuses it instead of maintaining a second copy
- * of that parsing. Only the index-to-response mapping is skills-specific.
+ * The `@prisma/adapter-pg` driver adapter does not populate `meta.target` on a
+ * P2002, so the violated index has to be read out of
+ * `meta.driverAdapterError.cause.constraint.index`. That parsing is generic and
+ * lives in `common/errors/unique-violation.js`, so this module reuses it
+ * instead of maintaining a second copy. Only the index-to-response mapping is
+ * skills-specific.
  */
-
-/** Response code and message for one violated unique constraint. */
-interface UniqueViolationTarget {
-  code: string;
-  message: string;
-}
-
-type UniqueViolationMap = Readonly<Record<string, UniqueViolationTarget>>;
 
 export const DUPLICATE_SKILL_NAME: UniqueViolationTarget = {
   code: "DUPLICATE_SKILL_NAME",
@@ -65,4 +59,28 @@ export class SkillInactiveError extends AppError {
   }
 }
 
-export { conflictError, mapUniqueViolation };
+/**
+ * AC01.05 / BR02: a skill reference that does not exist, or that is repeated
+ * within one request, is a 422 naming the offending field as `skills`.
+ *
+ * OpenAPI documents this as `SKILL_REFERENCE_INVALID` with an `errors.skills`
+ * entry, which `ValidationError` cannot express because it hard-codes the code
+ * `UNPROCESSABLE_ENTITY`. Same shape as `SkillInactiveError` above.
+ */
+export class SkillReferenceError extends AppError {
+  constructor(message = "Each skill must exist and may appear only once.") {
+    super(
+      message,
+      HTTP_STATUS.UNPROCESSABLE_ENTITY,
+      "SKILL_REFERENCE_INVALID",
+      {
+        skills: [message],
+      },
+    );
+  }
+}
+
+export {
+  conflictError,
+  mapUniqueViolation,
+} from "../../common/errors/unique-violation.js";

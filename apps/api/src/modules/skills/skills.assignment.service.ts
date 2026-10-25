@@ -1,4 +1,5 @@
 import { NotFoundError } from "../../common/errors/app-error.js";
+import { prisma } from "../../common/database/prisma.js";
 import type { AuthenticatedUser } from "../../common/auth/types.js";
 import type {
   AssignSkillInput,
@@ -6,6 +7,7 @@ import type {
   UpdateProficiencyInput,
 } from "./skills.schema.js";
 import { skillsRepository } from "./skills.repository.js";
+import { skillsEmployeeRepository } from "./skills.employee.repository.js";
 import { toEmployeeSkillView } from "./skills.views.js";
 import {
   EMPLOYEE_SKILLS_NOT_FOUND,
@@ -15,6 +17,7 @@ import {
   EMPLOYEE_SKILL_UNIQUE,
   SKILL_ALREADY_ASSIGNED,
   SkillInactiveError,
+  SkillReferenceError,
   conflictError,
   mapUniqueViolation,
 } from "./skills.errors.js";
@@ -49,18 +52,19 @@ export const skillsAssignmentService = {
   }> {
     skillsPolicy.assertCanViewEmployeeSkills(user, employeeId);
 
-    const employee = await skillsRepository.findEmployeeById(employeeId);
+    const employee =
+      await skillsEmployeeRepository.findEmployeeById(employeeId);
     if (!employee) {
       throw new NotFoundError(EMPLOYEE_SKILLS_NOT_FOUND);
     }
 
     const [rows, total] = await Promise.all([
-      skillsRepository.listEmployeeSkills(
+      skillsEmployeeRepository.listEmployeeSkills(
         employeeId,
         (query.page - 1) * query.pageSize,
         query.pageSize,
       ),
-      skillsRepository.countEmployeeSkills(employeeId),
+      skillsEmployeeRepository.countEmployeeSkills(employeeId),
     ]);
 
     return {
@@ -72,12 +76,39 @@ export const skillsAssignmentService = {
   },
 
   /**
-   * AC01.05 / BR02: a deactivated skill cannot be newly assigned to an employee
-   * or attached to a staffing requirement. Staffing validates existence itself,
-   * so a missing id is deliberately not reported here; only the inactive flag
-   * is this guard's concern.
+   * AC01.05 / BR02: every referenced skill must exist and may appear only once
+   * in a request. This is the only implementation of that rule; staffing
+   * requirements apply the same guard (and `assertSkillsActive` below) before
+   * attaching skills, so the rule lives here once instead of per module.
    */
-  async assertSkillsAssignable(skillIds: readonly string[]): Promise<void> {
+  async assertSkillReferencesValid(skillIds: readonly string[]): Promise<void> {
+    if (skillIds.length === 0) {
+      return;
+    }
+
+    if (new Set(skillIds).size !== skillIds.length) {
+      throw new SkillReferenceError(
+        "The same skill cannot be referenced twice.",
+      );
+    }
+
+    const skills = await skillsRepository.listSkillsByIds(skillIds);
+    const found = new Set(skills.map((skill) => skill.id));
+    if (skillIds.some((id) => !found.has(id))) {
+      throw new SkillReferenceError("A referenced skill does not exist.");
+    }
+  },
+
+  /**
+   * AC01.05 / BR02: a deactivated skill cannot be newly assigned to an employee
+   * or attached to a staffing requirement. This is the only implementation of
+   * the active-skill rule; staffing requirements apply it together with
+   * `assertSkillReferencesValid` above, so the rule lives here once.
+   *
+   * Existence is `assertSkillReferencesValid`'s concern: a missing id is
+   * simply absent from the lookup and is deliberately not reported here.
+   */
+  async assertSkillsActive(skillIds: readonly string[]): Promise<void> {
     if (skillIds.length === 0) {
       return;
     }
@@ -98,42 +129,56 @@ export const skillsAssignmentService = {
     employeeId: string,
     input: AssignSkillInput,
   ): Promise<EmployeeSkillView> {
-    const employee = await skillsRepository.findEmployeeById(employeeId);
+    const employee =
+      await skillsEmployeeRepository.findEmployeeById(employeeId);
     if (!employee) {
       throw new NotFoundError(EMPLOYEE_SKILLS_NOT_FOUND);
     }
 
-    const skill = await skillsRepository.findSkillById(input.skillId);
-    if (!skill) {
-      throw new NotFoundError(SKILL_NOT_FOUND);
-    }
-    if (!skill.isActive) {
-      throw new SkillInactiveError();
-    }
+    return prisma.$transaction(async (tx) => {
+      // F8: the lock and the insert share one transaction, so a concurrent
+      // deactivation either commits before this read (and is rejected below)
+      // or waits for the commit, instead of slipping between check and insert.
+      const locked = await skillsRepository.lockSkillsByIds(tx, [
+        input.skillId,
+      ]);
+      // Indexed access is `| undefined` under `noUncheckedIndexedAccess`; the
+      // explicit destructure keeps the missing row a 404 without a `!`.
+      const [skill] = locked;
+      if (!skill) {
+        throw new NotFoundError(SKILL_NOT_FOUND);
+      }
+      if (!skill.isActive) {
+        throw new SkillInactiveError();
+      }
 
-    const existing = await skillsRepository.findEmployeeSkill(
-      employeeId,
-      input.skillId,
-    );
-    if (existing) {
-      throw conflictError(SKILL_ALREADY_ASSIGNED);
-    }
-
-    try {
-      const assignment = await skillsRepository.createEmployeeSkill({
+      const existing = await skillsEmployeeRepository.findEmployeeSkill(
         employeeId,
-        skillId: input.skillId,
-        proficiencyLevel: input.proficiencyLevel,
-        createdBy: user.id,
-      });
-      return toEmployeeSkillView(assignment);
-    } catch (error) {
-      return mapUniqueViolation(
-        error,
-        EMPLOYEE_SKILL_UNIQUE,
-        SKILL_ALREADY_ASSIGNED,
+        input.skillId,
       );
-    }
+      if (existing) {
+        throw conflictError(SKILL_ALREADY_ASSIGNED);
+      }
+
+      try {
+        const assignment = await skillsEmployeeRepository.createEmployeeSkill(
+          {
+            employeeId,
+            skillId: input.skillId,
+            proficiencyLevel: input.proficiencyLevel,
+            createdBy: user.id,
+          },
+          tx,
+        );
+        return toEmployeeSkillView(assignment);
+      } catch (error) {
+        return mapUniqueViolation(
+          error,
+          EMPLOYEE_SKILL_UNIQUE,
+          SKILL_ALREADY_ASSIGNED,
+        );
+      }
+    });
   },
 
   /** AC02.04: the assignment must already exist; only its level changes. */
@@ -143,7 +188,7 @@ export const skillsAssignmentService = {
     input: UpdateProficiencyInput,
     actorId?: string,
   ): Promise<EmployeeSkillView> {
-    const existing = await skillsRepository.findEmployeeSkill(
+    const existing = await skillsEmployeeRepository.findEmployeeSkill(
       employeeId,
       skillId,
     );
@@ -151,12 +196,19 @@ export const skillsAssignmentService = {
       throw new NotFoundError(ASSIGNMENT_NOT_FOUND);
     }
 
-    const updated = await skillsRepository.updateEmployeeSkillProficiency(
-      employeeId,
-      skillId,
-      input.proficiencyLevel,
-      actorId,
-    );
+    const updated =
+      await skillsEmployeeRepository.updateEmployeeSkillProficiency(
+        employeeId,
+        skillId,
+        input.proficiencyLevel,
+        actorId,
+      );
+    // F5: a concurrent delete can remove the row after the pre-flight read, so
+    // the repository reports that as `null` instead of letting P2025 become a
+    // 500. It is still a missing assignment.
+    if (!updated) {
+      throw new NotFoundError(ASSIGNMENT_NOT_FOUND);
+    }
     return toEmployeeSkillView(updated);
   },
 
@@ -168,7 +220,7 @@ export const skillsAssignmentService = {
     employeeId: string,
     skillId: string,
   ): Promise<void> {
-    const existing = await skillsRepository.findEmployeeSkill(
+    const existing = await skillsEmployeeRepository.findEmployeeSkill(
       employeeId,
       skillId,
     );
@@ -176,6 +228,15 @@ export const skillsAssignmentService = {
       throw new NotFoundError(ASSIGNMENT_NOT_FOUND);
     }
 
-    await skillsRepository.deleteEmployeeSkill(employeeId, skillId);
+    // F5: the pre-flight read above can lose a race against a concurrent
+    // delete. The repository reports the vanished row as `false` rather than
+    // letting P2025 surface as a 500; it is still a missing assignment.
+    const removed = await skillsEmployeeRepository.deleteEmployeeSkill(
+      employeeId,
+      skillId,
+    );
+    if (!removed) {
+      throw new NotFoundError(ASSIGNMENT_NOT_FOUND);
+    }
   },
 };

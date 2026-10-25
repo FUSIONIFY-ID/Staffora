@@ -110,28 +110,55 @@ Panduan diagnosa dan penanganan insiden operasional Staffora.
   ```
 
   Untuk `skills`, penggabungannya berbeda karena satu karyawan tidak boleh punya skill yang sama dua
-  kali (`employee_skills` unik pada `employee_id, skill_id`). Buang pasangan yang bentrok lebih dulu,
-  baru pindahkan sisanya:
+  kali (`employee_skills` unik pada `employee_id, skill_id`), dan satu kebutuhan staf tidak boleh
+  menuntut skill yang sama dua kali (`staffing_requirement_skills` unik pada
+  `staffing_requirement_id, skill_id`). Bila sebuah baris memegang kedua skill sekaligus, level
+  tertinggi yang dipakai: naikkan dulu baris yang dipertahankan ke level maksimum kedua baris, baru
+  buang baris yang bentrok, lalu pindahkan sisanya:
 
   ```sql
   BEGIN;
 
-  -- Baris yang akan bentrok setelah referensi dipindah: karyawan yang punya
-  -- kedua skill sekaligus. Simpan yang lebih tinggi proficiency-nya.
+  -- Satu karyawan tidak boleh memegang :keep_id dan :drop_id sekaligus (unique
+  -- pada employee_id, skill_id). Untuk baris yang bentrok, naikkan dulu
+  -- proficiency_level baris :keep_id ke nilai tertinggi dari kedua baris, baru
+  -- baris :drop_id dihapus di statement berikutnya. Level tertinggi selalu
+  -- menang, jadi tidak ada proficiency yang hilang tanpa jejak.
+  UPDATE employee_skills AS kept
+  SET proficiency_level = GREATEST(kept.proficiency_level, duplicate.proficiency_level)
+  FROM employee_skills AS duplicate
+  WHERE kept.skill_id = :keep_id
+    AND duplicate.skill_id = :drop_id
+    AND duplicate.employee_id = kept.employee_id;
+
+  -- Hapus baris :drop_id milik karyawan yang barusan dinaikkan di atas.
   DELETE FROM employee_skills AS duplicate
   USING employee_skills AS kept
   WHERE duplicate.skill_id = :drop_id
     AND kept.skill_id = :keep_id
     AND kept.employee_id = duplicate.employee_id;
 
+  -- Baris :drop_id yang tidak bentrok cukup dipindahkan ke :keep_id.
   UPDATE employee_skills SET skill_id = :keep_id WHERE skill_id = :drop_id;
 
+  -- Hal yang sama untuk staffing_requirement_skills, dengan kolom
+  -- minimum_proficiency_level dan kunci staffing_requirement_id + skill_id.
+  UPDATE staffing_requirement_skills AS kept
+  SET minimum_proficiency_level =
+    GREATEST(kept.minimum_proficiency_level, duplicate.minimum_proficiency_level)
+  FROM staffing_requirement_skills AS duplicate
+  WHERE kept.skill_id = :keep_id
+    AND duplicate.skill_id = :drop_id
+    AND duplicate.staffing_requirement_id = kept.staffing_requirement_id;
+
+  -- Hapus baris :drop_id milik requirement yang barusan dinaikkan di atas.
   DELETE FROM staffing_requirement_skills AS duplicate
   USING staffing_requirement_skills AS kept
   WHERE duplicate.skill_id = :drop_id
     AND kept.skill_id = :keep_id
     AND kept.staffing_requirement_id = duplicate.staffing_requirement_id;
 
+  -- Baris :drop_id yang tidak bentrok cukup dipindahkan ke :keep_id.
   UPDATE staffing_requirement_skills SET skill_id = :keep_id WHERE skill_id = :drop_id;
 
   DELETE FROM skills WHERE id = :drop_id;
