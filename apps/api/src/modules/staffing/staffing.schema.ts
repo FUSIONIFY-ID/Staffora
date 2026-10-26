@@ -1,12 +1,11 @@
 import { z } from "zod";
 
 /**
- * F2: a requirement cannot reference the same skill twice. The refinement sits
- * on the array itself, so the issue path is `skills` and the API answers
- * `errors.skills`; the per-item shape is untouched. This is plain field
- * validation and lands as 422 `UNPROCESSABLE_ENTITY` — no custom code is added
- * here, because the coded `SKILL_REFERENCE_INVALID` case is raised by the
- * service, which is also the only layer that can see ids that do not exist.
+ * Shape of the optional `skills` payload: an array of
+ * `{ skillId, minimumProficiencyLevel }`. Only that shape is validated here.
+ * Reference validity — each `skillId` exists and no id appears twice — is
+ * enforced by the skills service, which is the only layer that can see ids
+ * that do not exist; it answers the coded `SKILL_REFERENCE_INVALID` error.
  */
 const requirementSkillsSchema = z
   .array(
@@ -15,22 +14,6 @@ const requirementSkillsSchema = z
       minimumProficiencyLevel: z.coerce.number().int().min(1).max(5),
     }),
   )
-  .superRefine((skills, context) => {
-    const seen = new Set<string>();
-    for (const { skillId } of skills) {
-      if (seen.has(skillId)) {
-        // One issue is enough: repeating the message per duplicate occurrence
-        // would just pad `errors.skills` with identical strings.
-        context.addIssue({
-          code: "custom",
-          path: [],
-          message: "The same skill cannot be referenced twice.",
-        });
-        return;
-      }
-      seen.add(skillId);
-    }
-  })
   .optional();
 
 export const createStaffingRequirementSchema = z.object({

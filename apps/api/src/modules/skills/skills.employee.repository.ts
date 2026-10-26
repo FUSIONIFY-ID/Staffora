@@ -55,11 +55,17 @@ export const skillsEmployeeRepository = {
     return prisma.employeeSkill.count({ where: { employeeId } });
   },
 
+  /**
+   * `tx` lets the assignment guard read the pair inside the transaction that
+   * already holds the `FOR SHARE` lock (F10); without it the read would take a
+   * second connection while the first is still held by the open transaction.
+   */
   findEmployeeSkill(
     employeeId: string,
     skillId: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<EmployeeSkillRecord | null> {
-    return prisma.employeeSkill.findUnique({
+    return (tx ?? prisma).employeeSkill.findUnique({
       where: { employeeId_skillId: { employeeId, skillId } },
       include: employeeSkillInclude,
     });

@@ -1,5 +1,5 @@
 import { NotFoundError } from "../../common/errors/app-error.js";
-import { prisma } from "../../common/database/prisma.js";
+import { withTransaction } from "../../common/database/transaction.js";
 import type { AuthenticatedUser } from "../../common/auth/types.js";
 import type {
   AssignSkillInput,
@@ -135,7 +135,11 @@ export const skillsAssignmentService = {
       throw new NotFoundError(EMPLOYEE_SKILLS_NOT_FOUND);
     }
 
-    return prisma.$transaction(async (tx) => {
+    // Every query inside this transaction must use `tx`. A statement issued
+    // through the module-level client would make the open transaction ask for a
+    // second pooled connection; with the default `max = 10` that starves the
+    // pool and concurrent assignments fail with P2028 (F10).
+    return withTransaction(async (tx) => {
       // F8: the lock and the insert share one transaction, so a concurrent
       // deactivation either commits before this read (and is rejected below)
       // or waits for the commit, instead of slipping between check and insert.
@@ -155,6 +159,7 @@ export const skillsAssignmentService = {
       const existing = await skillsEmployeeRepository.findEmployeeSkill(
         employeeId,
         input.skillId,
+        tx,
       );
       if (existing) {
         throw conflictError(SKILL_ALREADY_ASSIGNED);

@@ -1257,12 +1257,12 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
 
       // Uncaught, the duplicate reached the unique index on
       // (staffing_requirement_id, skill_id) and the transaction surfaced as a
-      // 500. The array-level refinement in staffing.schema.ts is the layer that
-      // answers first, and it is plain field validation, so the code is the
-      // generic one; the service's own Set check would answer
-      // SKILL_REFERENCE_INVALID if the body ever got past the schema.
+      // 500. The schema no longer refines the array: the service's Set check is
+      // the single implementation of reference validity, so a repeated id
+      // answers the coded error documented for this endpoint in
+      // docs/api/openapi.yaml (SKILL_REFERENCE_INVALID with `errors.skills`).
       expect(rejected.status).toBe(422);
-      expect(rejected.body.code).toBe("UNPROCESSABLE_ENTITY");
+      expect(rejected.body.code).toBe("SKILL_REFERENCE_INVALID");
       expect(Array.isArray(rejected.body.errors.skills)).toBe(true);
       expect(rejected.body.errors.skills.length).toBeGreaterThan(0);
 
@@ -1505,6 +1505,245 @@ describe("Skills Catalog and Employee Skills API (US02.02)", () => {
       expect(underscoreIds).not.toContain(withPercent.id);
       expect(underscoreIds).not.toContain(withoutPercent.id);
       expect(underscoreQuery.body.meta.total).toBeLessThan(catalog.length);
+    });
+  });
+
+  /**
+   * Regression coverage for the round-2 review findings on this card:
+   *
+   * - F13: the PATCH path never validated skill references, so an unknown id
+   *   reached the join insert and surfaced as a foreign-key 500 instead of the
+   *   documented 422, unlike the create path which already guarded.
+   * - F13: a DELETE racing proficiency PATCHes is the other half of the F5
+   *   lost-race path; the loser must answer 404, never let P2025 escape as 500.
+   * - F13: the `FOR SHARE` row lock in `skillsRepository.lockSkillsByIds` is
+   *   what makes the assignment guard's check-then-insert atomic. Without it
+   *   the assignment is not blocked behind a concurrent row-exclusive lock.
+   * - F10: an interactive transaction must use its own `tx` for every query.
+   *   Issuing a query through the module-level client takes a second pooled
+   *   connection while the transaction still holds the first, so enough
+   *   parallel assignments deadlock against the pool's default `max` of 10.
+   */
+  describe("review round 2 regressions (F1, F10, F13)", () => {
+    it("rejects an unknown skill id on requirement PATCH without replacing the existing skills (F13)", async () => {
+      const admin = await login("admin");
+      const first = await createSkill(admin, skillName("F13 Patch First"));
+      const second = await createSkill(admin, skillName("F13 Patch Second"));
+
+      const { requirementId } = await createProjectAndRequirement(
+        admin,
+        [
+          { skillId: first.id, minimumProficiencyLevel: 2 },
+          { skillId: second.id, minimumProficiencyLevel: 4 },
+        ],
+        "F13-Unknown",
+      );
+
+      const before = await prisma.staffingRequirementSkill.findMany({
+        where: { staffingRequirementId: requirementId },
+        select: { skillId: true },
+        orderBy: { skillId: "asc" },
+      });
+      expect(before).toHaveLength(2);
+
+      const rejected = await writeReq(
+        admin,
+        "patch",
+        `/api/v1/staffing-requirements/${requirementId}`,
+      ).send({
+        skills: [{ skillId: randomUUID(), minimumProficiencyLevel: 2 }],
+      });
+
+      // The reference guard runs before the update deletes and recreates the
+      // join rows, so the coded error is the only thing that happens.
+      expect(rejected.status).toBe(422);
+      expect(rejected.body.code).toBe("SKILL_REFERENCE_INVALID");
+      expect(Array.isArray(rejected.body.errors.skills)).toBe(true);
+      expect(rejected.body.errors.skills.length).toBeGreaterThan(0);
+
+      const after = await prisma.staffingRequirementSkill.findMany({
+        where: { staffingRequirementId: requirementId },
+        select: { skillId: true },
+        orderBy: { skillId: "asc" },
+      });
+      expect(after).toHaveLength(before.length);
+      expect(after.map((row) => row.skillId)).toEqual(
+        before.map((row) => row.skillId),
+      );
+    });
+
+    it("answers 404, never 500, when a DELETE races five proficiency PATCHes (F13)", async () => {
+      const admin = await login("admin");
+      const employeeId = await createEmployee(admin);
+      const skill = await createSkill(
+        admin,
+        skillName("F13 Delete Versus Patch"),
+      );
+
+      const assigned = await assignSkill(admin, employeeId, skill.id, 2);
+      expect(assigned.status).toBe(201);
+
+      const patchProficiency = (): request.Test =>
+        writeReq(
+          admin,
+          "patch",
+          `/api/v1/employees/${employeeId}/skills/${skill.id}`,
+        ).send({ proficiencyLevel: 4 });
+
+      // The DELETE is dispatched first, but that does not order the writes:
+      // a PATCH can reach the row before the DELETE and legitimately answer
+      // 200, in which case the DELETE still removes the row. What the race
+      // must never do is surface P2025 as a 5xx.
+      const results = await Promise.all([
+        removeAssignment(admin, employeeId, skill.id),
+        patchProficiency(),
+        patchProficiency(),
+        patchProficiency(),
+        patchProficiency(),
+        patchProficiency(),
+      ]);
+
+      const statuses = results.map((res) => res.status);
+      expect(statuses.filter((status) => status >= 500)).toEqual([]);
+      for (const status of statuses) {
+        expect([200, 204, 404]).toContain(status);
+      }
+
+      // Only the single DELETE can answer 204, and it has to win eventually:
+      // no other request removes the row.
+      expect(statuses.filter((status) => status === 204)).toHaveLength(1);
+      for (const res of results.filter((r) => r.status === 404)) {
+        expect(res.body.code).toBe("NOT_FOUND");
+      }
+      for (const res of results.filter((r) => r.status === 200)) {
+        expect(res.body.data).toMatchObject({
+          skillId: skill.id,
+          proficiencyLevel: 4,
+        });
+      }
+
+      expect(
+        await prisma.employeeSkill.count({
+          where: { employeeId, skillId: skill.id },
+        }),
+      ).toBe(0);
+    });
+
+    it(
+      "blocks a concurrent assignment while another transaction holds the skill row lock (F13)",
+      async () => {
+        const admin = await login("admin");
+        const employeeId = await createEmployee(admin);
+        const skill = await createSkill(admin, skillName("F13 Locked Skill"));
+
+        // Two deferred gates make the timing deterministic: the holder reports
+        // that it owns the lock, and only the test decides when to release it.
+        let releaseHolder: () => void = () => undefined;
+        const holderGate = new Promise<void>((resolve) => {
+          releaseHolder = resolve;
+        });
+        let reportLocked: () => void = () => undefined;
+        const lockAcquired = new Promise<void>((resolve) => {
+          reportLocked = resolve;
+        });
+
+        const holder = prisma.$transaction(async (tx) => {
+          // The holder genuinely deactivates the skill, which is what AC01.05 is
+          // about: an `UPDATE skills SET is_active = false` that has not
+          // committed yet. It takes `FOR NO KEY UPDATE`, and that mode conflicts
+          // with `FOR SHARE`, so the guard's `SELECT ... FOR SHARE` has to wait.
+          //
+          // It deliberately does NOT block the assignment's INSERT: the
+          // foreign-key check takes `FOR KEY SHARE`, which is compatible with
+          // `FOR NO KEY UPDATE`. Only the guard can be what keeps the request
+          // pending, so removing `FOR SHARE` from `lockSkillsByIds` makes this
+          // test fail for the right reason. (`SELECT ... FOR UPDATE` would have
+          // been wrong here — it conflicts with `FOR KEY SHARE` too, so the
+          // request would stay blocked on the insert alone.)
+          await tx.$executeRaw`
+            UPDATE skills SET is_active = false WHERE id = ${skill.id}::uuid
+          `;
+          reportLocked();
+          await holderGate;
+        });
+
+        let pendingTimer: NodeJS.Timeout | undefined;
+
+        try {
+          await Promise.race([lockAcquired, holder]);
+
+          const postResult = assignSkill(
+            admin,
+            employeeId,
+            skill.id,
+            3,
+          ).then((res) => res);
+
+          // A real timer is deliberate: the request is suspended inside
+          // PostgreSQL, not in JavaScript time, so fake timers could not free
+          // it. The timer only bounds how long the request is observed to stay
+          // pending while the lock is demonstrably held.
+          const raced = await Promise.race([
+            postResult.then(() => "settled" as const),
+            new Promise<"pending">((resolve) => {
+              pendingTimer = setTimeout(() => resolve("pending"), 300);
+            }),
+          ]);
+
+          // Without `FOR SHARE` in lockSkillsByIds the assignment does not wait
+          // for the holder and settles inside the timer window.
+          expect(raced).toBe("pending");
+
+          releaseHolder();
+          await holder;
+
+          // After the deactivation commits, the guard sees `is_active = false`
+          // and rejects: AC01.05 holds even when the deactivation lands in the
+          // middle of the assignment.
+          const completed = await postResult;
+          expect(completed.status).toBe(422);
+          expect(completed.body.code).toBe("SKILL_INACTIVE");
+          expect(
+            await prisma.employeeSkill.count({
+              where: { employeeId, skillId: skill.id },
+            }),
+          ).toBe(0);
+        } finally {
+          clearTimeout(pendingTimer);
+          // A failed assertion above must not leave the transaction (and its
+          // connection) open for the rest of the worker.
+          releaseHolder();
+          await holder.catch(() => undefined);
+        }
+      },
+      15_000,
+    );
+
+    it("assigns fourteen skills in parallel without exhausting the pool (F10)", async () => {
+      const admin = await login("admin");
+      const employeeId = await createEmployee(admin);
+
+      // 14 is deliberately above the pool's default `max` of 10: with a second
+      // connection needed per in-flight transaction, this many concurrent
+      // requests cannot all make progress and the extras die on transaction
+      // `maxWait` instead of queueing briefly.
+      const skills: SkillBody[] = [];
+      for (let index = 0; index < 14; index += 1) {
+        skills.push(
+          await createSkill(admin, skillName(`F10 Parallel ${index}`)),
+        );
+      }
+
+      const results = await Promise.all(
+        skills.map((skill) => assignSkill(admin, employeeId, skill.id, 3)),
+      );
+
+      expect(results.map((res) => res.status)).toEqual(
+        Array.from({ length: 14 }, () => 201),
+      );
+      expect(
+        await prisma.employeeSkill.count({ where: { employeeId } }),
+      ).toBe(14);
     });
   });
 });
