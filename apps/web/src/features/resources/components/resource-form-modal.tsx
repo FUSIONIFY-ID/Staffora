@@ -194,7 +194,7 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-slate-800 pt-4">
+        <div className="flex items-center justify-end gap-3 border-t border-line pt-4">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>

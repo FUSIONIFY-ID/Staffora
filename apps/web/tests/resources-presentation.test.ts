@@ -100,7 +100,7 @@ describe('resource presentation: formatting', () => {
   })
 
   it('formats ISO dates without shifting the day across time zones', () => {
-    expect(formatDate('2026-03-01')).toBe('01 Mar 2026')
+    expect(formatDate('2026-03-01')).toBe('Mar 01, 2026')
     expect(formatDate(undefined)).toBe('-')
     expect(formatDate('not-a-date')).toBe('not-a-date')
   })

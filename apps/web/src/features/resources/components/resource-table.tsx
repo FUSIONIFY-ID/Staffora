@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Button } from '../../../components/ui/button.js'
 import type { Employee } from '../api/resources-api.js'
 import { ResourceAvailabilityBadge } from './resource-availability-badge.js'
@@ -11,6 +11,8 @@ export interface ResourceTableProps {
 }
 
 export const ResourceTable: React.FC<ResourceTableProps> = ({ employees, canManage, onEdit }) => {
+  const navigate = useNavigate()
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[900px] border-collapse text-left text-sm">
@@ -47,11 +49,13 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({ employees, canMana
           {employees.map((employee) => (
             <tr
               key={employee.id}
-              className="h-[48px] transition-colors hover:bg-surface-page/50"
+              onClick={() => navigate(`/resources/${employee.id}`)}
+              className="h-[48px] cursor-pointer transition-colors hover:bg-surface-page/50"
             >
               <td className="px-6 py-3.5">
                 <Link
                   to={`/resources/${employee.id}`}
+                  onClick={(e) => e.stopPropagation()}
                   className="font-semibold text-ink hover:text-primary transition-colors block"
                 >
                   {employee.fullName}
@@ -82,6 +86,7 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({ employees, canMana
                 <div className="flex items-center justify-end gap-2">
                   <Link
                     to={`/resources/${employee.id}`}
+                    onClick={(e) => e.stopPropagation()}
                     className="text-xs font-medium text-primary hover:underline"
                   >
                     View detail
@@ -91,7 +96,10 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({ employees, canMana
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => onEdit(employee)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEdit(employee)
+                      }}
                       aria-label={`Edit ${employee.fullName}`}
                     >
                       Edit

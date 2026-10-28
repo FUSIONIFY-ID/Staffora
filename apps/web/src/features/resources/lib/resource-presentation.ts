@@ -98,9 +98,9 @@ export function formatDate(isoDate: string | undefined): string {
   if (!isoDate) return '-'
   const parsed = new Date(`${isoDate}T00:00:00Z`)
   if (Number.isNaN(parsed.getTime())) return isoDate
-  return parsed.toLocaleDateString('en-GB', {
-    day: '2-digit',
+  return parsed.toLocaleDateString('en-US', {
     month: 'short',
+    day: '2-digit',
     year: 'numeric',
     timeZone: 'UTC',
   })
