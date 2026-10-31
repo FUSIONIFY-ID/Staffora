@@ -5,6 +5,7 @@ import {
   type StaffingRequirementWithSkills,
 } from "./staffing.repository.js";
 import { staffingPolicy } from "./staffing.policy.js";
+import { skillsService } from "../skills/skills.service.js";
 import {
   NotFoundError,
   NotImplementedError,
@@ -40,6 +41,21 @@ export const staffingService = {
       "Project not found.",
     );
 
+    // AC01.05 / BR02: a deactivated skill cannot be newly attached to a
+    // staffing requirement, exactly like a new employee assignment. Existence
+    // and uniqueness are checked separately so an unknown or repeated id is a
+    // 422 instead of a foreign-key 500.
+    //
+    // F8: these guards read the skills table before the insert and are not
+    // covered by a lock on this path — the `FOR SHARE` primitive lives inside
+    // the skills module and must not be reached across the module boundary.
+    // The employee-assignment path closes the window with that lock; on the
+    // staffing path it stays a narrow, documented gap until US03.02 owns a
+    // shared transaction, so the check-then-insert here is not atomic.
+    const requested = data.skills?.map((s) => s.skillId) ?? [];
+    await skillsService.assertSkillReferencesValid(requested);
+    await skillsService.assertSkillsActive(requested);
+
     return staffingRepository.create({
       projectId,
       jobRoleId: data.jobRoleId,
@@ -66,6 +82,20 @@ export const staffingService = {
       requirement.project.projectManagerEmployeeId,
       "Staffing requirement not found.",
     );
+
+    // AC01.05 / BR02: only skills that this request newly adds are checked for
+    // active state. The update does replace every join row, but a skill that
+    // was attached before it was deactivated must be able to stay attached —
+    // otherwise a requirement holding a since-deactivated skill could never be
+    // re-saved with its full list. Re-sending an unchanged attachment is not a
+    // new assignment.
+    const requested = data.skills?.map((s) => s.skillId) ?? [];
+    await skillsService.assertSkillReferencesValid(requested);
+    const existing = await staffingRepository.findSkillIdsByRequirementId(id);
+    const newlyAdded = requested.filter(
+      (skillId) => !existing.includes(skillId),
+    );
+    await skillsService.assertSkillsActive(newlyAdded);
 
     return staffingRepository.update(id, {
       jobRoleId: data.jobRoleId,

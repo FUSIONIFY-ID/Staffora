@@ -1567,45 +1567,6 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       expect(res.body.code).toBe("NOT_IMPLEMENTED");
     });
 
-    it("returns 501 Not Implemented for GET /skills", async () => {
-      const res = await request(app)
-        .get("/api/v1/skills")
-        .set("Cookie", adminCookie);
-      expect(res.status).toBe(501);
-      expect(res.body.code).toBe("NOT_IMPLEMENTED");
-    });
-
-    it("returns 501 Not Implemented for POST /skills with valid payload", async () => {
-      const res = await request(app)
-        .post("/api/v1/skills")
-        .set("Cookie", adminCookie)
-        .set("X-CSRF-Token", adminCsrf)
-        .send({ name: "TypeScript", category: "TECHNICAL" });
-      expect(res.status).toBe(501);
-      expect(res.body.code).toBe("NOT_IMPLEMENTED");
-    });
-
-    it("returns 501 Not Implemented for PATCH /employees/:id/skills/:skillId with valid UUIDs", async () => {
-      const validSkillId = randomUUID();
-      const res = await request(app)
-        .patch(`/api/v1/employees/${employeeOwnId}/skills/${validSkillId}`)
-        .set("Cookie", adminCookie)
-        .set("X-CSRF-Token", adminCsrf)
-        .send({ proficiencyLevel: 4 });
-      expect(res.status).toBe(501);
-      expect(res.body.code).toBe("NOT_IMPLEMENTED");
-    });
-
-    it("returns 501 Not Implemented for DELETE /employees/:id/skills/:skillId with valid UUIDs (F29)", async () => {
-      const validSkillId = randomUUID();
-      const res = await request(app)
-        .delete(`/api/v1/employees/${employeeOwnId}/skills/${validSkillId}`)
-        .set("Cookie", adminCookie)
-        .set("X-CSRF-Token", adminCsrf);
-      expect(res.status).toBe(501);
-      expect(res.body.code).toBe("NOT_IMPLEMENTED");
-    });
-
     it("returns 501 Not Implemented for GET /capacity", async () => {
       const res = await request(app)
         .get("/api/v1/capacity")
