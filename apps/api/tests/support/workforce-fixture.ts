@@ -355,6 +355,18 @@ export async function teardownWorkforceFixture(): Promise<void> {
       () => prisma.employee.deleteMany({ where: { id: { in: employeeIds } } }),
     ],
     [
+      // A staffing requirement in another suite may attach one of this
+      // fixture's skills, leaving a `staffing_requirement_skills` row that
+      // points at the skill. Clear those join rows first so the skill delete
+      // below never trips `staffing_requirement_skills_skill_id_fkey`, the same
+      // way employee skills are cleared before employees above.
+      "staffing requirement skills",
+      () =>
+        prisma.staffingRequirementSkill.deleteMany({
+          where: { skillId: { in: created.skillIds } },
+        }),
+    ],
+    [
       "skills",
       () =>
         prisma.skill.deleteMany({ where: { id: { in: created.skillIds } } }),
