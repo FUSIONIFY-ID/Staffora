@@ -9,10 +9,22 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 // Error and helper text are linked via aria-describedby, and error sets
 // aria-invalid, so validation is announced rather than only coloured red.
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, className = '', id, ...props }, ref) => {
+  (
+    {
+      label,
+      error,
+      helperText,
+      className = '',
+      id,
+      'aria-describedby': ariaDescribedBy,
+      ...props
+    },
+    ref,
+  ) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
-    const messageId = inputId ? `${inputId}-message` : undefined
-    const hasMessage = Boolean(error || helperText)
+    const errorId = inputId ? `${inputId}-error` : undefined
+    const helperId = inputId ? `${inputId}-helper` : undefined
+    const describedBy = error && errorId ? errorId : helperText && helperId ? helperId : ariaDescribedBy
 
     return (
       <div className="w-full space-y-1.5 text-left">
@@ -28,7 +40,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           aria-invalid={error ? true : undefined}
-          aria-describedby={hasMessage ? messageId : undefined}
+          aria-describedby={describedBy}
           className={`w-full rounded-lg bg-surface-white border ${
             error
               ? 'border-danger focus:border-danger focus:ring-danger/20'
@@ -37,12 +49,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && (
-          <p id={messageId} className="text-xs text-danger font-medium">
+          <p id={errorId} className="text-xs text-danger font-medium">
             {error}
           </p>
         )}
         {helperText && !error && (
-          <p id={messageId} className="text-xs text-ink-dim">
+          <p id={helperId} className="text-xs text-ink-dim">
             {helperText}
           </p>
         )}

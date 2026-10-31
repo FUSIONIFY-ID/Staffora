@@ -923,17 +923,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List skill catalog */
+        /**
+         * List skill catalog
+         * @description Returns the skill catalog, filtered and paginated. Readable by ADMIN, PROJECT_MANAGER and RESOURCE_MANAGER; an EMPLOYEE receives 403 and reads their own skills through `GET /employees/{id}/skills` (AC02.05). Inactive skills stay in the catalog so historical assignments remain interpretable (AC01.04, BR03).
+         */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    page?: number;
+                    pageSize?: number;
+                    /** @description Case-insensitive substring match on the skill name, using the same comparison that enforces uniqueness (AC01.03). */
+                    q?: string;
+                    /** @description Filters on the Active/Inactive flag (AC01.04). Omit to return both active and inactive skills. */
+                    isActive?: boolean;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description List of skills */
+                /** @description Paginated skill catalog */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -943,11 +953,31 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                501: components["responses"]["NotImplementedResponse"];
+                /** @description Insufficient role. The catalog is readable by ADMIN, PROJECT_MANAGER and RESOURCE_MANAGER; an EMPLOYEE receives 403 here. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Malformed query parameters, for example page below 1, pageSize above 100, or an isActive value that is not a boolean */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
-        /** Create skill (Admin/Resource Manager) */
+        /**
+         * Create skill
+         * @description Creates a skill in the catalog (AC01.01). The name is required (AC01.02) and must be unique under case-insensitive comparison (AC01.03); a duplicate returns 409 with code DUPLICATE_SKILL_NAME. New skills are created active and can be deactivated later through `PATCH /skills/{id}` (AC01.04). Restricted to ADMIN and RESOURCE_MANAGER.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -957,9 +987,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": {
-                        name: string;
-                    };
+                    "application/json": components["schemas"]["CreateSkillInput"];
                 };
             };
             responses: {
@@ -970,20 +998,96 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data?: components["schemas"]["Skill"];
+                            data: components["schemas"]["Skill"];
                         };
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                403: components["responses"]["ForbiddenResponse"];
+                /** @description Insufficient role. Only ADMIN and RESOURCE_MANAGER may create skills. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                409: components["responses"]["ConflictResponse"];
                 422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/skills/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update skill
+         * @description Renames a skill or toggles it between Active and Inactive (AC01.04). A rename is rejected with 409 and code DUPLICATE_SKILL_NAME when another skill already holds the same name under case-insensitive comparison (AC01.03). Deactivating a skill leaves existing employee assignments untouched and readable, still reporting `skillIsActive: false` (BR03), while blocking any new assignment (AC01.05). At least one of `name` or `isActive` is required. Restricted to ADMIN and RESOURCE_MANAGER.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateSkillInput"];
+                };
+            };
+            responses: {
+                /** @description Skill updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Skill"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedResponse"];
+                /** @description Insufficient role. Only ADMIN and RESOURCE_MANAGER may update skills. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Skill not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                409: components["responses"]["ConflictResponse"];
+                422: components["responses"]["ValidationErrorResponse"];
+            };
+        };
         trace?: never;
     };
     "/employees/{id}/skills": {
@@ -993,10 +1097,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get employee skills */
+        /**
+         * Get employee skills
+         * @description Returns a page of the employee's skill list with the proficiency level of each assignment (AC02.05, BR01). The response uses the standard list envelope with pagination meta (TSD 11.1): page defaults to 1, pageSize defaults to 20 and is capped at 100. ADMIN, PROJECT_MANAGER and RESOURCE_MANAGER may read any employee; an EMPLOYEE may read only their own list and cannot edit it (AC02.05), and asking for another employee returns 404 rather than 403 so the response cannot be used to enumerate ids. Assignments that reference a since-deactivated skill stay readable and report `skillIsActive: false` (BR03).
+         */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    page?: number;
+                    pageSize?: number;
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -1005,24 +1115,45 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description List of employee skills with proficiency */
+                /** @description Paginated list of employee skills with proficiency */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
-                            data?: components["schemas"]["EmployeeSkill"][];
+                            data: components["schemas"]["EmployeeSkill"][];
+                            meta: components["schemas"]["PaginationMeta"];
                         };
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
+                /** @description Insufficient role. Readable by ADMIN, PROJECT_MANAGER and RESOURCE_MANAGER, plus an EMPLOYEE reading their own list. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Employee not found, or a record the caller may not see. An EMPLOYEE requesting another employee's skills receives the same 404 as an unknown id (AC02.05). */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
-        /** Assign skill to employee */
+        /**
+         * Assign skill to employee
+         * @description Assigns an active skill to an employee with a required proficiency level from 1 to 5 (AC02.01, AC02.02, BR01). An inactive skill cannot be newly assigned and is rejected with 422 and code SKILL_INACTIVE (AC01.05). A skill the employee already holds is rejected with 409 and code SKILL_ALREADY_ASSIGNED; update the existing proficiency through `PATCH /employees/{id}/skills/{skillId}` instead (AC02.03, AC02.04). Restricted to ADMIN and RESOURCE_MANAGER.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1034,11 +1165,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        skillId: string;
-                        proficiencyLevel: number;
-                    };
+                    "application/json": components["schemas"]["AssignEmployeeSkillInput"];
                 };
             };
             responses: {
@@ -1049,14 +1176,39 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data?: components["schemas"]["EmployeeSkill"];
+                            data: components["schemas"]["EmployeeSkill"];
                         };
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                403: components["responses"]["ForbiddenResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
+                /** @description Insufficient role. Only ADMIN and RESOURCE_MANAGER may assign skills. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Employee or skill not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                409: components["responses"]["ConflictResponse"];
+                /** @description Malformed body, for example a missing proficiencyLevel or a level outside 1 to 5, or a deactivated skill. A deactivated skill answers 422 with code SKILL_INACTIVE and an `errors.skillId` entry (AC01.05); the same rule now applies to staffing requirements, so an inactive skill cannot be newly attached there either (BR02). */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -1075,7 +1227,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Remove skill from employee */
+        /**
+         * Remove skill from employee
+         * @description Removes the skill assignment from the employee and returns 204 with no body (AC02.01). The skill itself is never deleted; deactivate it through `PATCH /skills/{id}` so historical references stay readable (AC01.04, BR03). Restricted to ADMIN and RESOURCE_MANAGER.
+         */
         delete: {
             parameters: {
                 query?: never;
@@ -1096,14 +1251,33 @@ export interface paths {
                     content?: never;
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                403: components["responses"]["ForbiddenResponse"];
+                /** @description Insufficient role. Only ADMIN and RESOURCE_MANAGER may remove skill assignments. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Employee not found, or the employee does not hold this skill */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
             };
         };
         options?: never;
         head?: never;
-        /** Update employee skill proficiency */
+        /**
+         * Update employee skill proficiency
+         * @description Updates the proficiency level of an existing employee skill assignment (AC02.04, BR01). The level is required and must be an integer from 1 to 5. The skill must already be assigned to the employee; the same pair cannot be created twice (AC02.03). Restricted to ADMIN and RESOURCE_MANAGER.
+         */
         patch: {
             parameters: {
                 query?: never;
@@ -1116,9 +1290,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": {
-                        proficiencyLevel: number;
-                    };
+                    "application/json": components["schemas"]["UpdateEmployeeSkillInput"];
                 };
             };
             responses: {
@@ -1129,14 +1301,30 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data?: components["schemas"]["EmployeeSkill"];
+                            data: components["schemas"]["EmployeeSkill"];
                         };
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
-                403: components["responses"]["ForbiddenResponse"];
+                /** @description Insufficient role. Only ADMIN and RESOURCE_MANAGER may update proficiency (AC02.05). */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Employee not found, or the employee does not hold this skill */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
             };
         };
         trace?: never;
@@ -1327,7 +1515,10 @@ export interface paths {
             };
         };
         put?: never;
-        /** Create staffing requirement for project */
+        /**
+         * Create staffing requirement for project
+         * @description Creates a staffing requirement for the project, restricted to ADMIN or the assigned Project Manager. The attached skills must reference existing skills and must not repeat a skill id. A deactivated skill cannot be newly attached and answers 422 with code SKILL_INACTIVE (AC01.05, BR02).
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1357,7 +1548,7 @@ export interface paths {
                 401: components["responses"]["UnauthorizedResponse"];
                 403: components["responses"]["ForbiddenResponse"];
                 404: components["responses"]["NotFoundResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
+                422: components["responses"]["SkillAssignmentErrorResponse"];
             };
         };
         delete?: never;
@@ -1409,7 +1600,7 @@ export interface paths {
         head?: never;
         /**
          * Update staffing requirement
-         * @description Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager. Passing an empty array for skills removes all existing required skills.
+         * @description Updates an existing staffing requirement. Restricted to Admin or the assigned Project Manager. Passing an empty array for skills removes all existing required skills. Only skills newly added by the request are checked against AC01.05: a skill that was already attached before it was deactivated may stay attached, while a newly attached deactivated skill answers 422 with code SKILL_INACTIVE and an `errors.skillId` entry. An unknown or repeated skill id answers 422 with code SKILL_REFERENCE_INVALID and an `errors.skills` entry.
          */
         patch: {
             parameters: {
@@ -1440,7 +1631,7 @@ export interface paths {
                 401: components["responses"]["UnauthorizedResponse"];
                 403: components["responses"]["ForbiddenResponse"];
                 404: components["responses"]["NotFoundResponse"];
-                422: components["responses"]["ValidationErrorResponse"];
+                422: components["responses"]["SkillAssignmentErrorResponse"];
             };
         };
         trace?: never;
@@ -2092,7 +2283,18 @@ export interface components {
             isActive: boolean;
         };
         SkillListResponse: {
-            data?: components["schemas"]["Skill"][];
+            data: components["schemas"]["Skill"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        CreateSkillInput: {
+            /** @description Skill name. Required (AC01.02) and unique under case-insensitive comparison (AC01.03). */
+            name: string;
+        };
+        UpdateSkillInput: {
+            /** @description New skill name. Rejected with 409 when another skill already holds it under case-insensitive comparison (AC01.03). */
+            name?: string;
+            /** @description Toggles the skill between Active and Inactive (AC01.04). An inactive skill cannot be newly assigned but stays readable on existing assignments (AC01.05, BR03). */
+            isActive?: boolean;
         };
         EmployeeSkill: {
             /** Format: uuid */
@@ -2100,7 +2302,22 @@ export interface components {
             /** Format: uuid */
             skillId: string;
             skillName: string;
+            /** @description Active flag of the referenced skill. False for a deactivated skill whose assignment is kept for history (BR03). */
             skillIsActive?: boolean;
+            /** @description Proficiency from 1 to 5 (BR01). */
+            proficiencyLevel: number;
+        };
+        AssignEmployeeSkillInput: {
+            /**
+             * Format: uuid
+             * @description Skill to assign. It must exist and be active (AC01.05) and must not already be assigned to the employee (AC02.03).
+             */
+            skillId: string;
+            /** @description Required proficiency from 1 to 5 (AC02.02, BR01). */
+            proficiencyLevel: number;
+        };
+        UpdateEmployeeSkillInput: {
+            /** @description New proficiency from 1 to 5 (AC02.04, BR01). */
             proficiencyLevel: number;
         };
         CreateEmployeeInput: {
@@ -2230,6 +2447,7 @@ export interface components {
             startDate: string;
             /** Format: date */
             endDate: string;
+            /** @description Skills required for the role. Each `skills[].skillId` must reference an existing skill and must be unique within the request; an unknown or repeated id answers 422 with code SKILL_REFERENCE_INVALID and an `errors.skills` entry. A deactivated skill cannot be newly attached and answers 422 with code SKILL_INACTIVE and an `errors.skillId` entry (AC01.05). */
             skills?: {
                 /** Format: uuid */
                 skillId: string;
@@ -2245,6 +2463,7 @@ export interface components {
             startDate?: string;
             /** Format: date */
             endDate?: string;
+            /** @description Replaces the requirement's skill list; an empty array removes all existing required skills. Each `skills[].skillId` must reference an existing skill and must be unique within the request; an unknown or repeated id answers 422 with code SKILL_REFERENCE_INVALID and an `errors.skills` entry. Only newly added skills are checked against AC01.05, so a skill that was already attached before it was deactivated may stay attached, while a newly attached deactivated skill answers 422 with code SKILL_INACTIVE and an `errors.skillId` entry. */
             skills?: {
                 /** Format: uuid */
                 skillId: string;
@@ -2424,6 +2643,24 @@ export interface components {
         };
         /** @description Validation failed for request parameters or body */
         ValidationErrorResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Validation failed for the request body or parameters; alongside generic validation failures, two codes name a skill problem: `SKILL_INACTIVE` means the request attaches a skill that is deactivated, named by an `errors.skillId` entry (AC01.05), and `SKILL_REFERENCE_INVALID` means the `skills` array names a skill id that does not exist or repeats the same id twice, named by an `errors.skills` entry. On `PATCH /staffing-requirements/{id}`, only skills newly added by the request are checked, so a skill that was already attached before it was deactivated may stay attached; AC01.05 applies to new assignments. */
+        SkillAssignmentErrorResponse: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Request conflicts with the current state of the resource, for example a duplicate normalized skill name or a skill already assigned to the employee. The `code` field carries the specific conflict code. */
+        ConflictResponse: {
             headers: {
                 [name: string]: unknown;
             };

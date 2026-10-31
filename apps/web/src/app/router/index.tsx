@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router";
 import { AppLayout } from "../layouts/app-layout.js";
 import { ProtectedRoute } from "./protected-route.js";
+import { PublicRoute } from "./public-route.js";
 import { useAuth } from "../providers/auth-provider.js";
 import { LoadingState } from "../../components/loading-state.js";
 import { NotFoundView } from "../layouts/not-found-view.js";
@@ -44,7 +45,14 @@ export const AppRouter: React.FC = () => {
   return (
     <Routes>
       {/* Public Route */}
-      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
 
       {/* Root redirect */}
       <Route path="/" element={<RootRedirect />} />

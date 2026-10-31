@@ -47,6 +47,19 @@ export const staffingRepository = {
     });
   },
 
+  /**
+   * F3 support: the ids currently attached to a requirement, used by the
+   * update path to tell a newly added skill from one that was already attached
+   * before it was deactivated. Only the id column is read.
+   */
+  async findSkillIdsByRequirementId(id: string): Promise<string[]> {
+    const rows = await prisma.staffingRequirementSkill.findMany({
+      where: { staffingRequirementId: id },
+      select: { skillId: true },
+    });
+    return rows.map((row) => row.skillId);
+  },
+
   async findByProjectId(
     projectId: string,
   ): Promise<StaffingRequirementWithDetails[]> {
@@ -63,6 +76,10 @@ export const staffingRepository = {
     });
   },
 
+  /**
+   * The requirement row and its skill rows are written in a single
+   * `prisma.$transaction`, so the requirement and its skills commit together.
+   */
   async create(data: {
     projectId: string;
     jobRoleId: string;
@@ -73,32 +90,34 @@ export const staffingRepository = {
     skills?: { skillId: string; minimumProficiencyLevel: number }[];
     createdBy?: string;
   }): Promise<StaffingRequirementWithSkills> {
-    return prisma.staffingRequirement.create({
-      data: {
-        projectId: data.projectId,
-        jobRoleId: data.jobRoleId,
-        headcount: data.headcount,
-        allocationPercentage: data.allocationPercentage,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        createdBy: data.createdBy,
-        skills:
-          data.skills && data.skills.length > 0
-            ? {
-                create: data.skills.map((s) => ({
-                  skillId: s.skillId,
-                  minimumProficiencyLevel: s.minimumProficiencyLevel,
-                })),
-              }
-            : undefined,
-      },
-      include: {
-        skills: {
-          include: {
-            skill: true,
+    return prisma.$transaction(async (tx) => {
+      return tx.staffingRequirement.create({
+        data: {
+          projectId: data.projectId,
+          jobRoleId: data.jobRoleId,
+          headcount: data.headcount,
+          allocationPercentage: data.allocationPercentage,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          createdBy: data.createdBy,
+          skills:
+            data.skills && data.skills.length > 0
+              ? {
+                  create: data.skills.map((s) => ({
+                    skillId: s.skillId,
+                    minimumProficiencyLevel: s.minimumProficiencyLevel,
+                  })),
+                }
+              : undefined,
+        },
+        include: {
+          skills: {
+            include: {
+              skill: true,
+            },
           },
         },
-      },
+      });
     });
   },
 
