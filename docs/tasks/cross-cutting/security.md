@@ -176,3 +176,9 @@ Konteks: `apps/web/src/api/client.ts` baris 118–120 hanya menghapus cache CSRF
 2. **Nilai cadangan lokal.** Apakah `docker-compose.yml` tetap memuat nilai lokal untuk pengembangan. Ini memengaruhi S1-SEC-01 dan S1-SEC-03.
 3. **Rate limit di memori.** `apps/api/src/common/auth/rate-limiter.ts` menyimpan hitungan per proses. Aman untuk satu VM (ADR-007). Jika jumlah instance bertambah, perlu penyimpanan bersama. Keputusan terima risiko atau pindahkan: Tech Lead.
 4. **Dokumen yang terbuka tapi tidak di-commit.** `docs/audits/` berisi temuan internal dan belum ter-commit. Keputusan apakah folder ini masuk repo: Tech Lead.
+
+## Keputusan Tech Lead (dicatat)
+
+- **Aturan `SESSION_SECRET` diturunkan.** Tanggal 2026-11-02, Tech Lead (Arya Isnaidi) menyetujui aturan minimal 8 karakter dengan satu huruf kapital dan satu karakter khusus, menggantikan minimal 32 karakter. Aturan ini ada di `apps/api/src/config/env.ts`. Risiko: secret lebih pendek dan lebih mudah ditebak daripada 32 karakter. Ini ikut menyentuh temuan DK-1 di `docs/audits/`.
+- **Fallback production belum diubah.** Nilai cadangan di `docker-compose.prod.yml` tidak memenuhi aturan baru. Jika `SESSION_SECRET` tidak diset di production, API gagal start. Perbaikan nilai cadangan tetap masuk S1-SEC-01.
+- **Pengecualian scope branch `QA-S1-DOC-docs-restructure`** dicatat di `docs/tasks/cross-cutting/scope-exception-qa-s1-doc.md`.
