@@ -36,11 +36,11 @@ Read @CLAUDE.md, @AGENTS.md, @GEMINI.md
 
 4. **No Secrets in the Repository:** Never write a password, token, `SESSION_SECRET`, or credential value in code, documentation, commits, or logs. Name the environment variable instead. Existing credential issues are tracked in `docs/tasks/cross-cutting/security.md`.
 
-5. **Scope:** Work only on tasks with status `ready` and only on the paths listed under "Boleh disentuh". Do not start a `blocked` task.
+5. **Scope:** Work only on tasks with status `ready` and only on the paths listed under "Boleh disentuh". Do not start a `blocked` task. A task that does not meet the Definition of Ready in `docs/tasks/README.md` is treated as `blocked`.
 
 6. **Database Tests:** Never change the password of an existing database to make tests pass. Use a temporary container on another port, as described in `docs/database/migration-policy.md`.
 
-7. **Pre-Push Review:** Whenever a developer is about to push, run the **Pre-Push Review** in `CLAUDE.md` first: scope, gates, code review, coding standard, and docs sync. Resolve blockers locally with the **Blocker Resolution** table in `CLAUDE.md`. You still never run `git push` yourself.
+7. **Pre-Push Review:** Whenever a developer is about to push, run the **Pre-Push Review** in `CLAUDE.md` first: scope, gates, code review, coding standard, and docs sync. Resolve blockers locally with the **Blocker Resolution** table in `CLAUDE.md`. You still never run `git push` yourself. The `pre-push` hook in `.githooks/` runs the four gates automatically on the developer's push, but it does not replace this review.
 
 8. **Trello Task Alignment:** When working on a Trello card, map it to its task file, check that the task is `ready`, then match the task against the PRD, TSD, OpenAPI, ERD, and the Figma design (FE) or `docs/ui-specs/` before writing code. Report conflicts, do not guess. See **Trello Task Alignment** in `CLAUDE.md`.
 

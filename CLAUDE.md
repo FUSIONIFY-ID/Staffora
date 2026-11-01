@@ -42,7 +42,7 @@ Because team members are junior developers, strict discipline, precise task scop
 
 1. **Mandatory Pre-Task Analysis & Contract Alignment:** Before creating, scaffolding, or writing ANY code, the AI agent MUST first read and analyze the project contracts. Read the task file in `docs/tasks/<sprint>/<USxx.xx>.md` (or `docs/tasks/cross-cutting/` for work outside a story), then the PRD story and AC, `docs/api/openapi.yaml`, `docs/database/erd.md`, and `apps/api/prisma/schema.prisma`. The agent MUST reference and adhere to @CLAUDE.md, @AGENTS.md, and @GEMINI.md. NEVER start coding blindly without understanding the domain constraints.
 2. **Absolute Ban on Agent `git push` (Commit-Only Boundary):** AI agents are **STRICTLY PROHIBITED** from running `git push` under ANY circumstances (to `dev`, `main`, or feature branches). An agent's execution boundary terminates strictly at local `git commit`. Pushing to GitHub remote is an EXCLUSIVE human developer responsibility after manual inspection and review.
-3. **No Rogue Development:** Developers and AI agents MUST NOT invent unapproved features, extra endpoints, or bypass PRD/TSD contracts. Work only on tasks with status `ready` in the task file, and only on paths listed under "Boleh disentuh". Tasks with status `blocked` are not started.
+3. **No Rogue Development:** Developers and AI agents MUST NOT invent unapproved features, extra endpoints, or bypass PRD/TSD contracts. Work only on tasks with status `ready` in the task file, and only on paths listed under "Boleh disentuh". Tasks with status `blocked` are not started. A task that does not meet the Definition of Ready in `docs/tasks/README.md` is treated as `blocked`.
 4. **Backend is Authoritative:** Never fake persistence, authorization, or capacity validation in the Web UI.
 5. **Pre-Commit Verification Gates:** AI agents may only create a local `git commit` if all 4 quality gates pass: `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. If any check fails, do NOT commit.
 6. **No Secrets in the Repository:** Never write a password, token, `SESSION_SECRET`, or other credential value in code, documentation, commit messages, or logs. Name the environment variable instead. Credentials that already exist in the repository are tracked in `docs/tasks/cross-cutting/security.md`. Do not add new ones.
@@ -132,10 +132,12 @@ When an AI agent is instructed to make commits or prepare branches:
   <type>(<scope>): <subject> [USxx.xx - ACxx.xx]
   ```
 - **Work without a story:** Use the tag `[QA-S1-DOC]` (documentation) or `[QA-S1-SEC]` (cross-cutting security) in place of `[USxx.xx - ACxx.xx]`. Never invent an AC ID.
-- **No AI attribution in commits:** Do NOT add a `Co-Authored-By: Claude ...` trailer or any other AI attribution line to commit messages. Commits are made under the developer's own git identity (`git config user.name`). The repository's local `commit-msg` hook (in `.git/hooks/`, not committed) strips such trailers, but this rule applies even without the hook.
+- **No AI attribution in commits:** Do NOT add a `Co-Authored-By: Claude ...` trailer or any other AI attribution line to commit messages. Commits are made under the developer's own git identity (`git config user.name`). The repository's `commit-msg` hook in `.githooks/` strips such trailers when the clone has `core.hooksPath` set to `.githooks`, and CI rejects them on pull requests. This rule applies even without the hook.
 - **No AI footer in pull requests:** Do not add an AI attribution footer to a PR description unless the developer asks for it.
 
 ## Pre-Push Review (mandatory before a developer pushes)
+
+The repository also has a `pre-push` hook (`.githooks/pre-push`). On every push from a clone with `core.hooksPath` set to `.githooks`, it runs the four gates automatically. The hook checks gates only and does not review code, so the steps below still apply when the agent is asked to review.
 
 The agent runs these steps in order, on the local branch, before it hands over any push command. All steps must pass.
 
@@ -300,10 +302,11 @@ staffora/
 - Modules communicate via public service interfaces, not by reaching into another module's repository.
 - `CapacityService` (`apps/api/src/modules/capacity/capacity.service.ts`) is the **sole source of truth** for workload and capacity calculations across the system.
 - Allocation mutations MUST serialize per employee row using `SELECT ... FOR UPDATE` inside a database transaction (TSD 10.4, ADR-009). **Status: not implemented yet.** Allocation mutations still answer 501. Do not write code, docs, or claims that say the lock is already in effect until it is implemented and tested.
+- The implementation status of every ADR is in the "Implementasi" column of `docs/architecture/decisions/README.md`. Do not claim an ADR is implemented unless that column says `Sesuai`.
 
 ### Scope and Domain Rules
 
-- Business UI copy is clean Bahasa Indonesia / English as specified in PRD. Code identifiers, error codes, database tables/columns, and API fields are English.
+- Business UI copy is clean Bahasa Indonesia / English as specified in PRD. Code identifiers, error codes, database tables/columns, and API fields are English. UI terms follow `docs/ui-specs/glossary.md`.
 - The 4 application roles are: `ADMIN`, `PROJECT_MANAGER`, `RESOURCE_MANAGER`, `EMPLOYEE`.
 - Product behavior must strictly match PRD acceptance criteria. Do not invent external microservices, queues, Redis, or AI matching scores (prohibited in MVP per ADR-010).
 - Historical records are never hard-deleted: inactive employees, archived projects, and cancelled allocations remain visible in audit history. Removal of employee skill assignments is an open decision (ADR-013, Proposed). Until the Tech Lead decides, do not change that behavior.
@@ -347,7 +350,9 @@ Specific test targets:
 
 API tests need PostgreSQL 18 with the migrations applied. Do not change the password of an existing database to make tests pass. Use a temporary container on another port and remove it afterwards. The steps are in `docs/database/migration-policy.md`, section "Lingkungan uji".
 
-Use Node 24, as set in `engines` in `package.json` (`>=24 <25`). If the local machine runs another Node version, say so in the gate report: the results may not match CI.
+The local Docker database listens on host port 5433 (`docker compose up -d db`). Port 5432 is often taken by a local PostgreSQL install, so `DATABASE_URL` for the Docker database must use port 5433.
+
+Use Node 24, as set in `engines` in `package.json` (`>=24 <25`). `.nvmrc` pins `24` for nvm users. If the local machine runs another Node version, say so in the gate report: the results may not match CI.
 
 ## Local Commands
 
@@ -362,7 +367,7 @@ npm run db:migrate:deploy -w @staffora/api    # CI and production: apply committ
 npm run db:seed -w @staffora/api              # Development data only
 
 # Development Servers
-npm run dev           # Concurrently runs web & api
+npm run dev           # Hanya menjalankan web. Untuk API jalankan npm run dev:api di terminal lain
 npm run dev:api       # Express API on http://localhost:3000
 npm run dev:web       # Vite SPA on http://localhost:5173
 npm run stack:up      # Full local stack with docker compose (dev overlay)
@@ -390,7 +395,7 @@ If context is compacted, re-confirm:
 - [ ] No secret values in code, docs, commits, or logs. Name variables only.
 - [ ] Before any developer push: run the Pre-Push Review (scope, gates, code review, coding standard, docs sync). Verdict is `BERSIH` or `ADA BLOCKER`.
 - [ ] Trello card work: map the card to the task file, check that the task is `ready`, confirm the design source (Figma or `docs/ui-specs/`) and the contract (OpenAPI, ERD) before coding.
-- [ ] Work starts from the task file in `docs/tasks/`. Only `ready` tasks, only the listed paths.
+- [ ] Work starts from the task file in `docs/tasks/`. Only `ready` tasks, only the listed paths. A task that does not meet the Definition of Ready is `blocked`.
 - [ ] Target integration branch is `dev`; `main` is protected and promoted only by Arya Isnaidi.
 - [ ] File size limit: no production file exceeds 300 lines (split at 250 lines).
 - [ ] Strict TypeScript: no `any`, no `@ts-ignore`, explicit return types.
