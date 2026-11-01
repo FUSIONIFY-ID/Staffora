@@ -30,6 +30,11 @@ Folder ini berisi task yang sudah dipecah per story. Agent dan developer membaca
 - Berhenti bila: <kondisi>
 ```
 
+## Pengecualian: task lintas modul
+
+Task yang bukan bagian story PRD disimpan di `docs/tasks/cross-cutting/`. Task ini tetap perlu penugasan Tech Lead sebelum dikerjakan. Tag commit-nya memakai `[QA-S1-SEC]` atau `[QA-S1-DOC]`, karena tidak ada ID AC.
+
 ## Daftar
 
 - [Sprint 1 — US02.02](sprint-1/US02.02.md)
+- [Lintas modul — keamanan](cross-cutting/security.md)
