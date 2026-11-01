@@ -81,3 +81,67 @@ jobs:
 
       - name: Production Bundle Build
         run: npm run build
+
+  # Job ini hanya berjalan pada pull_request dan tidak memakai secret. Ia hanya membaca riwayat git.
+  commit-hygiene:
+    name: Commit Hygiene - AI trailer and subject format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository (full history)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Gagal (exit 1) jika ada commit di rentang origin/<base>..HEAD yang memuat trailer atribusi AI.
+      - name: Reject AI attribution trailers
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          body="$(git log --format=%B "origin/${BASE_REF}..HEAD")"
+          hits="$(printf '%s\n' "${body}" | grep -ic 'co-authored-by: claude' || true)"
+          if [ "${hits}" -gt 0 ]; then
+            echo "::error::Ditemukan ${hits} baris trailer 'Co-Authored-By: Claude'. Hapus trailer dari commit, lalu push ulang."
+            exit 1
+          fi
+          echo "Tidak ada trailer atribusi AI di rentang commit."
+
+      # Hanya peringatan (job tidak digagalkan). Commit merge dan commit revert bawaan git diabaikan.
+      - name: Check commit subject format (warning only)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          pattern='^(feat|fix|docs|test|refactor|chore|style|perf|build|ci|revert)\([^()]+\): .+$'
+          git log --no-merges --format='%h%x09%s' "origin/${BASE_REF}..HEAD" | while IFS=$'\t' read -r sha subject; do
+            if [[ "${subject}" == 'Revert "'* ]]; then
+              continue
+            fi
+            if [[ ! "${subject}" =~ ${pattern} ]]; then
+              echo "::warning::Commit ${sha} tidak sesuai format <type>(<scope>): <subject>: ${subject}"
+            fi
+          done
+
+  # Non-blocking: job ini hanya melaporkan temuan dan tidak menggagalkan workflow.
+  # Akan dijadikan blocking setelah task S1-SEC-03, S1-SEC-05, dan S1-SEC-06 selesai
+  # (lihat docs/tasks/cross-cutting/security.md).
+  secret-scan:
+    name: Secret Scan - gitleaks (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # Tag tetap yang sudah diverifikasi dengan docker pull. Jangan diganti ke tag latest.
+      - name: Scan working tree with gitleaks
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/repo:ro" \
+            ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            detect --no-git --redact --source /repo
