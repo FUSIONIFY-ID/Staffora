@@ -1,0 +1,20 @@
+#!/bin/sh
+# Hook commit-msg untuk repo Staffora. Aktif setelah: git config core.hooksPath .githooks
+# 1) Menghapus trailer atribusi AI (aturan CLAUDE.md, Commit Safety Gate).
+# 2) Memberi peringatan jika subject tidak mengikuti format <type>(<scope>): <subject>. Tidak memblokir commit.
+
+MSG_FILE="$1"
+
+sed -i '/^Co-Authored-By: Claude/Id' "$MSG_FILE"
+
+SUBJECT="$(head -n 1 "$MSG_FILE")"
+case "$SUBJECT" in
+  Merge*|Revert*|fixup!*|squash!*) ;;
+  *)
+    if ! printf '%s\n' "$SUBJECT" | grep -Eq '^(feat|fix|docs|test|refactor|chore|style|perf|build|ci|revert)\([a-z0-9/_-]+\): .+'; then
+      echo "commit-msg: peringatan: subject sebaiknya mengikuti <type>(<scope>): <subject> [TAG]." >&2
+    fi
+    ;;
+esac
+
+exit 0
