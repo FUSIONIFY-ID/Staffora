@@ -98,7 +98,7 @@ Setiap aturan merujuk ID. Kolom kanan berisi bukti di kode dan tes (`tests/` ada
 
 ## Belum diverifikasi
 
-- Isi PRD (AC dan BR). PRD tidak ada di repo (`docs/audits/ROUND-2_FE-S1-US01-login-screen_REQUEST-CHANGES_2026-10-15.md:104`). Daftar AC di dokumen ini hanya berasal dari klaim PR di `docs/audits/ROUND-1_BE-S1-US01-Session-Authentication-API_REQUEST-CHANGES_2026-10-15.md:7` dan `docs/audits/ROUND-4_BE-S1-US01-RBAC-Authorization-Foundation_REQUEST-CHANGES_2026-10-12.md:7`. Belum dikonfirmasi Tech Lead.
+- Isi PRD (AC dan BR). PRD tidak ada di repo. Daftar AC di dokumen ini hanya berasal dari klaim PR di catatan review internal (tidak di repo). Belum dikonfirmasi Tech Lead.
 - Isi TSD §8. TSD tidak ada di repo. Nomor bagian yang dikutip hanya berasal dari komentar kode dan `CODING_STANDARD.md` §7.
 - Tes belum dijalankan. Yang diperiksa hanya keberadaan dan nama tes.
 - Jumlah instance deployment (`docs/architecture/decisions/adr-007-deployment-topology.md`) untuk menilai dampak rate limiter memori.

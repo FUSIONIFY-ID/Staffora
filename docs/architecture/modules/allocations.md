@@ -64,7 +64,7 @@ Rujuk ID. Teks tidak disalin.
 - Rentang tanggal alokasi harus berada di dalam rentang proyek (ERD 2.8). Service belum memeriksanya.
 - Persentase 1 sampai 100 (schema.ts:9-13, 29). Ditegakkan hanya di Zod, bukan di database (Drift 7).
 - Otorisasi mutasi: peran dari routes.ts. ADMIN dan RESOURCE_MANAGER mengelola alokasi di proyek mana pun. PROJECT_MANAGER hanya bila `user.employeeId` sama dengan `projectManagerEmployeeId` proyek (common/auth/policy.ts:151-163, 207-214). Pelanggaran menghasilkan 404, bukan 403 (common/auth/policy.ts:219-227).
-- Otorisasi baca: GET tidak membatasi peran (routes.ts:19-24). Audit docs/audits/ROUND-6_BE-S1-US01-RBAC-Authorization-Foundation_REQUEST-CHANGES_2026-10-14.md meminta `requireRole` ditambahkan saat US04 diimplementasikan. Keputusan peran baca belum dibuat (Drift 6).
+- Otorisasi baca: GET tidak membatasi peran (routes.ts:19-24). Catatan review internal (tidak di repo) meminta `requireRole` ditambahkan saat US04 diimplementasikan. Keputusan peran baca belum dibuat (Drift 6).
 - Konkurensi: belum ada. Lihat catatan lock di Drift.
 
 ## Dependensi
@@ -82,7 +82,7 @@ Kode dianggap benar kecuali disebut lain. Prioritas tinggi berkaitan dengan inte
 
 **Hasil pemeriksaan lock (ADR-009): tidak ada.** Tidak ada `$transaction`, `withTransaction`, atau `SELECT ... FOR UPDATE` di folder modul. Tidak ada lock pada baris employees di modul ini. Fungsi yang seharusnya memakainya adalah `createAllocation` (service.ts:38-56), `updateAllocation` (service.ts:58-75), dan `endAllocation` (service.ts:77-94). Ketiganya berhenti di throw `NotImplementedError` tanpa transaksi. Pola acuan di repo: `withTransaction` dipakai di skills.assignment.service.ts:142, lock skills memakai FOR SHARE (skills.repository.ts:114-131), dan staffing.repository.ts:93 dan :137 memakai `prisma.$transaction` langsung. ADR-009 menyebut create dan update. End dan cancel tidak disebut eksplisit. Keputusan apakah keduanya perlu lock ada di Tech Lead.
 
-1. [Tinggi] Lock dan transaksi belum ada, seperti dijelaskan di atas. Audit docs/audits/2026-10-12-full-project-audit.md:138 (A-01) mencatat hal yang sama. Kontrak POST /allocations menyebut row lock (openapi.yaml:1289).
+1. [Tinggi] Lock dan transaksi belum ada, seperti dijelaskan di atas. Catatan audit internal (tidak di repo, A-01) mencatat hal yang sama. Kontrak POST /allocations menyebut row lock (openapi.yaml:1289).
 2. [Tinggi] Engine kapasitas tidak dipanggil, dan 409 CAPACITY_CONFLICT tidak mungkin dihasilkan. Modul tidak mengimpor capacity. Kontrak 409 ada di openapi.yaml:1313-1318 dan 1390-1395. Kelas `CapacityConflictError` sudah ada (app-error.ts:90-103), tetapi belum dipakai modul mana pun.
 3. [Sedang] Komentar `withTransaction` (common/database/transaction.ts:11-20) menyatakan mutasi alokasi memakai boundary ini dan repository menerima parameter `tx` opsional. Repository allocations tidak punya parameter `tx` (repository.ts:13, 22). Komentar ini menyesatkan sampai implementasi selesai.
 4. [Sedang] Cancel: kontrak mengembalikan 200 dengan body Allocation (openapi.yaml:1462-1470). Kode mengembalikan 204 (controller.ts:116, response.ts:15-17) dan service bertipe `Promise<void>` (service.ts:96). Belum tercapai karena 501. Pilih satu sebelum implementasi.
@@ -106,4 +106,4 @@ Kode dianggap benar kecuali disebut lain. Prioritas tinggi berkaitan dengan inte
 - Engine kapasitas (capacity.service.ts) hanya dicek signature `evaluateCapacity`. Logika sweep-line tidak diverifikasi.
 - Migration hanya dibaca sebagai SQL dan tidak diuji terhadap database. Pencarian CHECK dilakukan di seluruh folder migrations.
 - apps/web tidak dicek.
-- docs/development/coding-conventions.md:39 dan docs/audits/ROUND-5 dan ROUND-6 hanya dibaca lewat pencarian, belum dibaca utuh.
+- docs/development/coding-conventions.md:39 dan catatan review internal (tidak di repo, Round 5 dan 6) hanya dibaca lewat pencarian, belum dibaca utuh.
