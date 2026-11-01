@@ -50,7 +50,7 @@ Dokumen tingkat repo yang tetap di root `docs/`:
 | --- | --- |
 | `architecture/overview.md` | Perlu sinkron dengan kode (lihat catatan di dokumen) |
 | `architecture/modules/*` | Dibuat dari kode, ada bagian "Belum diverifikasi" |
-| `architecture/decisions/*` | Accepted, 11 ADR |
+| `architecture/decisions/*` | 11 Accepted (ADR-001 sampai 011), 4 Proposed (ADR-012 sampai 015) |
 | `api/conventions.md`, `api/error-catalog.md` | Dibuat dari kode `app.ts`, `common/http`, dan `common/errors`. Kesesuaian dengan TSD §11 belum diverifikasi |
 | `security/authentication.md` | Dibuat dari `common/auth`. Kutipan TSD §8 belum diverifikasi penuh |
 | `security/rbac-matrix.md` | Dibuat dari guard di routes. Pembatasan per data belum dicek semua |
@@ -58,4 +58,7 @@ Dokumen tingkat repo yang tetap di root `docs/`:
 | `database/migration-policy.md` | Sebagian usulan, ditandai di dokumen |
 | `quality/traceability.md` | Parsial: US02.02 dan US01.01 terpetakan, sisanya belum |
 | `tasks/sprint-1/US02.02.md` | 4 task: 2 blocked, 1 ready, 1 done |
-| `runbooks/*` | Belum diuji ulang pada branch ini |
+| `runbooks/deployment.md` | Ditulis dari workflow dan compose. Pipeline deploy hanya build image. Push, migrasi, rollout, dan smoke test belum ada di repo |
+| `runbooks/rollback.md` | Ditulis ulang. Target rollback belum ada karena tidak ada tag atau image yang dipush. Belum diuji |
+| `runbooks/troubleshooting.md` | Ditulis ulang. Perintah dan respons dicek terhadap kode, sebagian diuji di container sementara |
+| `runbooks/backup-restore.md` | Kebijakan dari TSD, mekanisme belum ada di repo. Restore belum diuji |

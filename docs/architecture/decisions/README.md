@@ -15,3 +15,9 @@ Setiap keputusan arsitektur yang mengikat lintas modul dicatat sebagai ADR. Form
 | [009](adr-009-allocation-concurrency-row-lock.md) | Serialisasi mutasi alokasi dengan row lock karyawan | Accepted | TD-009 |
 | [010](adr-010-lean-architecture-no-queue.md) | Tanpa Redis, queue, atau object storage di MVP | Accepted | TD-010 |
 | [011](adr-011-figma-design-system-light-mode.md) | Design system Figma dan light mode saja | Accepted | TD-011 |
+| [012](adr-012-project-status-set.md) | Himpunan status proyek | Proposed | belum ditetapkan |
+| [013](adr-013-employee-skill-removal.md) | Penghapusan penugasan skill karyawan | Proposed | belum ditetapkan |
+| [014](adr-014-database-check-constraints.md) | Constraint CHECK di database | Proposed | belum ditetapkan |
+| [015](adr-015-proficiency-label-scale.md) | Label skala proficiency | Proposed | belum ditetapkan |
+
+ADR berstatus Proposed belum mengikat. Keputusan diambil Tech Lead, lalu status diubah menjadi Accepted dan diberi Technical Decision ID.

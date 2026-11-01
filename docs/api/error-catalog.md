@@ -33,7 +33,7 @@ Pesan 404 untuk skill dan penugasan (`SKILL_NOT_FOUND`, `ASSIGNMENT_NOT_FOUND`, 
 | 409 | `DUPLICATE_RESOURCE` | workforce | `workforce.errors.ts` (fallback) | Fallback untuk unique violation yang tidak dipetakan | **Tidak** |
 | 409 | `DUPLICATE_SKILL_NAME` | skills | `skills.errors.ts` | Nama skill sudah dipakai, case-insensitive | Ya |
 | 409 | `SKILL_ALREADY_ASSIGNED` | skills | `skills.errors.ts` | Pasangan karyawan dan skill sudah ada | Ya |
-| 409 | `CAPACITY_CONFLICT` | allocations | `app-error.ts`, `CapacityConflictError` | Alokasi melewati 100% | Ya |
+| 409 | `CAPACITY_CONFLICT` | allocations | `app-error.ts`, `CapacityConflictError` | Alokasi melewati 100%. **Kelasnya ada, tetapi belum dipanggil di runtime.** Mutasi alokasi masih menjawab 501 | Ya |
 | 422 | `SKILL_INACTIVE` | skills | `skills.errors.ts` | Skill nonaktif dipakai untuk penetapan baru | Ya |
 | 422 | `SKILL_REFERENCE_INVALID` | skills, staffing | `skills.errors.ts` | ID skill tidak dikenal atau berulang di staffing | Ya |
 

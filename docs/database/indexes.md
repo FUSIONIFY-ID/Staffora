@@ -42,7 +42,7 @@ Nama index Prisma yang dipotong (`..._end__idx`, `..._i_key`) adalah batas panja
 | --- | --- | --- |
 | `CHECK` untuk level proficiency 1–5 | **Tidak ada** | Validasi hanya di Zod (`skills.schema.ts`). Lihat [skills](../architecture/modules/skills.md) |
 | `CHECK` untuk persentase alokasi 1–100 | **Tidak ada** | TSD §12.1 mewajibkannya. Belum ada di migrasi |
-| `CHECK` untuk `end_date >= start_date` | **Tidak ada** | TSD §12.1 mewajibkannya. Validasi hanya di Zod dan service |
+| `CHECK` untuk `end_date >= start_date` | **Tidak ada** | TSD §12.1 mewajibkannya. Untuk `projects` validasinya di Zod. Untuk `staffing_requirements` belum ditemukan pemeriksaan di kode (lihat ADR-014) |
 | Partial index untuk alokasi non-cancelled | **Tidak ada** | TSD §12.2 menyerahkannya ke query plan. Belum dibuat |
 
 Tiga `CHECK` yang belum ada adalah temuan utama untuk Tech Lead. Jika dibiarkan, data yang masuk lewat seed atau SQL manual tidak dijaga oleh database.
