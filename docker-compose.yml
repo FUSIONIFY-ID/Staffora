@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: staffora_local
       POSTGRES_DB: staffora
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - staffora_pgdata:/var/lib/postgresql
     healthcheck:

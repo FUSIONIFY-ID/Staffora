@@ -8,7 +8,7 @@ Dokumen ini menjelaskan langkah-langkah menyiapkan local environment Staffora un
 
 Pastikan perangkat lokal Anda telah terinstall:
 
-- **Node.js**: v24 LTS (direkomendasikan) atau Node.js v20+
+- **Node.js**: 24 (sesuai `engines` di `package.json` dan `.nvmrc`)
 - **npm**: v10+ (terbawa bersama Node.js)
 - **Docker Desktop** / Docker Engine & Docker Compose
 - **Git**
@@ -45,7 +45,7 @@ Pastikan variabel di `apps/api/.env` sesuai:
 ```env
 NODE_ENV=development
 PORT=3000
-DATABASE_URL=postgresql://staffora:staffora_local@localhost:5432/staffora
+DATABASE_URL=postgresql://staffora:staffora_local@localhost:5433/staffora
 SESSION_SECRET=local-development-session-secret-must-be-long-and-random-32char
 ```
 
@@ -64,6 +64,8 @@ Staffora menggunakan PostgreSQL 18. Jalankan database melalui Docker Compose:
 ```bash
 docker compose up -d db
 ```
+
+> **Catatan port:** container `db` memakai host port `5433` (`"5433:5432"` di `docker-compose.yml`), supaya tidak bentrok dengan PostgreSQL lokal di `5432`. Jika mesin Anda punya PostgreSQL lokal di `5432`, container tetap di `5433` dan `DATABASE_URL` di `apps/api/.env` harus menunjuk ke `5433`.
 
 Untuk memverifikasi database sehat:
 
@@ -91,13 +93,9 @@ npm run db:seed -w @staffora/api
 
 ## 6. Menjalankan Aplikasi
 
-Jalankan dev server frontend dan backend:
+Jalankan backend dan frontend di dua terminal terpisah. `npm run dev` di root saat ini hanya menjalankan frontend, jadi API tidak ikut naik.
 
 ```bash
-# Menjalankan kedua aplikasi secara bersamaan
-npm run dev
-
-# Atau jalankan di dua terminal terpisah:
 # Terminal 1 (API):
 npm run dev:api
 
