@@ -62,18 +62,37 @@ Setiap capability API diuji terhadap:
 
 Suite API menulis baris ke database yang ditunjuk `DATABASE_URL`, dan variabel
 yang sama dipakai `npm run dev` serta `db:seed`. Arahkan test ke database
-tersendiri supaya data development tidak tersentuh:
+tersendiri supaya data development tidak tersentuh.
 
-```bash
+Siapkan database uji (PowerShell, dari root repo):
+
+```powershell
+docker compose up -d --wait db
+docker compose exec db createdb -U staffora staffora_test
 cp apps/api/.env.test.example apps/api/.env.test
-# isi DATABASE_URL di .env.test ke database khusus test
-npm run db:migrate:deploy -w @staffora/api   # dengan DATABASE_URL dari .env.test
-npm run db:seed -w @staffora/api             # dengan DATABASE_URL dari .env.test
+```
+
+Jalankan `docker compose up -d --wait db` lagi setiap kali container berhenti. `createdb` cukup dijalankan sekali; jika menulis `already exists`, database uji sudah ada dan pesan itu boleh diabaikan. Lewati baris `cp` bila `apps/api/.env.test` sudah ada, supaya isinya tidak tertimpa.
+
+Migrasi dan seed harus memakai `DATABASE_URL` dari `.env.test`. Kedua perintah ini membaca `apps/api/.env` lewat `dotenv`, bukan `.env.test`. `dotenv` tidak menimpa variabel yang sudah ada di shell, jadi baris pertama di bawah ini mengatur `DATABASE_URL` untuk jendela PowerShell ini:
+
+```powershell
+Get-Content apps/api/.env.test | Where-Object { $_ -match '^DATABASE_URL=' } | ForEach-Object { $env:DATABASE_URL = $_.Substring('DATABASE_URL='.Length) }
+Write-Output ("target: " + (($env:DATABASE_URL -split '@')[1]))
+```
+
+Pastikan baris `target:` menampilkan `localhost:5433/staffora_test` sebelum lanjut. Jika tidak, berhenti dan periksa `apps/api/.env.test`. Jika baris pertama gagal, migrasi dan seed diam-diam membaca `apps/api/.env`, yaitu database development.
+
+```powershell
+npm run db:migrate:deploy -w @staffora/api
+npm run db:seed -w @staffora/api
 npm test -w @staffora/api
 ```
 
+Di bash, ganti dua baris pertama dengan `export "$(grep '^DATABASE_URL=' apps/api/.env.test)"`, lalu `echo "${DATABASE_URL#*@}"` harus menampilkan `localhost:5433/staffora_test`. Setelah selesai, hapus variabel itu (PowerShell: `Remove-Item Env:DATABASE_URL`; bash: `unset DATABASE_URL`) agar `npm run dev:api` kembali membaca `apps/api/.env`.
+
 `apps/api/vitest.config.ts` memuat `.env.test` lebih dulu bila file itu ada,
-sehingga tidak perlu mengubah shell. CI tidak memakai file ini: job CI
+sehingga nilai di `.env.test` menang atas variabel shell dengan nama yang sama. CI tidak memakai file ini: job CI
 menyediakan container PostgreSQL sementara dan menyetel `DATABASE_URL` sendiri.
 
 Tes juga menolak berjalan bila `DATABASE_URL` belum diset, atau bila nama database-nya tidak berakhiran `_test`. Pengecekan ini dilewati saat `CI=true`, yang diatur otomatis oleh GitHub Actions. Hook `pre-push` memeriksa keberadaan `apps/api/.env.test` sebelum menjalankan gate apa pun.
