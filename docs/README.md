@@ -22,8 +22,9 @@ Aturan dokumen:
 | [`architecture/`](architecture/overview.md) | Gambaran sistem, batas modul, ADR, dokumen per modul | Tech Lead |
 | [`architecture/modules/`](architecture/modules/) | Satu dokumen per modul backend: tanggung jawab, endpoint, entitas, dan drift | Backend |
 | [`architecture/decisions/`](architecture/decisions/README.md) | Architecture Decision Records | Tech Lead |
-| [`api/`](api/openapi.yaml) | Kontrak OpenAPI, dan changelog kontrak | Backend |
-| [`database/`](database/erd.md) | ERD dan DBML | Backend |
+| [`api/`](api/openapi.yaml) | Kontrak OpenAPI, [konvensi API](api/conventions.md), [katalog error](api/error-catalog.md), dan changelog kontrak | Backend |
+| [`database/`](database/erd.md) | ERD, DBML, [index dan constraint](database/indexes.md), dan [kebijakan migrasi](database/migration-policy.md) | Backend |
+| [`security/`](security/authentication.md) | Autentikasi, sesi, CSRF, dan [matriks akses peran](security/rbac-matrix.md) | Backend dan Tech Lead |
 | [`tasks/`](tasks/README.md) | Task per story, dengan path yang boleh disentuh dan tes wajib | Tech Lead dan Backend/Frontend |
 | [`quality/`](quality/traceability.md) | Pemetaan AC ke endpoint dan tes | QA |
 | [`development/`](development/local-setup.md) | Setup lokal, konvensi, git workflow, panduan tes | Tech Lead |
@@ -50,6 +51,11 @@ Dokumen tingkat repo yang tetap di root `docs/`:
 | `architecture/overview.md` | Perlu sinkron dengan kode (lihat catatan di dokumen) |
 | `architecture/modules/*` | Dibuat dari kode, ada bagian "Belum diverifikasi" |
 | `architecture/decisions/*` | Accepted, 11 ADR |
+| `api/conventions.md`, `api/error-catalog.md` | Dibuat dari kode `app.ts`, `common/http`, dan `common/errors`. Kesesuaian dengan TSD §11 belum diverifikasi |
+| `security/authentication.md` | Dibuat dari `common/auth`. Kutipan TSD §8 belum diverifikasi penuh |
+| `security/rbac-matrix.md` | Dibuat dari guard di routes. Pembatasan per data belum dicek semua |
+| `database/indexes.md` | Dibuat dari migrasi. Tiga `CHECK` dari TSD §12.1 belum ada |
+| `database/migration-policy.md` | Sebagian usulan, ditandai di dokumen |
 | `quality/traceability.md` | Parsial: US02.02 dan US01.01 terpetakan, sisanya belum |
 | `tasks/sprint-1/US02.02.md` | 4 task: 2 blocked, 1 ready, 1 done |
 | `runbooks/*` | Belum diuji ulang pada branch ini |
