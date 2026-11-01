@@ -75,3 +75,5 @@ npm test -w @staffora/api
 `apps/api/vitest.config.ts` memuat `.env.test` lebih dulu bila file itu ada,
 sehingga tidak perlu mengubah shell. CI tidak memakai file ini: job CI
 menyediakan container PostgreSQL sementara dan menyetel `DATABASE_URL` sendiri.
+
+Tes juga menolak berjalan bila `DATABASE_URL` belum diset, atau bila nama database-nya tidak berakhiran `_test`. Pengecekan ini dilewati saat `CI=true`, yang diatur otomatis oleh GitHub Actions. Hook `pre-push` memeriksa keberadaan `apps/api/.env.test` sebelum menjalankan gate apa pun.

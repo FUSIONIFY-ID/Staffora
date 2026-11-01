@@ -22,6 +22,29 @@ if (existsSync(envTestPath)) {
   loadEnv({ path: envTestPath, override: true, quiet: true });
 }
 
+/**
+ * Refuses to run the suite against a database that is not a dedicated test database.
+ * The database name must end in `_test`. GitHub Actions sets CI=true and provisions its
+ * own ephemeral database, so the check is skipped there.
+ */
+function assertTestDatabase(databaseUrl: string): void {
+  if (databaseUrl === "") {
+    throw new Error(
+      "Tes berhenti: DATABASE_URL belum diset. Buat apps/api/.env.test dari .env.test.example (lihat docs/development/testing-guide.md).",
+    );
+  }
+  const databaseName = new URL(databaseUrl).pathname.slice(1);
+  if (!databaseName.endsWith("_test")) {
+    throw new Error(
+      `Tes berhenti: database "${databaseName}" bukan database uji. Nama database uji harus berakhiran _test. Buat apps/api/.env.test dari .env.test.example (lihat docs/development/testing-guide.md).`,
+    );
+  }
+}
+
+if (!process.env.CI) {
+  assertTestDatabase(process.env.DATABASE_URL ?? "");
+}
+
 export default defineConfig({
   test: {
     environment: "node",

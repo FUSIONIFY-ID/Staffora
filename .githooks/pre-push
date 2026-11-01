@@ -9,6 +9,13 @@ set -u
 ROOT="$(git rev-parse --show-toplevel)" || exit 1
 cd "$ROOT" || exit 1
 
+# Tes hanya boleh memakai database uji. Tanpa apps/api/.env.test, tes akan memakai DATABASE_URL dari .env (database development).
+if [ ! -f apps/api/.env.test ]; then
+  echo "pre-push: apps/api/.env.test belum ada. Salin apps/api/.env.test.example ke apps/api/.env.test, isi DATABASE_URL ke database staffora_test, lalu jalankan migrasi dan seed ke database itu."
+  echo "pre-push: lihat docs/development/testing-guide.md. Push dibatalkan."
+  exit 1
+fi
+
 run_gate() {
   echo "pre-push: menjalankan $*"
   if ! "$@"; then
