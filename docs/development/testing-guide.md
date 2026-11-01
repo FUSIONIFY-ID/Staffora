@@ -81,15 +81,19 @@ Get-Content apps/api/.env.test | Where-Object { $_ -match '^DATABASE_URL=' } | F
 Write-Output ("target: " + (($env:DATABASE_URL -split '@')[1]))
 ```
 
-Pastikan baris `target:` menampilkan `localhost:5433/staffora_test` sebelum lanjut. Jika tidak, berhenti dan periksa `apps/api/.env.test`. Jika baris pertama gagal, migrasi dan seed diam-diam membaca `apps/api/.env`, yaitu database development.
+Pastikan baris `target:` menampilkan `localhost:5433/staffora_test` sebelum lanjut. Jika tidak, berhenti dan periksa `apps/api/.env.test`. Jika baris pertama gagal, `DATABASE_URL` tetap kosong, dan blok PowerShell di bawah menolak menjalankan migrasi dan seed.
 
 ```powershell
-npm run db:migrate:deploy -w @staffora/api
-npm run db:seed -w @staffora/api
-npm test -w @staffora/api
+if (($env:DATABASE_URL -split '/')[-1] -like '*_test') {
+  npm run db:migrate:deploy -w @staffora/api
+  npm run db:seed -w @staffora/api
+  npm test -w @staffora/api
+} else {
+  Write-Error 'DATABASE_URL tidak menunjuk ke database uji. Perintah dihentikan.'
+}
 ```
 
-Di bash, ganti dua baris pertama dengan `export "$(grep '^DATABASE_URL=' apps/api/.env.test)"`, lalu `echo "${DATABASE_URL#*@}"` harus menampilkan `localhost:5433/staffora_test`. Setelah selesai, hapus variabel itu (PowerShell: `Remove-Item Env:DATABASE_URL`; bash: `unset DATABASE_URL`) agar `npm run dev:api` kembali membaca `apps/api/.env`.
+Di bash, ganti dua baris pertama dengan `export "$(grep '^DATABASE_URL=' apps/api/.env.test)"`, lalu `echo "${DATABASE_URL#*@}"` harus menampilkan `localhost:5433/staffora_test`, dan tiga perintah npm di atas hanya dijalankan jika itu benar. Setelah selesai, hapus variabel itu (PowerShell: `Remove-Item Env:DATABASE_URL`; bash: `unset DATABASE_URL`) agar `npm run dev:api` kembali membaca `apps/api/.env`.
 
 `apps/api/vitest.config.ts` memuat `.env.test` lebih dulu bila file itu ada,
 sehingga nilai di `.env.test` menang atas variabel shell dengan nama yang sama. CI tidak memakai file ini: job CI
