@@ -64,14 +64,14 @@ Konteks: `docker-compose.yml` baris 26–27 mem-publish `3000:3000`. Overlay pro
 - Dependensi: S1-SEC-01 (agar pola variabel konsisten)
 - Kontrak: tidak ada
 - Migration: tidak
-- Boleh disentuh: `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, `docs/development/local-setup.md` (bagian yang menyebut kredensial lokal)
+- Boleh disentuh: `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, `apps/api/.env.example`, `apps/api/.env.test.example`, `.github/workflows/ci.yml` (bagian variabel koneksi dan service Postgres), `docs/development/local-setup.md` (bagian yang menyebut kredensial lokal)
 - Di luar scope: mengganti password di database yang sudah berjalan. Itu keputusan operasional (lihat "Keputusan terbuka").
 - Tes wajib: `POSTGRES_PASSWORD` dan `DATABASE_URL` di overlay production wajib diisi dari variabel lingkungan. Pencarian `grep` untuk nilai literal di compose tidak menemukan apa pun.
 - Gate: lint, typecheck, test, build
 - Output: commit lokal
 - Berhenti bila: nama variabel untuk production belum disepakati
 
-Konteks: `docker-compose.yml` baris 6 (`POSTGRES_PASSWORD`) dan baris 24 (`DATABASE_URL`) menuliskan password lokal secara literal. Overlay production tidak menggantinya. Nilai ini ada di riwayat git, jadi harus dianggap sudah terbuka. Staging dan production wajib memakai kredensial baru.
+Konteks: `docker-compose.yml` baris 6 (`POSTGRES_PASSWORD`) dan baris 24 (`DATABASE_URL`) menuliskan password lokal secara literal. Overlay production tidak menggantinya. Nilai ini ada di riwayat git, jadi harus dianggap sudah terbuka. Staging dan production wajib memakai kredensial baru. `.github/workflows/ci.yml` juga memuat nilai untuk `POSTGRES_PASSWORD`, `DATABASE_URL`, dan `SESSION_SECRET` (baris 29, 40, dan 41 saat ini). `apps/api/.env.example` dan `apps/api/.env.test.example` memuat `DATABASE_URL` dengan password lokal.
 
 ---
 
@@ -121,7 +121,7 @@ Konteks: `apps/api/prisma/seed.ts` menuliskan password literal di baris 175, 188
 - Dependensi: S1-SEC-05 (agar dokumen menunjuk cara yang benar)
 - Kontrak: tidak ada
 - Migration: tidak
-- Boleh disentuh: `docs/development/local-setup.md` (bagian kredensial seed)
+- Boleh disentuh: `README.md` (tabel akun pengujian), `docs/development/local-setup.md` (bagian kredensial seed), `docs/ui-specs/app-shell/qa/round-2/round-2.md` (baris yang memuat password seed)
 - Di luar scope: file kode
 - Tes wajib: `grep` untuk nilai password seed di `docs/` tidak menemukan apa pun
 - Gate: lint, typecheck, test, build

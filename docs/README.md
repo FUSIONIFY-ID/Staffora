@@ -51,8 +51,8 @@ Dokumen tingkat repo yang tetap di root `docs/`:
 | `architecture/overview.md` | Perlu sinkron dengan kode (lihat catatan di dokumen) |
 | `architecture/modules/*` | Dibuat dari kode, ada bagian "Belum diverifikasi" |
 | `architecture/decisions/*` | 11 Accepted (ADR-001 sampai 011), 4 Proposed (ADR-012 sampai 015) |
-| `api/conventions.md`, `api/error-catalog.md` | Dibuat dari kode `app.ts`, `common/http`, dan `common/errors`. Kesesuaian dengan TSD §11 belum diverifikasi |
-| `security/authentication.md` | Dibuat dari `common/auth`. Kutipan TSD §8 belum diverifikasi penuh |
+| `api/conventions.md`, `api/error-catalog.md` | Dibuat dari kode `app.ts`, `apps/api/src/common/http`, dan `apps/api/src/common/errors`. Kesesuaian dengan TSD §11 belum diverifikasi |
+| `security/authentication.md` | Dibuat dari `apps/api/src/common/auth`. Kutipan TSD §8 belum diverifikasi penuh |
 | `security/rbac-matrix.md` | Dibuat dari guard di routes. Pembatasan per data belum dicek semua |
 | `database/indexes.md` | Dibuat dari migrasi. Tiga `CHECK` dari TSD §12.1 belum ada |
 | `database/migration-policy.md` | Sebagian usulan, ditandai di dokumen |
