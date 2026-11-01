@@ -30,7 +30,7 @@
 |---|---|---|---|---|
 | `web` | `apps/web/Dockerfile` (nginx:alpine) | 80 | 8080 | `docker-compose.yml:41-46`, `apps/web/Dockerfile:17-20` |
 | `api` | `apps/api/Dockerfile` (node:24-alpine) | 3000 | 3000 | `docker-compose.yml:17-27`, `apps/api/Dockerfile:18-26` |
-| `db` | Image `postgres:18`, volume `staffora_pgdata` | 5432 | 5432 di base, di-reset di prod | `docker-compose.yml:2-11`, `docker-compose.prod.yml:4` |
+| `db` | Image `postgres:18`, volume `staffora_pgdata` | 5432 | 5433 di base, di-reset di prod | `docker-compose.yml:2-11`, `docker-compose.prod.yml:4` |
 
 - `web` menyajikan SPA dan meneruskan `/api/` ke `http://api:3000` (`apps/web/nginx.conf:2, 5`).
 - ADR-007 menyebut Nginx juga mengakhiri TLS (`docs/architecture/decisions/adr-007-deployment-topology.md:15`). Di repo, nginx hanya listen di port 80 (`apps/web/nginx.conf:2`), dan tidak ada konfigurasi TLS.
@@ -88,7 +88,7 @@ Workflow hanya menjalankan langkah 1. Langkah 2 sampai 6 adalah urutan rollout y
 ### Langkah 2. Backup database (belum ada di repo)
 
 1. Belum ada langkah backup di workflow, skrip, atau compose.
-2. Perintah backup versi lama (`pg_dump` dari host ke `localhost`) tidak tersedia di overlay production, karena `docker-compose.prod.yml:4` mereset port 5432. Jangan dipakai tanpa verifikasi.
+2. Perintah backup versi lama (`pg_dump` dari host ke `localhost`) tidak tersedia di overlay production, karena `docker-compose.prod.yml:4` mereset semua port publish `db`. Jangan dipakai tanpa verifikasi.
 3. Pemeriksaan: belum ada kriteria di repo. Usulan, belum disetujui: file backup ada dan tidak kosong sebelum lanjut ke langkah 3.
 
 ### Langkah 3. Migrasi database (`prisma migrate deploy`)
