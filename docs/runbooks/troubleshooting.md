@@ -35,7 +35,7 @@
 ### Pola 2: API gagal start
 
 - **Gejala**: Proses keluar dengan `ZodError` yang menunjuk `SESSION_SECRET` atau `DATABASE_URL`.
-- **Diagnosis**: Aturan ada di `apps/api/src/config/env.ts`. `SESSION_SECRET` minimal 32 karakter di semua mode (baris 10). `DATABASE_URL` harus diawali `postgresql://` (baris 9). Di production keduanya wajib (baris 13-24). Di development, `SESSION_SECRET` yang tidak ada sama sekali memakai nilai fallback lokal (`session.ts:59-62`). Nilai kosong atau pendek tetap ditolak. Diuji: `SESSION_SECRET` 5 karakter membuat proses keluar dengan kode 1.
+- **Diagnosis**: Aturan ada di `apps/api/src/config/env.ts`. `SESSION_SECRET` minimal 8 karakter dengan satu huruf kapital dan satu karakter khusus di semua mode (baris 10). `DATABASE_URL` harus diawali `postgresql://` (baris 9). Di production keduanya wajib (baris 13-24). Di development, `SESSION_SECRET` yang tidak ada sama sekali memakai nilai fallback lokal (`session.ts:59-62`). Nilai kosong atau pendek tetap ditolak. Diuji: `SESSION_SECRET` 5 karakter membuat proses keluar dengan kode 1.
 - **Perbaikan**: Perbaiki nilai di `apps/api/.env` atau di environment. Jangan menurunkan `NODE_ENV` untuk melewati error ini (lihat `docs/runbooks/deployment.md` bagian 1.1).
 
 ### Pola 3: 403 `FORBIDDEN` "Invalid or missing CSRF token." pada POST, PUT, PATCH, DELETE, atau login

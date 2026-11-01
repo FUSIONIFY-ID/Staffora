@@ -14,7 +14,7 @@
 - Overlay production menyatakan bahwa secret production, TLS, dan prosedur deployment perlu persetujuan (`docker-compose.prod.yml:1`). Jalankan rollout hanya setelah persetujuan itu ada.
 - TLS di depan Nginx. Belum ada di repo (lihat 1.1).
 - Docker Compose yang mendukung tag `!reset` di overlay (`docker-compose.prod.yml:4`). Versi minimum belum diverifikasi.
-- Nilai `SESSION_SECRET` (minimal 32 karakter, `apps/api/src/config/env.ts:10`) dan `DATABASE_URL` sudah disiapkan di VM. Nama variabel ada di 1.4. Nilainya tidak ditulis di dokumen ini.
+- Nilai `SESSION_SECRET` (minimal 8 karakter dengan satu huruf kapital dan satu karakter khusus, `apps/api/src/config/env.ts:10`) dan `DATABASE_URL` sudah disiapkan di VM. Nama variabel ada di 1.4. Nilainya tidak ditulis di dokumen ini.
 
 ### 1.1 Environment Mode untuk Staging dan Production
 
@@ -137,7 +137,7 @@ Workflow hanya menjalankan langkah 1. Langkah 2 sampai 6 adalah urutan rollout y
 - Build gagal (langkah 1): berhenti. Perbaiki di branch, jalankan gate di `CLAUDE.md` (lint, typecheck, test, build), lalu build ulang. Jangan rollout.
 - Backup gagal atau belum tersedia: jangan lanjut ke migrasi. Backup belum ada di repo, jadi keputusan ada pada Tech Lead.
 - Migrasi gagal: berhenti sebelum rollout. Pemulihan dari backup belum ada di repo. Lihat `docs/runbooks/rollback.md` bagian D untuk mitigasi migrasi, lalu eskalasi ke Arya Isnaidi.
-- API tidak mau start: `env.ts:13-24` menolak boot tanpa `DATABASE_URL` atau `SESSION_SECRET` (minimal 32 karakter) di production. Cek nama variabel di VM. Jangan salin nilai ke log atau chat.
+- API tidak mau start: `env.ts:13-24` menolak boot tanpa `DATABASE_URL` atau `SESSION_SECRET` (minimal 8 karakter, ada huruf kapital dan karakter khusus) di production. Cek nama variabel di VM. Jangan salin nilai ke log atau chat.
 - `/ready` mengembalikan 503 dengan `database: "disconnected"`: cek container `db` dan nilai `DATABASE_URL` (`docker-compose.yml:24`).
 - Login tidak bertahan, atau dashboard mengembalikan 401 setelah login: cek HTTPS dan `X-Forwarded-Proto` di proxy TLS (1.1). Jangan ubah `NODE_ENV`.
 - Rollback aplikasi: lihat `docs/runbooks/rollback.md` bagian C. Perintah di sana memakai image tag yang belum ada di compose (lihat langkah 4).
