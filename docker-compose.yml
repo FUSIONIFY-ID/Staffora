@@ -22,7 +22,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       DATABASE_URL: postgresql://staffora:staffora_local@db:5432/staffora
-      SESSION_SECRET: ${SESSION_SECRET:-Local-only-change-this-before-deployment-123456!}
+      SESSION_SECRET: ${SESSION_SECRET:?Isi SESSION_SECRET di .env root sebelum menjalankan stack}
     ports:
       - "3000:3000"
     healthcheck:
