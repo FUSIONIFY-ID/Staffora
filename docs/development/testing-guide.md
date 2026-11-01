@@ -72,7 +72,7 @@ docker compose exec db createdb -U staffora staffora_test
 cp apps/api/.env.test.example apps/api/.env.test
 ```
 
-Jalankan `docker compose up -d --wait db` lagi setiap kali container berhenti. `createdb` cukup dijalankan sekali; jika menulis `already exists`, database uji sudah ada dan pesan itu boleh diabaikan. Lewati baris `cp` bila `apps/api/.env.test` sudah ada, supaya isinya tidak tertimpa.
+Jalankan `docker compose up -d --wait db` lagi setiap kali container berhenti. `createdb` cukup dijalankan sekali; jika menulis `already exists`, database uji sudah ada dan pesan itu boleh diabaikan. Lewati baris `cp` bila `apps/api/.env.test` sudah ada, supaya isinya tidak tertimpa. Jika `cp` dijalankan, ganti `<password-lokal>` di `apps/api/.env.test` dengan password database lokal (sama dengan `POSTGRES_PASSWORD` di `docker-compose.yml`) sebelum lanjut.
 
 Migrasi dan seed harus memakai `DATABASE_URL` dari `.env.test`. Kedua perintah ini membaca `apps/api/.env` lewat `dotenv`, bukan `.env.test`. `dotenv` tidak menimpa variabel yang sudah ada di shell, jadi baris pertama di bawah ini mengatur `DATABASE_URL` untuk jendela PowerShell ini:
 
