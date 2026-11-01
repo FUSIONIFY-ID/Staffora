@@ -105,7 +105,7 @@ npm run dev:api
 npm run dev:web
 ```
 
-Alternatif — seluruh stack dalam Docker (hot reload aktif untuk API dan Web):
+Alternatif — seluruh stack dalam Docker (hot reload aktif untuk API dan Web). Compose membaca `SESSION_SECRET` dari `.env` di root repo, jadi salin `.env.example` ke `.env` dan isi nilainya dulu:
 
 ```bash
 npm run stack:up
