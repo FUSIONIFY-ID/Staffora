@@ -49,18 +49,6 @@ export function clampPercentage(value: number | undefined): number {
   return Math.min(100, Math.max(0, Math.round(value)))
 }
 
-const PROFICIENCY_LABELS: Readonly<Record<number, string>> = {
-  1: 'Beginner',
-  2: 'Elementary',
-  3: 'Intermediate',
-  4: 'Advanced',
-  5: 'Expert',
-}
-
-export function describeProficiency(level: number): string {
-  return PROFICIENCY_LABELS[level] ?? 'Unknown'
-}
-
 export type AllocationDisplayStatus = 'PLANNED' | 'ACTIVE' | 'ENDED' | 'CANCELLED'
 
 export interface AllocationStatusPresentation {

@@ -3,7 +3,6 @@ import {
   clampPercentage,
   describeAllocationStatus,
   describeAvailability,
-  describeProficiency,
   formatDate,
   toInitials,
 } from '../src/features/resources/lib/resource-presentation.js'
@@ -69,19 +68,7 @@ describe('resource presentation: availability indicator', () => {
   })
 })
 
-describe('resource presentation: proficiency and allocation labels', () => {
-  it('maps proficiency levels 1-5 onto the required labels', () => {
-    expect(describeProficiency(1)).toBe('Beginner')
-    expect(describeProficiency(2)).toBe('Elementary')
-    expect(describeProficiency(3)).toBe('Intermediate')
-    expect(describeProficiency(4)).toBe('Advanced')
-    expect(describeProficiency(5)).toBe('Expert')
-  })
-
-  it('falls back safely for an out-of-contract proficiency level', () => {
-    expect(describeProficiency(9)).toBe('Unknown')
-  })
-
+describe('resource presentation: allocation labels', () => {
   it('maps allocation display statuses to labels and badge variants', () => {
     expect(describeAllocationStatus('ACTIVE')).toEqual({ label: 'Active', variant: 'green' })
     expect(describeAllocationStatus('PLANNED')).toEqual({ label: 'Planned', variant: 'amber' })

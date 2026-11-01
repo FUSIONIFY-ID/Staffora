@@ -6,7 +6,7 @@ export interface SelectOption {
   disabled?: boolean
 }
 
-export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'children'> {
+export interface ResourceSelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'children'> {
   label?: string
   error?: string
   helperText?: string
@@ -14,8 +14,8 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   placeholder?: string
 }
 
-// Native select on purpose: keyboard and screen-reader behaviour come for free.
-export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+// Scoped select component for resource form controls.
+export const ResourceSelect = forwardRef<HTMLSelectElement, ResourceSelectProps>(
   ({ label, error, helperText, options, placeholder, className = '', id, ...props }, ref) => {
     const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
     const errorId = error ? `${selectId}-error` : undefined
@@ -60,4 +60,4 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   },
 )
 
-Select.displayName = 'Select'
+ResourceSelect.displayName = 'ResourceSelect'

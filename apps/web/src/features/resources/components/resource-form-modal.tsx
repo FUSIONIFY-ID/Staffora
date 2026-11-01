@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm, type Resolver } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { Alert } from '../../../components/ui/alert.js'
 import { Button } from '../../../components/ui/button.js'
 import { Input } from '../../../components/ui/input.js'
 import { Modal } from '../../../components/ui/modal.js'
-import { Select } from '../../../components/ui/select.js'
+import { ResourceSelect } from './resource-select.js'
 import type { Department, Employee, JobRole } from '../api/resources-api.js'
 import {
   EMPTY_EMPLOYEE_FORM,
@@ -68,7 +68,7 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     setError,
     formState: { errors },
   } = useForm<CreateEmployeeFormValues>({
-    resolver: zodResolver(createEmployeeFormSchema) as Resolver<CreateEmployeeFormValues>,
+    resolver: zodResolver(createEmployeeFormSchema),
     defaultValues: EMPTY_EMPLOYEE_FORM,
     mode: 'onBlur',
   })
@@ -167,7 +167,7 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
             {...register('workEmail')}
           />
 
-          <Select
+          <ResourceSelect
             id="resource-form-status"
             label="Employment status"
             options={STATUS_OPTIONS}
@@ -175,7 +175,7 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
             {...register('status')}
           />
 
-          <Select
+          <ResourceSelect
             id="resource-form-department"
             label="Department"
             placeholder="Select a department"
@@ -184,7 +184,7 @@ export const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
             {...register('departmentId')}
           />
 
-          <Select
+          <ResourceSelect
             id="resource-form-job-role"
             label="Job role"
             placeholder="Select a job role"

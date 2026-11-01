@@ -1,11 +1,17 @@
 import type React from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { ResourceFilters } from '../src/features/resources/components/resource-filters.js'
 import { ResourceFormModal } from '../src/features/resources/components/resource-form-modal.js'
 import { ResourceTable } from '../src/features/resources/components/resource-table.js'
+import * as ResourcesApi from '../src/features/resources/api/resources-api.js'
 import type { EmployeeListFilters } from '../src/features/resources/api/resources-api.js'
+import {
+  useCreateEmployee,
+  useUpdateEmployee,
+} from '../src/features/resources/hooks/use-resources.js'
 import {
   ALL_EMPLOYEES,
   DEPARTMENT_DELIVERY,
@@ -130,6 +136,21 @@ describe('ResourceFilters (AC01.02 - search and filters)', () => {
     await waitFor(() => expect(onChange).toHaveBeenCalledWith({ search: 'budi', page: 1 }), {
       timeout: 1500,
     })
+  })
+
+  it('clears the search input and calls onReset when Reset filters is clicked (F1)', () => {
+    const { onReset } = renderFilters()
+
+    const searchInput = screen.getByLabelText(/Search/i)
+    fireEvent.change(searchInput, { target: { value: 'budi' } })
+    expect(searchInput).toHaveValue('budi')
+
+    const resetButton = screen.getByRole('button', { name: /Reset filters/i })
+    expect(resetButton).toBeEnabled()
+
+    fireEvent.click(resetButton)
+    expect(searchInput).toHaveValue('')
+    expect(onReset).toHaveBeenCalledTimes(1)
   })
 
   it('applies a department filter immediately and resets to page 1', () => {
@@ -259,5 +280,47 @@ describe('ResourceFormModal (AC02 - create and edit forms)', () => {
     // The banner explains the failure at the form level too.
     expect(screen.getByRole('alert')).toHaveTextContent('Could not save the resource')
     expect(screen.getByRole('alert')).toHaveTextContent('Employee code already exists.')
+  })
+})
+
+describe('Resource mutation cache invalidation (AC04 - TanStack Query)', () => {
+  it('invalidates the employees query cache when creating a resource', async () => {
+    const queryClient = new QueryClient()
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+    vi.spyOn(ResourcesApi, 'createEmployee').mockResolvedValue(EMPLOYEE_AVAILABLE)
+
+    const wrapper = ({ children }: { children: React.ReactNode }): React.ReactElement => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    )
+
+    const { result } = renderHook(() => useCreateEmployee(), { wrapper })
+    await result.current.mutateAsync({
+      employeeCode: 'EMP999',
+      fullName: 'Test Employee',
+      workEmail: 'test@staffora.internal',
+      departmentId: DEPARTMENT_ENGINEERING.id,
+      jobRoleId: JOB_ROLE_DEVELOPER.id,
+      status: 'ACTIVE',
+    })
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['employees'] })
+  })
+
+  it('invalidates the employees query cache when updating a resource', async () => {
+    const queryClient = new QueryClient()
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+    vi.spyOn(ResourcesApi, 'updateEmployee').mockResolvedValue(EMPLOYEE_AVAILABLE)
+
+    const wrapper = ({ children }: { children: React.ReactNode }): React.ReactElement => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    )
+
+    const { result } = renderHook(() => useUpdateEmployee(), { wrapper })
+    await result.current.mutateAsync({
+      employeeId: EMPLOYEE_AVAILABLE.id,
+      input: { fullName: 'Updated Name', status: 'ACTIVE' },
+    })
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['employees'] })
   })
 })

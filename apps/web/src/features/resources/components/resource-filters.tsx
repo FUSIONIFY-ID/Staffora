@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Button } from '../../../components/ui/button.js'
 import { useDebouncedValue } from '../hooks/use-debounced-value.js'
 import type { Department, EmployeeListFilters, JobRole } from '../api/resources-api.js'
@@ -18,6 +18,9 @@ const STATUS_OPTIONS = [
   { value: 'INACTIVE', label: 'Inactive' },
 ]
 
+const isEmployeeStatus = (value: string): value is 'ACTIVE' | 'INACTIVE' =>
+  value === 'ACTIVE' || value === 'INACTIVE'
+
 export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
   filters,
   departments,
@@ -30,19 +33,38 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
   const [searchTerm, setSearchTerm] = useState(filters.search)
   const [appliedSearch, setAppliedSearch] = useState(filters.search)
   const debouncedSearch = useDebouncedValue(searchTerm, 300)
+  const isFirstRender = useRef(true)
+  const filtersRef = useRef(filters)
 
+  useEffect(() => {
+    filtersRef.current = filters
+  }, [filters])
+
+  // Sync internal input state when filters.search changes externally (e.g. Reset/Clear filters)
   if (filters.search !== appliedSearch) {
     setAppliedSearch(filters.search)
     setSearchTerm(filters.search)
   }
 
+  // Emit search change only when the debounced search term changes
   useEffect(() => {
-    if (debouncedSearch !== filters.search) {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    if (debouncedSearch !== filtersRef.current.search) {
       onChange({ search: debouncedSearch, page: 1 })
     }
-  }, [debouncedSearch, filters.search, onChange])
+  }, [debouncedSearch, onChange])
+
+  const handleReset = (): void => {
+    setSearchTerm('')
+    setAppliedSearch('')
+    onReset()
+  }
 
   const hasActiveFilters =
+    searchTerm !== '' ||
     filters.search !== '' ||
     filters.departmentId !== '' ||
     filters.jobRoleId !== '' ||
@@ -91,7 +113,7 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
             value={filters.status}
             onChange={(event) =>
               onChange({
-                status: event.target.value === '' ? '' : (event.target.value as 'ACTIVE' | 'INACTIVE'),
+                status: isEmployeeStatus(event.target.value) ? event.target.value : '',
                 page: 1,
               })
             }
@@ -156,7 +178,7 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={onReset}
+          onClick={handleReset}
           disabled={!hasActiveFilters}
         >
           Reset filters

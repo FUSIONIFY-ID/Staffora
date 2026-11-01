@@ -1,4 +1,11 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from '@tanstack/react-query'
 import {
   createEmployee,
   fetchDepartments,
@@ -8,8 +15,11 @@ import {
   updateEmployee,
   type CapacityWindow,
   type CreateEmployeeInput,
+  type Department,
+  type Employee,
   type EmployeeListFilters,
   type EmployeeListResult,
+  type JobRole,
   type ResourceDetail,
   type UpdateEmployeeInput,
 } from '../api/resources-api.js'
@@ -33,7 +43,7 @@ export const resourceKeys = {
 }
 
 // keepPreviousData holds the current page on screen while the next one loads.
-export function useEmployeeList(filters: EmployeeListFilters) {
+export function useEmployeeList(filters: EmployeeListFilters): UseQueryResult<EmployeeListResult, Error> {
   return useQuery<EmployeeListResult>({
     queryKey: resourceKeys.list(filters),
     queryFn: () => fetchEmployees(filters),
@@ -42,7 +52,10 @@ export function useEmployeeList(filters: EmployeeListFilters) {
   })
 }
 
-export function useEmployeeDetail(employeeId: string | undefined, window?: CapacityWindow) {
+export function useEmployeeDetail(
+  employeeId: string | undefined,
+  window?: CapacityWindow,
+): UseQueryResult<ResourceDetail, Error> {
   return useQuery<ResourceDetail>({
     queryKey: resourceKeys.detail(employeeId, window),
     queryFn: () => fetchEmployeeDetail(employeeId ?? '', window),
@@ -51,7 +64,7 @@ export function useEmployeeDetail(employeeId: string | undefined, window?: Capac
   })
 }
 
-export function useDepartments() {
+export function useDepartments(): UseQueryResult<Department[], Error> {
   return useQuery({
     queryKey: resourceKeys.departments,
     queryFn: fetchDepartments,
@@ -59,7 +72,7 @@ export function useDepartments() {
   })
 }
 
-export function useJobRoles() {
+export function useJobRoles(): UseQueryResult<JobRole[], Error> {
   return useQuery({
     queryKey: resourceKeys.jobRoles,
     queryFn: fetchJobRoles,
@@ -69,7 +82,7 @@ export function useJobRoles() {
 
 // Invalidates the whole root: a new employee changes the list, the total and
 // therefore the pagination metadata.
-export function useCreateEmployee() {
+export function useCreateEmployee(): UseMutationResult<Employee, Error, CreateEmployeeInput> {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -80,7 +93,11 @@ export function useCreateEmployee() {
   })
 }
 
-export function useUpdateEmployee() {
+export function useUpdateEmployee(): UseMutationResult<
+  Employee,
+  Error,
+  { employeeId: string; input: UpdateEmployeeInput }
+> {
   const queryClient = useQueryClient()
 
   return useMutation({

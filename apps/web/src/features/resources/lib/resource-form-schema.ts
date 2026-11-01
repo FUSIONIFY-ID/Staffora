@@ -31,8 +31,6 @@ export const employeeFormSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE']),
 })
 
-export type EmployeeFormValues = z.infer<typeof employeeFormSchema>
-
 export const createEmployeeFormSchema = employeeFormSchema.extend({
   employeeCode: z
     .string()
