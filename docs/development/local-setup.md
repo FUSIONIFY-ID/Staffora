@@ -93,7 +93,7 @@ npm run db:seed -w @staffora/api
 
 ## 6. Menjalankan Aplikasi
 
-Jalankan backend dan frontend di dua terminal terpisah. `npm run dev` di root saat ini hanya menjalankan frontend, jadi API tidak ikut naik.
+Jalankan backend dan frontend di dua terminal terpisah dengan `npm run dev:api` dan `npm run dev:web`. `npm run dev` di root menjalankan skrip `dev` setiap workspace secara berurutan, jadi tidak menjalankan keduanya bersamaan.
 
 ```bash
 # Terminal 1 (API):

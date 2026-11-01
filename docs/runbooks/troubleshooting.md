@@ -25,7 +25,7 @@
 - **Gejala**: `GET /api/v1/health/ready` menjawab 503 dengan `{"status":"unavailable","database":"disconnected"}`. Runbook lama menulis `DOWN`, yang tidak sesuai kode. Jika database putus saat API berjalan, log berisi `Idle connection in the session store pool failed` (`apps/api/src/common/auth/session.ts:23-28`).
 - **Diagnosis**:
   - Stack Docker: `docker compose ps` harus menunjukkan `db` dalam keadaan sehat. Log database lewat `docker compose logs db` (belum ada di repo).
-  - `DATABASE_URL` harus sesuai tempat API berjalan. Host memakai `localhost:5432` (`docker-compose.yml:8-9`), sedangkan container API memakai hostname `db` (`docker-compose.yml:24`).
+  - `DATABASE_URL` harus sesuai tempat API berjalan. Host memakai `localhost:5433` (`docker-compose.yml:8-9`), sedangkan container API memakai hostname `db` (`docker-compose.yml:24`).
   - Jika variabel tidak terbaca, `apps/api/src/common/database/prisma.ts:12` memakai nilai default lokal, dan API tidak mencatat peringatan apa pun tentang itu.
 - **Perbaikan**:
   - Jalankan database dengan `docker compose up -d db` (`docs/development/local-setup.md` bagian 4).
