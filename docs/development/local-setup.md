@@ -46,10 +46,10 @@ Pastikan variabel di `apps/api/.env` sesuai:
 NODE_ENV=development
 PORT=3000
 DATABASE_URL=postgresql://staffora:<password-lokal>@localhost:5433/staffora
-SESSION_SECRET=local-development-session-secret-must-be-long-and-random-32char
+SESSION_SECRET=<session-secret-minimal-32-karakter>
 ```
 
-Ganti `<password-lokal>` dengan password database lokal, yaitu nilai yang sama dengan `POSTGRES_PASSWORD` di `docker-compose.yml`.
+Ganti `<password-lokal>` dengan password database lokal, yaitu nilai yang sama dengan `POSTGRES_PASSWORD` di `docker-compose.yml`. Ganti `<session-secret-minimal-32-karakter>` dengan nilai acak minimal 32 karakter.
 
 Dan variabel di `apps/web/.env` sesuai:
 
