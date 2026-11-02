@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: staffora_local
       POSTGRES_DB: staffora
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - staffora_pgdata:/var/lib/postgresql
     healthcheck:
@@ -22,7 +22,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       DATABASE_URL: postgresql://staffora:staffora_local@db:5432/staffora
-      SESSION_SECRET: ${SESSION_SECRET:-local-only-change-this-before-deployment-123456}
+      SESSION_SECRET: ${SESSION_SECRET:?Isi SESSION_SECRET di .env root sebelum menjalankan stack}
     ports:
       - "3000:3000"
     healthcheck:

@@ -7,7 +7,12 @@ const schema = z
       .default("development"),
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     DATABASE_URL: z.url().startsWith("postgresql://").optional(),
-    SESSION_SECRET: z.string().min(32).optional(),
+    SESSION_SECRET: z
+      .string()
+      .min(8)
+      .regex(/[A-Z]/, "Must contain an uppercase letter")
+      .regex(/[^A-Za-z0-9]/, "Must contain a special character")
+      .optional(),
   })
   .superRefine((value, context) => {
     if (value.NODE_ENV === "production" && !value.DATABASE_URL)

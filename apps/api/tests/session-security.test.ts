@@ -74,7 +74,7 @@ describe("session cookie security (US01.01, ADR-006)", () => {
 
   it("trusts exactly one proxy hop when the API runs in production", () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("SESSION_SECRET", "p".repeat(32));
+    vi.stubEnv("SESSION_SECRET", "P!" + "p".repeat(30));
     vi.stubEnv(
       "DATABASE_URL",
       process.env.DATABASE_URL ??

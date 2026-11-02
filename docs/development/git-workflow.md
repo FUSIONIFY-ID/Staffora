@@ -94,6 +94,14 @@ npm run build
 git push -u origin <nama-branch-anda>
 ```
 
+### Ukuran PR
+
+- Satu story per PR. Task dari satu story boleh digabung dalam satu PR.
+- Maksimal sekitar 20 file berubah. Hitung dengan `git diff --stat origin/dev...HEAD`.
+- File hasil generator tidak dihitung, misalnya output `npm run api:types` di `apps/web/src/api/schema.d.ts`. Migration Prisma tetap dihitung sampai Tech Lead menetapkan lain.
+- PR dokumentasi lintas modul boleh melewati batas hanya jika membahas satu tema dan disetujui Tech Lead.
+- PR yang melewati batas dipecah menjadi beberapa PR, masing-masing satu story atau satu tema.
+
 ---
 
 ## 5. Aturan Keselamatan Commit & Push (Safety Gate)

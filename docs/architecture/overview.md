@@ -61,6 +61,9 @@ Backend features are organized into isolated domain modules:
 7. **`capacity`**: Deterministic interval-based sweep-line calculation engine. Source of truth for all workload, availability, and conflict checking.
 8. **`resource-finder`**: Filter-based resource matching by date range, role, skill proficiency, and remaining capacity.
 9. **`dashboard`**: Role-scoped workforce summaries, capacity distribution, and project progress metrics.
+10. **`health`**: Liveness and readiness endpoints (`/api/v1/health/live`, `/api/v1/health/ready`). Bukan modul domain, tidak punya tabel.
+
+Setiap modul domain punya dokumen di [`modules/`](modules/). Dokumen itu memuat endpoint, entitas, dependensi, dan catatan drift dari kode.
 
 ---
 

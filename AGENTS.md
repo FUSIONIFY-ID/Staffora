@@ -2,12 +2,15 @@
 
 Read @CLAUDE.md, @AGENTS.md, @GEMINI.md
 
+> **Sumber utama: `CLAUDE.md`.** Jika file ini berbeda dengan `CLAUDE.md`, `CLAUDE.md` yang berlaku.
+
 ## 🚨 Mandatory Agent Guardrails (Read Before Any Action)
 
 1. **Mandatory Pre-Task Analysis & Alignment:**
-   Before creating, scaffolding, or modifying ANY code or files, you MUST thoroughly read and analyze the project contracts, guidelines, and specifications:
+   Before creating, scaffolding, or modifying ANY code or files, you MUST read and analyze:
+   - Task file: `docs/tasks/<sprint>/<USxx.xx>.md`, or `docs/tasks/cross-cutting/` for work outside a story
    - Primary agent guidelines: @CLAUDE.md, @AGENTS.md, @GEMINI.md
-   - Architecture & standards: `docs/architecture/overview.md`, `docs/CODING_STANDARD.md`
+   - Architecture & standards: `docs/architecture/overview.md`, the module doc in `docs/architecture/modules/`, `docs/CODING_STANDARD.md`
    - Data & API contracts: `docs/database/erd.md`, `docs/api/openapi.yaml`, `apps/api/prisma/schema.prisma`
    - PRD specifications: Approved PRD v1.0 (`Staffora — Product Requirements, User Stories & Acceptance Criteria MVP v1.0`)
      NEVER write code blindly without structural understanding of the task boundaries.
@@ -28,6 +31,18 @@ Read @CLAUDE.md, @AGENTS.md, @GEMINI.md
      # To be executed manually by the human developer:
      git push origin <feature-branch-name>
      ```
+
+3. **No AI Attribution in Commits:** Do NOT add `Co-Authored-By: Claude ...` or any other AI attribution line to commit messages or PR descriptions. Commit under the developer's git identity.
+
+4. **No Secrets in the Repository:** Never write a password, token, `SESSION_SECRET`, or credential value in code, documentation, commits, or logs. Name the environment variable instead. Existing credential issues are tracked in `docs/tasks/cross-cutting/security.md`.
+
+5. **Scope:** Work only on tasks with status `ready` and only on the paths listed under "Boleh disentuh". Do not start a `blocked` task. A task that does not meet the Definition of Ready in `docs/tasks/README.md` is treated as `blocked`.
+
+6. **Database Tests:** Never change the password of an existing database to make tests pass. Use a temporary container on another port, as described in `docs/database/migration-policy.md`.
+
+7. **Pre-Push Review:** Whenever a developer is about to push, run the **Pre-Push Review** in `CLAUDE.md` first: scope, gates, code review, coding standard, and docs sync. Resolve blockers locally with the **Blocker Resolution** table in `CLAUDE.md`. You still never run `git push` yourself. The `pre-push` hook in `.githooks/` runs the four gates automatically on the developer's push, but it does not replace this review.
+
+8. **Trello Task Alignment:** When working on a Trello card, map it to its task file, check that the task is `ready`, then match the task against the PRD, TSD, OpenAPI, ERD, and the Figma design (FE) or `docs/ui-specs/` before writing code. Report conflicts, do not guess. See **Trello Task Alignment** in `CLAUDE.md`.
 
 <!-- code-review-graph MCP tools -->
 

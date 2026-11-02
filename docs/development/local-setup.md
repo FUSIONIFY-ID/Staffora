@@ -8,7 +8,7 @@ Dokumen ini menjelaskan langkah-langkah menyiapkan local environment Staffora un
 
 Pastikan perangkat lokal Anda telah terinstall:
 
-- **Node.js**: v24 LTS (direkomendasikan) atau Node.js v20+
+- **Node.js**: 24 (sesuai `engines` di `package.json` dan `.nvmrc`)
 - **npm**: v10+ (terbawa bersama Node.js)
 - **Docker Desktop** / Docker Engine & Docker Compose
 - **Git**
@@ -45,9 +45,11 @@ Pastikan variabel di `apps/api/.env` sesuai:
 ```env
 NODE_ENV=development
 PORT=3000
-DATABASE_URL=postgresql://staffora:staffora_local@localhost:5432/staffora
-SESSION_SECRET=local-development-session-secret-must-be-long-and-random-32char
+DATABASE_URL=postgresql://staffora:<password-lokal>@localhost:5433/staffora
+SESSION_SECRET=<session-secret>
 ```
+
+Ganti `<password-lokal>` dengan password database lokal, yaitu nilai yang sama dengan `POSTGRES_PASSWORD` di `docker-compose.yml`. Ganti `<session-secret>` dengan nilai minimal 8 karakter yang berisi satu huruf kapital dan satu karakter khusus.
 
 Dan variabel di `apps/web/.env` sesuai:
 
@@ -64,6 +66,8 @@ Staffora menggunakan PostgreSQL 18. Jalankan database melalui Docker Compose:
 ```bash
 docker compose up -d db
 ```
+
+> **Catatan port:** container `db` memakai host port `5433` (`"5433:5432"` di `docker-compose.yml`), supaya tidak bentrok dengan PostgreSQL lokal di `5432`. Jika mesin Anda punya PostgreSQL lokal di `5432`, container tetap di `5433` dan `DATABASE_URL` di `apps/api/.env` harus menunjuk ke `5433`.
 
 Untuk memverifikasi database sehat:
 
@@ -91,13 +95,9 @@ npm run db:seed -w @staffora/api
 
 ## 6. Menjalankan Aplikasi
 
-Jalankan dev server frontend dan backend:
+Jalankan backend dan frontend di dua terminal terpisah dengan `npm run dev:api` dan `npm run dev:web`. `npm run dev` di root menjalankan skrip `dev` setiap workspace secara berurutan, jadi tidak menjalankan keduanya bersamaan.
 
 ```bash
-# Menjalankan kedua aplikasi secara bersamaan
-npm run dev
-
-# Atau jalankan di dua terminal terpisah:
 # Terminal 1 (API):
 npm run dev:api
 
@@ -105,7 +105,7 @@ npm run dev:api
 npm run dev:web
 ```
 
-Alternatif — seluruh stack dalam Docker (hot reload aktif untuk API dan Web):
+Alternatif — seluruh stack dalam Docker (hot reload aktif untuk API dan Web). Compose membaca `SESSION_SECRET` dari `.env` di root repo, jadi salin `.env.example` ke `.env` dan isi nilainya dulu:
 
 ```bash
 npm run stack:up
