@@ -262,12 +262,70 @@ async function main() {
     },
   });
 
+  // 9. US03.01 scope fixtures (idempotent): second PM, project owned by them,
+  //    and a non-cancelled allocation for the seeded employee (EMP-005).
+  const empPM2 = await prisma.employee.upsert({
+    where: { employeeCode: "EMP-006" },
+    update: {},
+    create: {
+      employeeCode: "EMP-006",
+      fullName: "Sari Wulandari",
+      workEmail: "pm2@staffora.internal",
+      departmentId: deptEngineering.id,
+      jobRoleId: rolePM.id,
+      status: "ACTIVE",
+    },
+  });
+
+  const pm2PasswordHash = await hashPassword("StafforaPM2026!");
+  await prisma.user.upsert({
+    where: { normalizedEmail: "pm2@staffora.internal" },
+    update: {},
+    create: {
+      normalizedEmail: "pm2@staffora.internal",
+      passwordHash: pm2PasswordHash,
+      role: "PROJECT_MANAGER",
+      isActive: true,
+      employeeId: empPM2.id,
+    },
+  });
+
+  await prisma.project.upsert({
+    where: { projectCode: "PRJ-STAFFORA-02" },
+    update: {},
+    create: {
+      projectCode: "PRJ-STAFFORA-02",
+      name: "Staffora Mobile Companion",
+      projectManagerEmployeeId: empPM2.id,
+      startDate: new Date("2026-11-01T00:00:00Z"),
+      endDate: new Date("2027-03-31T00:00:00Z"),
+      status: "PLANNED",
+    },
+  });
+
+  const employeeAllocation = await prisma.allocation.findFirst({
+    where: { employeeId: empDev2.id, projectId: project.id, cancelledAt: null },
+  });
+  if (!employeeAllocation) {
+    await prisma.allocation.create({
+      data: {
+        employeeId: empDev2.id,
+        projectId: project.id,
+        jobRoleId: roleBE.id,
+        allocationPercentage: 40,
+        startDate: new Date("2026-10-05T00:00:00Z"),
+        endDate: new Date("2026-12-15T00:00:00Z"),
+      },
+    });
+  }
+
   console.log("Seeding completed successfully!");
   console.log("Credentials seeded:");
   console.log(
     "  Admin:            admin@staffora.internal / StafforaAdmin2026!",
   );
   console.log("  Project Manager:  pm@staffora.internal / StafforaPM2026!");
+  console.log("  Project Manager2: pm2@staffora.internal / StafforaPM2026!");
   console.log("  Resource Manager: rm@staffora.internal / StafforaRM2026!");
   console.log(
     "  Employee:         employee@staffora.internal / StafforaEmp2026!",
