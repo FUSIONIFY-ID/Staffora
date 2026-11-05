@@ -617,8 +617,8 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       const listRes = await request(app)
         .get("/api/v1/projects")
         .set("Cookie", pmCookie);
-      expect(listRes.status).toBe(501);
-      expect(listRes.body.code).toBe("NOT_IMPLEMENTED");
+      expect(listRes.status).toBe(200);
+      expect(Array.isArray(listRes.body.data)).toBe(true);
 
       const detailRes = await request(app)
         .get(`/api/v1/projects/${pmOwnProjectId}`)
@@ -632,7 +632,7 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
       expect(fallbackDetail.body.code).toBe("NOT_FOUND");
     });
 
-    it("returns HTTP 501 when PROJECT_MANAGER attempts to create a project (Not Implemented in Sprint 1)", async () => {
+    it("rejects PROJECT_MANAGER project creation without projectManagerEmployeeId (HTTP 422, US03.01)", async () => {
       const res = await request(app)
         .post("/api/v1/projects")
         .set("Cookie", pmCookie)
@@ -643,8 +643,8 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
           startDate: "2026-11-01",
           endDate: "2026-12-31",
         });
-      expect(res.status).toBe(501);
-      expect(res.body.code).toBe("NOT_IMPLEMENTED");
+      expect(res.status).toBe(422);
+      expect(res.body.code).toBe("UNPROCESSABLE_ENTITY");
     });
 
     it("disallows PROJECT_MANAGER from creating staffing requirement in another PM project (HTTP 404)", async () => {
@@ -1484,13 +1484,26 @@ describe("RBAC & Authorization Foundation (PRD US01.02 & TSD Section 15.4)", () 
         isActive: true,
         employeeId: null,
       };
-      await expect(projectsService.getProjects({}, userAdmin)).rejects.toThrow(
-        "not implemented",
+      const list = await projectsService.getProjects(
+        { page: 1, pageSize: 20 },
+        userAdmin,
       );
+      expect(list.page).toBe(1);
+      expect(Array.isArray(list.data)).toBe(true);
 
       await expect(
-        projectsService.createProject({}, userAdmin),
-      ).rejects.toThrow("not implemented");
+        projectsService.createProject(
+          {
+            projectCode: "PRJ-X",
+            name: "X",
+            projectManagerEmployeeId: "00000000-0000-0000-0000-000000000000",
+            startDate: "2026-01-10",
+            endDate: "2026-01-01",
+            status: "DRAFT",
+          },
+          userAdmin,
+        ),
+      ).rejects.toThrow("Validation failed");
 
       await expect(
         staffingService.getRequirementsForProject(

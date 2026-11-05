@@ -1,8 +1,17 @@
 import type { Request, Response, NextFunction } from "express";
 import { getParam } from "../../common/http/params.js";
 import { assertAuth } from "../../common/auth/policy.js";
-import { sendSuccess, sendList } from "../../common/http/response.js";
+import {
+  sendSuccess,
+  sendList,
+  sendCreated,
+} from "../../common/http/response.js";
 import { projectsService } from "./projects.service.js";
+import type {
+  CreateProjectInput,
+  QueryProjectsInput,
+  UpdateProjectInput,
+} from "./projects.schema.js";
 
 export const projectsController = {
   async getProjects(
@@ -12,7 +21,10 @@ export const projectsController = {
   ): Promise<void | Response> {
     try {
       assertAuth(req.user);
-      const result = await projectsService.getProjects(req.query, req.user);
+      const result = await projectsService.getProjects(
+        req.query as unknown as QueryProjectsInput,
+        req.user,
+      );
       return sendList(res, result.data, {
         page: result.page,
         pageSize: result.pageSize,
@@ -30,13 +42,11 @@ export const projectsController = {
   ): Promise<void | Response> {
     try {
       assertAuth(req.user);
-      const project = await projectsService.createProject(req.body, req.user);
-      return res.status(201).json({
-        data: project,
-        meta: {
-          message: "Create project scaffold - Ready for Sprint 1 development",
-        },
-      });
+      const project = await projectsService.createProject(
+        req.body as CreateProjectInput,
+        req.user,
+      );
+      return sendCreated(res, project);
     } catch (err) {
       next(err);
     }
@@ -70,7 +80,7 @@ export const projectsController = {
       assertAuth(req.user);
       const updated = await projectsService.updateProject(
         projectId,
-        req.body,
+        req.body as UpdateProjectInput,
         req.user,
       );
       return sendSuccess(res, updated);

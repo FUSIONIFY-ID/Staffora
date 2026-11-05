@@ -4,7 +4,7 @@ export const createProjectSchema = z
   .object({
     projectCode: z.string().min(1, "Project code is required").max(50),
     name: z.string().min(1, "Project name is required").max(255),
-    projectManagerEmployeeId: z.string().uuid().optional(),
+    projectManagerEmployeeId: z.string().uuid(),
     startDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Start date must be YYYY-MM-DD"),
@@ -58,3 +58,7 @@ export const queryProjectsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
+
+export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+export type QueryProjectsInput = z.infer<typeof queryProjectsSchema>;

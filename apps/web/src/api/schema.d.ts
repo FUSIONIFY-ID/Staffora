@@ -1336,10 +1336,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List projects */
+        /**
+         * List projects
+         * @description Role-scoped list (US03.01). ADMIN and RESOURCE_MANAGER see all projects;
+         *     PROJECT_MANAGER sees projects they manage; EMPLOYEE sees projects where
+         *     they hold a non-cancelled allocation. Users without a linked employee
+         *     (other than ADMIN/RESOURCE_MANAGER) get an empty list.
+         *     Sorted by startDate desc, then projectCode asc.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description Case-insensitive match on project name or code. */
                     search?: string;
                     status?: "DRAFT" | "PLANNED" | "ACTIVE" | "COMPLETED" | "ARCHIVED";
                     projectManagerEmployeeId?: string;
@@ -1363,11 +1371,18 @@ export interface paths {
                 };
                 401: components["responses"]["UnauthorizedResponse"];
                 422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
             };
         };
         put?: never;
-        /** Create project */
+        /**
+         * Create project
+         * @description ADMIN or PROJECT_MANAGER. A PROJECT_MANAGER may only create a project
+         *     with themselves as projectManagerEmployeeId (otherwise 403).
+         *     The manager must be an ACTIVE employee linked to an active
+         *     PROJECT_MANAGER user (otherwise 422). Initial status must be DRAFT,
+         *     PLANNED or ACTIVE. Dates are inclusive; endDate >= startDate
+         *     (same-day is valid).
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1394,8 +1409,16 @@ export interface paths {
                 };
                 401: components["responses"]["UnauthorizedResponse"];
                 403: components["responses"]["ForbiddenResponse"];
+                /** @description Project code already exists (code: DUPLICATE_PROJECT_CODE) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 422: components["responses"]["ValidationErrorResponse"];
-                501: components["responses"]["NotImplementedResponse"];
             };
         };
         delete?: never;
@@ -1411,7 +1434,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get project detail */
+        /**
+         * Get project detail
+         * @description Same role scope as the list. Projects outside the caller's scope return
+         *     404 (non-disclosure). COMPLETED and ARCHIVED projects stay readable,
+         *     including cancelled allocations (history is preserved).
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1444,7 +1472,24 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update project */
+        /**
+         * Update project
+         * @description ADMIN, or the PROJECT_MANAGER who manages the project (others get 404).
+         *     Only ADMIN may change projectManagerEmployeeId (403 otherwise).
+         *     Dates are merged with stored values and must satisfy endDate >= startDate (422).
+         *     ARCHIVED projects are read-only (409 PROJECT_ARCHIVED). The period may not
+         *     exclude existing non-cancelled allocations or staffing requirements
+         *     (409 PERIOD_CONFLICT).
+         *
+         *     Allowed status transitions (409 INVALID_STATUS_TRANSITION otherwise):
+         *     - DRAFT -> PLANNED, ACTIVE
+         *     - PLANNED -> DRAFT, ACTIVE
+         *     - ACTIVE -> COMPLETED
+         *     - COMPLETED -> ARCHIVED
+         *     - ARCHIVED -> (none, terminal)
+         *
+         *     COMPLETED and ARCHIVED projects do not accept new allocations (BR-G13).
+         */
         patch: {
             parameters: {
                 query?: never;
@@ -1467,13 +1512,26 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data?: components["schemas"]["Project"];
+                            data?: components["schemas"]["ProjectDetail"];
                         };
                     };
                 };
                 401: components["responses"]["UnauthorizedResponse"];
                 403: components["responses"]["ForbiddenResponse"];
                 404: components["responses"]["NotFoundResponse"];
+                /**
+                 * @description Conflict. `code` is one of INVALID_STATUS_TRANSITION,
+                 *     PERIOD_CONFLICT or PROJECT_ARCHIVED; `meta` carries details
+                 *     (e.g. from/to/allowed, or kind/requiredStartDate/requiredEndDate).
+                 */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 422: components["responses"]["ValidationErrorResponse"];
             };
         };
@@ -2395,10 +2453,11 @@ export interface components {
             /** Format: date */
             endDate: string;
             /**
+             * @description COMPLETED/ARCHIVED are rejected on create (422).
              * @default DRAFT
              * @enum {string}
              */
-            status: "DRAFT" | "PLANNED" | "ACTIVE" | "COMPLETED" | "ARCHIVED";
+            status: "DRAFT" | "PLANNED" | "ACTIVE";
         };
         UpdateProjectInput: {
             name?: string;
